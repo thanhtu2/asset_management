@@ -1,0 +1,99 @@
+# Docker Compose for Debug/Development
+version: '3.8'
+
+services:
+  # MySQL Database (use existing MySQL on host)
+  # mysql:
+  #   image: mysql:8.0
+  #   container_name: office-mbs-mysql
+  #   restart: unless-stopped
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: rootpassword
+  #     MYSQL_DATABASE: asset_management
+  #     MYSQL_USER: assetuser
+  #     MYSQL_PASSWORD: assetpass
+  #   ports:
+  #     - "3307:3306"
+  #   volumes:
+  #     - mysql_data:/var/lib/mysql
+  #     - ./backend/src/config/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #   networks:
+  #     - office-mbs-network
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: office-mbs-backend
+    restart: unless-stopped
+    environment:
+      DB_HOST: host.docker.internal
+      DB_USER: root
+      DB_PASSWORD: "123456"
+      DB_NAME: asset_management
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - office-mbs-network
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  # Asset Management API
+  asset_management:
+    build:
+      context: ./asset_management
+      dockerfile: Dockerfile
+    container_name: office-mbs-asset-management
+    restart: unless-stopped
+    environment:
+      DB_HOST: host.docker.internal
+      DB_USER: root
+      DB_PASSWORD: "123456"
+      DB_NAME: asset_management
+      PORT: 3001
+    ports:
+      - "3002:3001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - office-mbs-network
+    volumes:
+      - ./asset_management:/app
+      - /app/node_modules
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: office-mbs-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:3001/api
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - office-mbs-network
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  mysql_data:
+
+networks:
+  office-mbs-network:
+    driver: bridge
+

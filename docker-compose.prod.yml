@@ -1,0 +1,93 @@
+# Docker Compose for Production/Deploy
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: office-mbs-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_NAME:-asset_management}
+      MYSQL_USER: ${DB_USER:-assetuser}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-assetpass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - office-mbs-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: office-mbs-backend
+    restart: always
+    environment:
+      DB_HOST: mysql
+      DB_USER: ${DB_USER:-assetuser}
+      DB_PASSWORD: ${DB_PASSWORD:-assetpass}
+      DB_NAME: ${DB_NAME:-asset_management}
+      PORT: 3001
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-in-production}
+    ports:
+      - "3001:3001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - office-mbs-network
+
+  # Asset Management API
+  asset_management:
+    build:
+      context: ./asset_management
+      dockerfile: Dockerfile.prod
+    container_name: office-mbs-asset-management
+    restart: always
+    environment:
+      DB_HOST: mysql
+      DB_USER: ${DB_USER:-assetuser}
+      DB_PASSWORD: ${DB_PASSWORD:-assetpass}
+      DB_NAME: ${DB_NAME:-asset_management}
+      PORT: 3001
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-in-production}
+    ports:
+      - "3002:3001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - office-mbs-network
+
+  # Frontend (Static files served by Nginx)
+  frontend:
+    image: nginx:alpine
+    container_name: office-mbs-frontend
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - office-mbs-network
+
+volumes:
+  mysql_data:
+
+networks:
+  office-mbs-network:
+    driver: bridge
+
