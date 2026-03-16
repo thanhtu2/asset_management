@@ -25,13 +25,9 @@ const InventorySession = {
     return rows[0];
   },
 
-  // Create inventory session and populate with assets from the specified department
+  // Create inventory session and populate with assets from the specified department (or all assets for total inventory)
   async create(data, userId) {
     const { name, start_date, end_date, department_id } = data;
-
-    if (!department_id) {
-        throw new Error('Department ID is required to create an inventory session.');
-    }
 
     const connection = await pool.getConnection();
     await connection.beginTransaction();
@@ -40,20 +36,26 @@ const InventorySession = {
         // 1. Create the session
         const [result] = await connection.query(
             'INSERT INTO inventory_sessions (name, start_date, end_date, created_by, department_id, status) VALUES (?, ?, ?, ?, ?, ?)',
-            [name, start_date, end_date || null, userId, department_id, 'in_progress']
+            [name, start_date, end_date || null, userId, department_id || null, 'in_progress']
         );
         const sessionId = result.insertId;
 
-        // 2. "Chốt sổ sách": Get assets based on department
-        const [assets] = await connection.query('SELECT id FROM assets WHERE department_id = ?', [department_id]);
+        // 2. "Chốt sổ sách": Get assets based on department or all assets
+        let assets;
+        if (department_id) {
+            [assets] = await connection.query('SELECT id FROM assets WHERE department_id = ?', [department_id]);
+        } else {
+            // Total inventory - get all assets
+            [assets] = await connection.query('SELECT id FROM assets');
+        }
 
-        // 3. Populate inventory_records
+        // 3. Populate inventory_records with pending status
         if (assets.length > 0) {
             const assetIds = assets.map(a => a.id);
-            const recordsData = assetIds.map(id => [sessionId, id, 0]);
+            const recordsData = assetIds.map(id => [sessionId, id, 0, 'pending_check']);
             
             await connection.query(
-                'INSERT INTO inventory_records (session_id, asset_id, actual_quantity) VALUES ?',
+                'INSERT INTO inventory_records (session_id, asset_id, actual_quantity, status) VALUES ?',
                 [recordsData]
             );
         }
@@ -227,7 +229,8 @@ const InventorySession = {
       SELECT 
         a.department_id,
         d.name as department_name,
-        SUM(CASE WHEN ir.status IN ('found', 'missing', 'damaged', 'pending_check', 'found_wrong_location') THEN 1 ELSE 0 END) as total,
+        SUM(CASE WHEN ir.status IN ('found', 'missing', 'damaged', 'pending_check', 'found_wrong_location', 'extra') THEN 1 ELSE 0 END) as total,
+        SUM(CASE WHEN ir.status = 'pending_check' THEN 1 ELSE 0 END) as pending_count,
         SUM(CASE WHEN ir.status = 'found' OR ir.status = 'found_wrong_location' THEN 1 ELSE 0 END) as found_count,
         SUM(CASE WHEN ir.status = 'missing' THEN 1 ELSE 0 END) as missing_count,
         SUM(CASE WHEN ir.status = 'damaged' THEN 1 ELSE 0 END) as damaged_count,

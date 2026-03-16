@@ -185,34 +185,49 @@ const Asset = {
 
   // Update asset
   async update(id, assetData) {
-    // Get existing asset first
+    const { 
+      asset_code, 
+      name, 
+      description, 
+      category_id, 
+      location_id, 
+      department_id, 
+      supplier_id, 
+      purchase_date, 
+      purchase_price, 
+      current_value, 
+      status,
+      barcode,
+      image_url,
+      assigned_to_name
+    } = assetData;
+
+    // Get existing asset to preserve values
     const existing = await this.findById(id);
     if (!existing) return null;
 
-    const {
-      asset_code = existing.asset_code,
-      name = existing.name,
-      description = existing.description,
-      category_id = existing.category_id,
-      location_id = existing.location_id,
-      department_id = existing.department_id,
-      supplier_id = existing.supplier_id,
-      purchase_date = existing.purchase_date,
-      purchase_price = existing.purchase_price,
-      current_value = existing.current_value,
-      status = existing.status,
-      barcode = existing.barcode,
-      image_url = existing.image_url,
-      assigned_to_name = existing.assigned_to_name
-    } = assetData;
-
+    // Use provided values or fall back to existing
     await pool.query(
       `UPDATE assets SET asset_code=?, name=?, description=?, category_id=?, location_id=?,
         department_id=?, supplier_id=?, purchase_date=?, purchase_price=?, current_value=?,
         status=?, barcode=?, image_url=?, assigned_to_name=? WHERE id=?`,
-      [asset_code, name, description, category_id, location_id, department_id,
-        supplier_id, purchase_date, purchase_price, current_value, status, barcode, image_url, 
-        assigned_to_name, id]
+      [
+        asset_code || existing.asset_code, 
+        name || existing.name, 
+        description || existing.description, 
+        category_id || existing.category_id, 
+        location_id || existing.location_id, 
+        department_id || existing.department_id, 
+        supplier_id || existing.supplier_id, 
+        purchase_date || existing.purchase_date, 
+        purchase_price || existing.purchase_price, 
+        current_value || existing.current_value, 
+        status || existing.status, 
+        barcode || existing.barcode, 
+        image_url || existing.image_url, 
+        assigned_to_name || existing.assigned_to_name, 
+        id
+      ]
     );
     return this.findById(id);
   },

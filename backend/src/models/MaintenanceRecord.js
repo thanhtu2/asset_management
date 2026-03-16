@@ -46,11 +46,25 @@ const MaintenanceRecord = {
 
   // Update maintenance record
   async update(id, data) {
-    const { asset_id, maintenance_date, maintenance_type, description, cost, technician, next_maintenance_date } = data;
+    // Get existing record
+    const existing = await this.findById(id);
+    if (!existing) return null;
+
+    const { 
+      asset_id = existing.asset_id, 
+      maintenance_date = existing.maintenance_date, 
+      maintenance_type = existing.maintenance_type, 
+      description = existing.description, 
+      cost = existing.cost, 
+      technician = existing.technician, 
+      next_maintenance_date = existing.next_maintenance_date,
+      status = existing.status,
+      completion_date = existing.completion_date
+    } = data;
     
     await pool.query(
-      'UPDATE maintenance_records SET asset_id=?, maintenance_date=?, maintenance_type=?, description=?, cost=?, technician=?, next_maintenance_date=? WHERE id=?',
-      [asset_id, maintenance_date, maintenance_type, description, cost, technician, next_maintenance_date, id]
+      'UPDATE maintenance_records SET asset_id=?, maintenance_date=?, maintenance_type=?, description=?, cost=?, technician=?, next_maintenance_date=?, status=?, completion_date=? WHERE id=?',
+      [asset_id, maintenance_date, maintenance_type, description, cost, technician, next_maintenance_date, status, completion_date, id]
     );
     return this.findById(id);
   },

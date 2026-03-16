@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { inventoryAPI, assetsAPI, departmentsAPI } from '../api';
 import QrScanner from '../components/QrScanner';
 
@@ -25,6 +25,7 @@ const InventoryPage = () => {
 
   // State for damage report modal
   const [damageModal, setDamageModal] = useState({ show: false, record: null, severity: 'minor', notes: '' });
+  const [liquidationModal, setLiquidationModal] = useState({ show: false, records: [] });
 
   // State for QR Scanner
   const [showScannerModal, setShowScannerModal] = useState(false);
@@ -107,22 +108,21 @@ const InventoryPage = () => {
   };
 
   // Handler for QR Code Scan Success
-  const handleScanSuccess = async (decodedText) => {
+  const handleScanSuccess = useCallback(async (decodedText) => {
     if (isScanning.current || !selectedSession) return;
 
     try {
       isScanning.current = true;
       
       let barcode = decodedText;
-      // Check if the decoded text is a URL and try to extract the last part
       try {
         const url = new URL(decodedText);
-        const pathParts = url.pathname.split('/').filter(part => part); // e.g., ['asset', '58']
+        const pathParts = url.pathname.split('/').filter(part => part);
         if (pathParts.length > 0) {
-          barcode = pathParts[pathParts.length - 1]; // '58'
+          barcode = pathParts[pathParts.length - 1];
         }
       } catch (e) {
-        // Not a valid URL, assume decodedText is the barcode itself. No action needed.
+        barcode = decodedText;
       }
 
       setScanResult({ message: `Đang xử lý mã: ${barcode}...`, type: 'info', assetName: null });
@@ -135,22 +135,22 @@ const InventoryPage = () => {
         assetName: response.data.details?.assetName,
       });
       
-      // Refresh the details view to show the updated asset status
       await handleViewDetails(selectedSession);
+      setShowScannerModal(false);
+      alert(response.data.message || 'Quét thành công!');
 
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Lỗi không xác định';
       setScanResult({ message: errorMessage, type: 'error', assetName: null });
       console.error('Scan Error:', error);
+      setShowScannerModal(false);
+      alert(errorMessage);
     } finally {
-      // Allow scanning again after a short delay
       setTimeout(() => {
         isScanning.current = false;
-        // Optional: clear the message after a few seconds
-        // setTimeout(() => setScanResult({ message: '', type: '' }), 2000);
-      }, 1000);
+      }, 1500);
     }
-  };
+  }, [selectedSession, setShowScannerModal]);
 
   const handleAddAssetsByDepartment = async (sessionId, departmentId) => {
     if (!departmentId) {
@@ -258,6 +258,36 @@ const InventoryPage = () => {
     }
   };
 
+  // Handle create maintenance request from damaged assets list
+  const handleCreateMaintenance = async (record) => {
+    const notes = prompt('Nhập mô tả hư hỏng:');
+    if (!notes) return;
+    
+    try {
+      await assetsAPI.updateStatus(record.asset_id, 'needs_repair', notes);
+      alert('Đã tạo yêu cầu sửa chữa cho tài sản ' + record.asset_code);
+      handleViewDetails(selectedSession);
+    } catch (error) {
+      console.error('Error creating maintenance:', error);
+      alert('Có lỗi xảy ra');
+    }
+  };
+
+  // Handle report damage from found assets list
+  const handleReportDamageFromFound = async (record, notes) => {
+    try {
+      // Update inventory record status to damaged
+      await inventoryAPI.updateRecord(selectedSession.id, record.id, { status: 'damaged', notes });
+      // Update asset status to needs_repair
+      await assetsAPI.updateStatus(record.asset_id, 'needs_repair', notes || 'Hư hỏng phát hiện khi kiểm kê');
+      alert('Đã báo hỏng tài sản ' + record.asset_code);
+      handleViewDetails(selectedSession);
+    } catch (error) {
+      console.error('Error reporting damage:', error);
+      alert('Có lỗi xảy ra');
+    }
+  };
+
   const handleComplete = async (id) => {
     if (!confirm('Bạn có chắc chắn muốn hoàn thành phiên kiểm kê này?')) return;
     try {
@@ -290,6 +320,19 @@ const InventoryPage = () => {
     };
     const badge = badges[status] || badges.draft;
     return <span className={`badge ${badge.class}`}>{badge.label}</span>;
+  };
+
+  const getRecordStatusBadge = (status) => {
+    const statusMap = {
+      pending_check: { label: 'Chờ kiểm', className: 'pending' },
+      found: { label: 'Tìm thấy', className: 'good' },
+      missing: { label: 'Thiếu', className: 'disposed' },
+      damaged: { label: 'Hỏng', className: 'needs_repair' },
+      extra: { label: 'Thừa', className: 'new' },
+      found_wrong_location: { label: 'Sai vị trí', className: 'good' }
+    };
+    const display = statusMap[status] || { label: status || 'Chờ kiểm', className: 'pending' };
+    return <span className={`badge badge-${display.className}`}>{display.label}</span>;
   };
 
   const unassignedAssets = assets.filter(a => !records.some(r => r.asset_id === a.id));
@@ -415,18 +458,33 @@ const InventoryPage = () => {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label>Phòng ban kiểm kê *</label>
+                  <label>Loại kiểm kê *</label>
                   <select
-                    value={selectedDepartment}
-                    onChange={(e) => setSelectedDepartment(e.target.value)}
-                    required
+                    value={selectedDepartment === '' ? 'all' : 'dept'}
+                    onChange={(e) => {
+                      if (e.target.value === 'all') {
+                        setSelectedDepartment('');
+                      }
+                    }}
                   >
-                    <option value="">-- Chọn phòng ban --</option>
-                    {departments.map((dept) => (
-                      <option key={dept.id} value={dept.id}>{dept.name}</option>
-                    ))}
+                    <option value="all">Kiểm kê tổng (tất cả tài sản)</option>
+                    <option value="dept">Kiểm kê theo phòng ban</option>
                   </select>
                 </div>
+                {selectedDepartment !== '' || (
+                  <div className="form-group">
+                    <label>Phòng ban kiểm kê</label>
+                    <select
+                      value={selectedDepartment}
+                      onChange={(e) => setSelectedDepartment(e.target.value)}
+                    >
+                      <option value="">-- Chọn phòng ban --</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>{dept.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
               <div className="modal-footer">
                 <button type="button" onClick={() => setShowModal(false)} className="btn btn-outline">Hủy</button>
@@ -458,12 +516,14 @@ const InventoryPage = () => {
                     📷 Bắt đầu quét
                   </button>
                 )}
-                 <button 
-                  className="btn btn-success"
-                  onClick={() => handleComplete(selectedSession.id)}
-                >
-                  ✓ Hoàn thành phiên
-                </button>
+                {selectedSession.status === 'in_progress' && (
+                  <button 
+                    className="btn btn-success"
+                    onClick={() => handleComplete(selectedSession.id)}
+                  >
+                    ✓ Hoàn thành phiên
+                  </button>
+                )}
             </div>
 
             <div className="modal-body">
@@ -476,6 +536,7 @@ const InventoryPage = () => {
                       <tr style={{ background: '#f5f5f5' }}>
                         <th style={{ padding: '8px', textAlign: 'left' }}>Phòng</th>
                         <th style={{ padding: '8px', textAlign: 'center' }}>Tổng</th>
+                        <th style={{ padding: '8px', textAlign: 'center', color: 'gray' }}>Chờ</th>
                         <th style={{ padding: '8px', textAlign: 'center', color: 'green' }}>Tìm thấy</th>
                         <th style={{ padding: '8px', textAlign: 'center', color: 'red' }}>Thiếu</th>
                         <th style={{ padding: '8px', textAlign: 'center', color: 'orange' }}>Hỏng</th>
@@ -487,6 +548,7 @@ const InventoryPage = () => {
                         <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
                           <td style={{ padding: '8px' }}>{summary.department_name || 'Chưa phân phòng'}</td>
                           <td style={{ padding: '8px', textAlign: 'center' }}>{summary.total}</td>
+                          <td style={{ padding: '8px', textAlign: 'center', color: 'gray' }}>{summary.pending_count}</td>
                           <td style={{ padding: '8px', textAlign: 'center', color: 'green' }}>{summary.found_count}</td>
                           <td style={{ padding: '8px', textAlign: 'center', color: 'red' }}>{summary.missing_count}</td>
                           <td style={{ padding: '8px', textAlign: 'center', color: 'orange' }}>{summary.damaged_count}</td>
@@ -495,6 +557,141 @@ const InventoryPage = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {/* Damaged Assets Section */}
+              {records.some(r => r.status === 'damaged') && (
+                <div style={{ marginBottom: '20px', padding: '15px', background: '#fff3cd', borderRadius: '8px', border: '1px solid #ffc107' }}>
+                  <h3 style={{ fontSize: '16px', marginBottom: '10px', color: '#856404' }}>
+                    ⚠️ Tài sản hư hỏng ({records.filter(r => r.status === 'damaged').length})
+                  </h3>
+                  <table style={{ width: '100%', fontSize: '13px' }}>
+                    <thead>
+                      <tr style={{ background: '#ffeeba' }}>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>Mã TS</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>Tên tài sản</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>Ghi chú</th>
+                        <th style={{ padding: '8px', textAlign: 'center' }}>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {records.filter(r => r.status === 'damaged').map((record) => (
+                        <tr key={record.id} style={{ borderBottom: '1px solid #eee' }}>
+                          <td style={{ padding: '8px' }}>{record.asset_code}</td>
+                          <td style={{ padding: '8px' }}>{record.asset_name}</td>
+                          <td style={{ padding: '8px', fontSize: '12px' }}>{record.notes || '-'}</td>
+                          <td style={{ padding: '8px', textAlign: 'center' }}>
+                            <button 
+                              onClick={() => handleCreateMaintenance(record)}
+                              className="btn btn-sm btn-outline"
+                              style={{ margin: '2px', borderColor: '#0d6efd', color: '#0d6efd' }}
+                              title="Tạo yêu cầu sửa chữa"
+                            >
+                              🔧 Sửa chữa
+                            </button>
+                            <button 
+                              onClick={() => setLiquidationModal({ show: true, records: [record] })}
+                              className="btn btn-sm btn-outline"
+                              style={{ margin: '2px', borderColor: '#dc3545', color: '#dc3545' }}
+                              title="Đề xuất thanh lý"
+                            >
+                              🗑️ Thanh lý
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {records.filter(r => r.status === 'damaged').length > 1 && (
+                    <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                      <button 
+                        onClick={() => setLiquidationModal({ show: true, records: records.filter(r => r.status === 'damaged') })}
+                        className="btn btn-sm btn-danger"
+                      >
+                        🗑️ Thanh lý tất cả ({records.filter(r => r.status === 'damaged').length})
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Missing Assets Section */}
+              {selectedSession.status === 'completed' && records.some(r => r.status === 'missing') && (
+                <div style={{ marginBottom: '20px', padding: '15px', background: '#f8d7da', borderRadius: '8px', border: '1px solid #f5c6cb' }}>
+                  <h3 style={{ fontSize: '16px', marginBottom: '10px', color: '#721c24' }}>
+                    ❌ Tài sản thiếu ({records.filter(r => r.status === 'missing').length})
+                  </h3>
+                  <table style={{ width: '100%', fontSize: '13px' }}>
+                    <thead>
+                      <tr style={{ background: '#f5c6cb' }}>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>Mã TS</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>Tên tài sản</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>Ghi chú</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {records.filter(r => r.status === 'missing').map((record) => (
+                        <tr key={record.id} style={{ borderBottom: '1px solid #eee' }}>
+                          <td style={{ padding: '8px' }}>{record.asset_code}</td>
+                          <td style={{ padding: '8px' }}>{record.asset_name}</td>
+                          <td style={{ padding: '8px', fontSize: '12px' }}>{record.notes || 'Không tìm thấy khi kiểm kê'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Found Assets Section */}
+              {selectedSession.status === 'completed' && records.some(r => r.status === 'found' || r.status === 'found_wrong_location') && (
+                <div style={{ marginBottom: '20px', padding: '15px', background: '#d4edda', borderRadius: '8px', border: '1px solid #c3e6cb' }}>
+                  <h3 style={{ fontSize: '16px', marginBottom: '10px', color: '#155724' }}>
+                    ✅ Tài sản tìm thấy ({records.filter(r => r.status === 'found' || r.status === 'found_wrong_location').length})
+                  </h3>
+                  <table style={{ width: '100%', fontSize: '13px' }}>
+                    <thead>
+                      <tr style={{ background: '#c3e6cb' }}>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>Mã TS</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>Tên tài sản</th>
+                        <th style={{ padding: '8px', textAlign: 'center' }}>Trạng thái</th>
+                        <th style={{ padding: '8px', textAlign: 'center' }}>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {records.filter(r => r.status === 'found' || r.status === 'found_wrong_location').slice(0, 20).map((record) => (
+                        <tr key={record.id} style={{ borderBottom: '1px solid #eee' }}>
+                          <td style={{ padding: '8px' }}>{record.asset_code}</td>
+                          <td style={{ padding: '8px' }}>{record.asset_name}</td>
+                          <td style={{ padding: '8px', textAlign: 'center' }}>
+                            <span className="badge badge-good">
+                              {record.status === 'found' ? 'Tìm thấy' : 'Sai vị trí'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '8px', textAlign: 'center' }}>
+                            <button 
+                              onClick={() => {
+                                const notes = prompt('Nhập mô tả hư hỏng:');
+                                if (notes) {
+                                  handleReportDamageFromFound(record, notes);
+                                }
+                              }}
+                              className="btn btn-sm btn-outline"
+                              style={{ margin: '2px', borderColor: '#f59e0b', color: '#f59e0b' }}
+                              title="Báo hỏng"
+                            >
+                              ⚠️ Báo hỏng
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {records.filter(r => r.status === 'found' || r.status === 'found_wrong_location').length > 20 && (
+                    <p style={{ marginTop: '10px', textAlign: 'center', color: '#721c24' }}>
+                      ... và {records.filter(r => r.status === 'found' || r.status === 'found_wrong_location').length - 20} tài sản khác
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -522,28 +719,16 @@ const InventoryPage = () => {
                               <td style={{ padding: '8px' }}>{record.asset_code}</td>
                               <td style={{ padding: '8px' }}>{record.asset_name}</td>
                               <td style={{ padding: '8px', textAlign: 'center' }}>
-                                {(() => {
-                                  const statusMap = {
-                                    found: { label: 'Tìm thấy', className: 'good' },
-                                    missing: { label: 'Mất', className: 'disposed' },
-                                    damaged: { label: 'Hỏng', className: 'needs_repair' },
-                                    extra: { label: 'Thừa', className: 'new' },
-                                    found_wrong_location: { label: 'Sai vị trí', className: 'good' }
-                                  };
-                                  const display = statusMap[record.status] || { label: 'Chờ kiểm kê', className: 'pending' };
-                                  return (
-                                    <span className={`badge badge-${display.className}`}>{display.label}</span>
-                                  );
-                                })()}
+                                {getRecordStatusBadge(record.status)}
                               </td>
                               <td style={{ padding: '8px', textAlign: 'center' }}>
-                                {selectedSession.status !== 'completed' && (
+                                {selectedSession.status !== 'completed' && (record.status === 'pending_check' || !record.status) && (
                                   <>
                                     <button 
                                       onClick={() => handleUpdateRecord(record, 'found')}
                                       className="btn btn-sm btn-success"
                                       style={{ margin: '2px', padding: '4px 8px' }}
-                                      disabled={record.status === 'found'}
+                                      title="Tìm thấy"
                                     >
                                       ✓
                                     </button>
@@ -551,7 +736,7 @@ const InventoryPage = () => {
                                       onClick={() => handleUpdateRecord(record, 'missing')}
                                       className="btn btn-sm btn-danger"
                                       style={{ margin: '2px', padding: '4px 8px' }}
-                                      disabled={record.status === 'missing'}
+                                      title="Thiếu"
                                     >
                                       ✗
                                     </button>
@@ -559,7 +744,7 @@ const InventoryPage = () => {
                                       onClick={() => handleUpdateRecord(record, 'damaged')}
                                       className="btn btn-sm btn-outline"
                                       style={{ margin: '2px', padding: '4px 8px', color: '#f59e0b', borderColor: '#f59e0b' }}
-                                      disabled={record.status === 'damaged'}
+                                      title="Hỏng"
                                     >
                                       !
                                     </button>
@@ -593,6 +778,7 @@ const InventoryPage = () => {
             </div>
             <div className="modal-body">
               <QrScanner 
+                key={Date.now()}
                 onScanSuccess={handleScanSuccess}
                 onScanError={(error) => console.log(error?.message || 'QR Scan Error')}
               />
@@ -713,6 +899,60 @@ const InventoryPage = () => {
               <button type="button" onClick={() => setDamageModal({ ...damageModal, show: false })} className="btn btn-outline">Hủy</button>
               <button type="button" onClick={handleDamageReport} className="btn btn-primary">
                 Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Liquidation Modal */}
+      {liquidationModal.show && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h2>Đề xuất thanh lý tài sản</h2>
+              <button onClick={() => setLiquidationModal({ show: false, records: [] })} className="btn btn-sm btn-outline">&times;</button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: '16px' }}>
+                Bạn có chắc chắn muốn đề xuất thanh lý {liquidationModal.records.length} tài sản này?
+              </p>
+              <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #e0e0e0', padding: '10px', marginBottom: '16px' }}>
+                {liquidationModal.records.map((record, idx) => (
+                  <div key={idx} style={{ padding: '8px', borderBottom: '1px solid #f0f0f0' }}>
+                    <strong>{record.asset_code}</strong> - {record.asset_name}
+                  </div>
+                ))}
+              </div>
+              <div className="form-group">
+                <label>Lý do thanh lý</label>
+                <textarea
+                  rows="3"
+                  placeholder="Nhập lý do thanh lý..."
+                  id="liquidationReason"
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setLiquidationModal({ show: false, records: [] })} className="btn btn-outline">Hủy</button>
+              <button 
+                onClick={async () => {
+                  const reason = document.getElementById('liquidationReason').value;
+                  try {
+                    for (const record of liquidationModal.records) {
+                      await assetsAPI.updateStatus(record.asset_id, 'disposed', reason || 'Đề xuất thanh lý khi kiểm kê');
+                    }
+                    alert('Đã cập nhật trạng thái thanh lý');
+                    setLiquidationModal({ show: false, records: [] });
+                    handleViewDetails(selectedSession);
+                  } catch (error) {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra');
+                  }
+                }} 
+                className="btn btn-danger"
+              >
+                Xác nhận thanh lý
               </button>
             </div>
           </div>
