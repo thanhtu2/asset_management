@@ -1,5 +1,12 @@
 import axios from 'axios';
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://192.168.89.118:3001/api';
+
+// Chỉ sử dụng biến môi trường, loại bỏ IP fallback để tránh lỗi kết nối ngầm
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+if (!API_BASE_URL) {
+  console.error("VITE_API_URL is missing. Please check your .env file!");
+}
+
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {

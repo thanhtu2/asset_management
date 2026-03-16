@@ -83,7 +83,8 @@ const Asset = {
     const total = countResult[0].total;
 
     // Add pagination - use string interpolation for LIMIT/OFFSET
-    query += ' ORDER BY a.created_at DESC LIMIT ' + limitNum + ' OFFSET ' + offset;
+    query += ' ORDER BY a.created_at DESC LIMIT ? OFFSET ?';
+    params.push(limitNum, offset);
 
     const [rows] = await pool.query(query, params);
 

@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 
 // Import routes
@@ -17,7 +19,9 @@ import dashboardRoutes from './routes/dashboard.routes.js';
 
 import { initDatabase, testConnection, getPool } from './config/database.js';
 
-dotenv.config();
+// Lùi ra 2 cấp thư mục (từ src/ ra backend/ rồi ra root/) để đọc file .env
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -37,10 +41,7 @@ const corsOptions = {
     // If no origin (server-to-server) or origin is allowed
     if (!origin) {
       callback(null, true);
-    } else if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
-      callback(null, true);
-'192.168.89.118'
-      // Allow any port from 192.168.90.23
+    } else if (origin.startsWith('http://192.168.1.250') || origin.startsWith('http://192.168.1.250')) {
       callback(null, true);
     } else {
       // For production, allow all origins for now to debug

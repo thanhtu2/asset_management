@@ -38,30 +38,10 @@ services:
       DB_NAME: ${DB_NAME:-asset_management}
       PORT: 3001
       JWT_SECRET: ${JWT_SECRET:-change-this-secret-in-production}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      FRONTEND_URL: ${FRONTEND_URL}
     ports:
       - "3001:3001"
-    depends_on:
-      mysql:
-        condition: service_healthy
-    networks:
-      - office-mbs-network
-
-  # Asset Management API
-  asset_management:
-    build:
-      context: ./asset_management
-      dockerfile: Dockerfile.prod
-    container_name: office-mbs-asset-management
-    restart: always
-    environment:
-      DB_HOST: mysql
-      DB_USER: ${DB_USER:-assetuser}
-      DB_PASSWORD: ${DB_PASSWORD:-assetpass}
-      DB_NAME: ${DB_NAME:-asset_management}
-      PORT: 3001
-      JWT_SECRET: ${JWT_SECRET:-change-this-secret-in-production}
-    ports:
-      - "3002:3001"
     depends_on:
       mysql:
         condition: service_healthy
@@ -90,4 +70,3 @@ volumes:
 networks:
   office-mbs-network:
     driver: bridge
-
