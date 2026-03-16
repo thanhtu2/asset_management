@@ -271,6 +271,9 @@
   .badge-disposed {
     @apply bg-red-100 text-red-700;
   }
+  .badge-pending {
+    @apply bg-gray-100 text-gray-700;
+  }
 
   /* ── Login Page ──────────────────────────────────────── */
   .login-container {

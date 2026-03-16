@@ -121,6 +121,8 @@ CREATE TABLE IF NOT EXISTS maintenance_records (
   cost DECIMAL(15,2) DEFAULT 0,
   technician VARCHAR(100),
   next_maintenance_date DATE,
+  status ENUM('pending', 'in_progress', 'completed') DEFAULT 'pending',
+  completion_date DATE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE

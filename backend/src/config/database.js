@@ -44,7 +44,41 @@ const createDatabase = async () => {
       }
     }
     
+    // Fix missing columns
+    try {
+      await connection.query('ALTER TABLE inventory_records ADD COLUMN actual_quantity INT DEFAULT 0 AFTER status');
+      console.log('Added actual_quantity column to inventory_records');
+    } catch (e) {
+      if (!e.message.includes('Duplicate column')) {
+        // Ignore if column already exists
+      }
+    }
+    
     console.log('Database tables initialized!');
+    
+    // Fix ENUM status column if needed
+    try {
+      await connection.query(`ALTER TABLE assets MODIFY COLUMN status ENUM('new', 'good', 'needs_repair', 'disposed') DEFAULT 'new'`);
+      console.log('Fixed assets.status ENUM');
+    } catch (e) {
+      // Ignore if already correct
+    }
+    
+    // Fix maintenance_records table - add status and completion_date columns if needed
+    try {
+      await connection.query(`ALTER TABLE maintenance_records ADD COLUMN status ENUM('pending', 'in_progress', 'completed') DEFAULT 'pending' AFTER next_maintenance_date`);
+      console.log('Added maintenance_records.status column');
+    } catch (e) {
+      // Ignore if already exists
+    }
+    
+    try {
+      await connection.query(`ALTER TABLE maintenance_records ADD COLUMN completion_date DATE AFTER status`);
+      console.log('Added maintenance_records.completion_date column');
+    } catch (e) {
+      // Ignore if already exists
+    }
+    
     await connection.end();
     return true;
   } catch (error) {

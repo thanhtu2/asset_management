@@ -49,7 +49,7 @@ const AssetImportModal = ({ onClose, onSuccess }) => {
 
   const handleDownloadTemplate = () => {
     const token = localStorage.getItem('token');
-    const url = assetsAPI.getTemplateUrl();
+    const url = import.meta.env.VITE_API_URL + '/assets/template';
     // Open in new tab with auth header via fetch & blob
     fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.blob())

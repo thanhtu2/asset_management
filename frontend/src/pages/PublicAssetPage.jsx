@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { assetsAPI } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -34,8 +34,8 @@ const PublicAssetPage = () => {
   // Cleanup scanner on unmount
   useEffect(() => {
     return () => {
-      if (html5QrcodeScannerRef.current) {
-        html5QrcodeScannerRef.current.clear().catch(() => {});
+      if (html5QrcodeScannerRef.current && html5QrcodeScannerRef.current.isScanning) {
+        html5QrcodeScannerRef.current.stop().catch(() => {});
       }
     };
   }, []);
@@ -139,20 +139,19 @@ const PublicAssetPage = () => {
     // Wait for DOM to be ready
     setTimeout(() => {
       if (scannerRef.current && !html5QrcodeScannerRef.current) {
-        html5QrcodeScannerRef.current = new Html5QrcodeScanner(
-          "qr-reader",
+        html5QrcodeScannerRef.current = new Html5Qrcode("qr-reader");
+
+        html5QrcodeScannerRef.current.start(
+          { facingMode: "environment" },
           {
             fps: 10,
             qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0
           },
-          false
-        );
-
-        html5QrcodeScannerRef.current.render(
           (decodedText) => {
-            html5QrcodeScannerRef.current.clear();
-            setShowScanner(false);
+            html5QrcodeScannerRef.current.stop().then(() => {
+              html5QrcodeScannerRef.current = null;
+              setShowScanner(false);
+            });
             
             console.log('QR Scanned:', decodedText);
             
@@ -209,15 +208,19 @@ const PublicAssetPage = () => {
             // Parse error, ignore
             console.log('QR Scan error:', errorMessage);
           }
-        );
+        ).catch(err => {
+          console.error("Failed to start scanner:", err);
+          setShowScanner(false);
+        });
       }
     }, 100);
   };
 
   const stopScanner = () => {
     if (html5QrcodeScannerRef.current) {
-      html5QrcodeScannerRef.current.clear().catch(() => {});
-      html5QrcodeScannerRef.current = null;
+      html5QrcodeScannerRef.current.stop().then(() => {
+        html5QrcodeScannerRef.current = null;
+      }).catch(() => {});
     }
     setShowScanner(false);
   };
