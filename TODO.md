@@ -1,16 +1,9 @@
-# Cập nhật IP tĩnh → 192.168.89.118
-## ✅ Plan đã confirm bởi user
+# Docker Configuration Task
 
-### 📋 Các bước thực hiện:
+## Steps:
+- [x] 1. Create .env file with Docker environment variables.
+- [x] 2. Test with `docker-compose -f docker-compose.prod.yml up -d --build`.
+- [x] 3. Verify services: MySQL, backend, frontend/nginx.
+- [x] 4. Access app at http://localhost.
 
-#### [ ] Bước 1: Tạo TODO.md (HOÀN THÀNH)
-#### [ ] Bước 2: Edit 4 files với IP mới
-- [ ] frontend/src/api/index.js
-- [ ] backend/src/app.js  
-- [ ] backend/src/controllers/asset.controller.js
-- [ ] README.md
-#### [ ] Bước 3: Tạo .env files sample
-#### [ ] Bước 4: Test changes
-#### [ ] Bước 5: attempt_completion
-
-**Current progress: 5/5 ✅ TẤT CẢ HOÀN THÀNH**
+**Notes:** Update .env passwords before production use. Uses docker-compose.prod.yml for full stack.
