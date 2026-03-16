@@ -12,19 +12,22 @@ export const generateQR = async (req, res) => {
       return res.status(404).json({ message: 'Asset not found' });
     }
 
-    // Ưu tiên theo thứ tự:
-    // 1. origin từ query param (cho phép client chỉ định)
-    // 2. Origin header từ request (tự động phát hiện frontend đang gọi)
-    // 3. FRONTEND_URL từ env
-    // 4. Fallback to 192.168.90.23 (production server)
-'http://192.168.89.118:5173'
-    
-    // Tự động thêm http:// nếu thiếu để đảm bảo QR code luôn là một URL hợp lệ
-    if (!/^https?:\/\//i.test(frontendUrl)) {
-      frontendUrl = 'http://' + frontendUrl;
+    // Logic để xác định URL của frontend cho mã QR
+    // Ưu tiên:
+    // 1. Query param `origin` (cho phép client tự chỉ định)
+    // 2. Header `Origin` từ request (tự động phát hiện frontend đang gọi)
+    // 3. Biến môi trường `FRONTEND_URL` làm phương án dự phòng
+    let frontendUrl = req.query.origin || req.get('Origin') || process.env.FRONTEND_URL;
+
+    if (!frontendUrl) {
+      console.error("Lỗi generateQR: FRONTEND_URL chưa được cấu hình trong .env và không thể xác định từ request.");
+      return res.status(500).json({ message: 'URL của Frontend chưa được cấu hình trên server.' });
     }
 
-    // Thống nhất sử dụng ID tài sản để tạo QR code
+    // Dọn dẹp dấu gạch chéo thừa ở cuối URL
+    frontendUrl = frontendUrl.replace(/\/$/, "");
+
+    // Dữ liệu được mã hóa vào mã QR, sử dụng ID duy nhất của tài sản
     const qrData = `${frontendUrl}/asset/${asset.id}`;
 
     // Generate QR code as data URL (base64)

@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS assets (
   purchase_date DATE,
   purchase_price DECIMAL(15,2) DEFAULT 0,
   current_value DECIMAL(15,2) DEFAULT 0,
-  status ENUM('new', 'good', 'in_repair', 'awaiting_disposal', 'disposed') DEFAULT 'new',
+  status ENUM('new', 'good', 'needs_repair', 'disposed') DEFAULT 'new',
   assigned_to INT NULL,
   assigned_to_name VARCHAR(100) NULL,
   assigned_date DATE,

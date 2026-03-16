@@ -4,10 +4,11 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-dotenv.config();
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Đọc đúng file .env từ thư mục gốc của dự án (lùi 3 cấp thư mục)
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 // First connection without database to create it
 const createDatabase = async () => {
@@ -16,7 +17,7 @@ const createDatabase = async () => {
       host: process.env.DB_HOST || 'localhost',
       port: process.env.DB_PORT || 3306,
       user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || ''
+      password: process.env.DB_PASSWORD || '123456'
     });
     
     await connection.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME || 'asset_management'}`);
@@ -62,7 +63,7 @@ export const initDatabase = async () => {
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
+    password: process.env.DB_PASSWORD || '123456',
     database: process.env.DB_NAME || 'asset_management',
     waitForConnections: true,
     connectionLimit: 10,

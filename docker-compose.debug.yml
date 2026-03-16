@@ -33,11 +33,13 @@ services:
     container_name: office-mbs-backend
     restart: unless-stopped
     environment:
-      DB_HOST: host.docker.internal
-      DB_USER: root
-      DB_PASSWORD: "123456"
-      DB_NAME: asset_management
+      DB_HOST: ${DB_HOST:-host.docker.internal}
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-123456}
+      DB_NAME: ${DB_NAME:-asset_management}
       PORT: 3001
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      FRONTEND_URL: ${FRONTEND_URL}
     ports:
       - "3001:3001"
     extra_hosts:
@@ -48,29 +50,6 @@ services:
       - ./backend:/app
       - /app/node_modules
 
-  # Asset Management API
-  asset_management:
-    build:
-      context: ./asset_management
-      dockerfile: Dockerfile
-    container_name: office-mbs-asset-management
-    restart: unless-stopped
-    environment:
-      DB_HOST: host.docker.internal
-      DB_USER: root
-      DB_PASSWORD: "123456"
-      DB_NAME: asset_management
-      PORT: 3001
-    ports:
-      - "3002:3001"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - office-mbs-network
-    volumes:
-      - ./asset_management:/app
-      - /app/node_modules
-
   # Frontend
   frontend:
     build:
@@ -79,7 +58,7 @@ services:
     container_name: office-mbs-frontend
     restart: unless-stopped
     environment:
-      VITE_API_URL: http://localhost:3001/api
+      VITE_API_URL: ${VITE_API_URL}
     ports:
       - "5173:5173"
     depends_on:
@@ -96,4 +75,3 @@ volumes:
 networks:
   office-mbs-network:
     driver: bridge
-
