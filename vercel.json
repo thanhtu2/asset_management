@@ -9,7 +9,8 @@
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "project": "frontend"
+        "project": "frontend",
+        "buildCommand": "npx vite build"
       }
     }
   ],
