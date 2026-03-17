@@ -7,7 +7,11 @@
     },
     {
       "src": "frontend/package.json",
-      "use": "@vercel/static-build"
+      "use": "@vercel/static-build",
+      "config": {
+        "project": "frontend",
+        "buildCommand": "npx vite build"
+      }
     }
   ],
   "routes": [
