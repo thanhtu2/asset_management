@@ -10,7 +10,7 @@
       "use": "@vercel/static-build",
       "config": {
         "project": "frontend",
-        "buildCommand": "npm run build"
+        "buildCommand": "npx vite build"
       }
     }
   ],
