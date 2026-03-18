@@ -23,8 +23,13 @@ const createDatabase = async () => {
       }
     });
     
-    await connection.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME || 'asset_management'}`);
-    console.log('Database created or already exists!');
+    // Bọc trong try-catch vì Aiven Cloud có thể chặn quyền CREATE DATABASE đối với user avnadmin
+    try {
+      await connection.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME || 'asset_management'}`);
+      console.log('Database created or already exists!');
+    } catch (dbError) {
+      console.log('Bỏ qua tạo DB do Cloud provider quản lý quyền:', dbError.message);
+    }
     
     // Read and execute init.sql
     const initSqlPath = path.join(__dirname, 'init.sql');
