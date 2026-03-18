@@ -2,17 +2,15 @@
   "version": 2,
   "builds": [
     {
-      "src": "backend/src/app.js",
-      "use": "@vercel/node"
-    },
-    {
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "project": "frontend",
-        "buildCommand": "npx vite build",
         "distDir": "dist"
       }
+    },
+    {
+      "src": "backend/src/app.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -21,12 +19,16 @@
       "dest": "/backend/src/app.js"
     },
     {
-      "src": "/(.*\\..*)",
-      "dest": "/frontend/$1"
+      "src": "/assets/(.*)",
+      "dest": "/frontend/dist/assets/$1"
+    },
+    {
+      "src": "/(.*\\.(js|css|ico|png|svg|jpg|jpeg|woff|woff2))",
+      "dest": "/frontend/dist/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/frontend/index.html"
+      "dest": "/frontend/dist/index.html"
     }
   ]
 }
