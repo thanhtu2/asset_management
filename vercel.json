@@ -15,22 +15,18 @@
       }
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/backend/src/app.js"
+      "src": "/api/(.*)",
+      "dest": "/backend/src/app.js"
     },
     {
-      "source": "/assets/(.*)",
-      "destination": "/frontend/dist/assets/$1"
+      "src": "/(.*\\..*)",
+      "dest": "/frontend/$1"
     },
     {
-      "source": "/vite.svg",
-      "destination": "/frontend/dist/vite.svg"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/frontend/dist/index.html"
+      "src": "/(.*)",
+      "dest": "/frontend/index.html"
     }
   ]
 }
