@@ -17,7 +17,10 @@ const createDatabase = async () => {
       host: process.env.DB_HOST || 'localhost',
       port: process.env.DB_PORT || 3306,
       user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '123456'
+      password: process.env.DB_PASSWORD || '123456',
+      ssl: {
+        rejectUnauthorized: false
+      }
     });
     
     await connection.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME || 'asset_management'}`);
@@ -104,7 +107,10 @@ export const initDatabase = async () => {
     queueLimit: 0,
     enableKeepAlive: true,
     keepAliveInitialDelay: 0,
-    charset: 'utf8mb4_unicode_ci'
+    charset: 'utf8mb4_unicode_ci',
+    ssl: {
+      rejectUnauthorized: false
+    }
   });
   
   return pool;
