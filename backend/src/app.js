@@ -41,7 +41,7 @@ const corsOptions = {
     // If no origin (server-to-server) or origin is allowed
     if (!origin) {
       callback(null, true);
-    } else if (origin.startsWith('http://192.168.1.118') || origin.startsWith('http://192.168.1.118')) {
+    } else if (origin.startsWith('http://192.168.89.118') || origin.startsWith('http://192.168.89.118')) {
       callback(null, true);
     } else {
       // For production, allow all origins for now to debug
