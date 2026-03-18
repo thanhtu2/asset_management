@@ -32,24 +32,30 @@ const createDatabase = async () => {
     }
     
     // Read and execute init.sql
-    const initSqlPath = path.join(__dirname, 'init.sql');
-    const initSql = fs.readFileSync(initSqlPath, 'utf8');
-    
-    await connection.query(`USE ${process.env.DB_NAME || 'asset_management'}`);
-    
-    // Split by semicolon and execute each statement
-    const statements = initSql.split(';').filter(stmt => stmt.trim());
-    for (const statement of statements) {
-      if (statement.trim()) {
-        try {
-          await connection.query(statement);
-        } catch (e) {
-          // Ignore errors for CREATE DATABASE and USE statements
-          if (!e.message.includes('Unknown database') && !e.message.includes('Already exists')) {
-            console.log('Statement executed:', statement.substring(0, 50) + '...');
+    if (!process.env.VERCEL) {
+      const initSqlPath = path.join(__dirname, 'init.sql');
+      if (fs.existsSync(initSqlPath)) {
+        const initSql = fs.readFileSync(initSqlPath, 'utf8');
+        
+        await connection.query(`USE ${process.env.DB_NAME || 'asset_management'}`);
+        
+        // Split by semicolon and execute each statement
+        const statements = initSql.split(';').filter(stmt => stmt.trim());
+        for (const statement of statements) {
+          if (statement.trim()) {
+            try {
+              await connection.query(statement);
+            } catch (e) {
+              // Ignore errors for CREATE DATABASE and USE statements
+              if (!e.message.includes('Unknown database') && !e.message.includes('Already exists')) {
+                console.log('Statement executed:', statement.substring(0, 50) + '...');
+              }
+            }
           }
         }
       }
+    } else {
+      console.log('Bỏ qua đọc file init.sql vì đang chạy trên Vercel.');
     }
     
     // Fix missing columns
