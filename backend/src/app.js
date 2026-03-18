@@ -121,11 +121,17 @@ const seedAdminUser = async () => {
 };
 
 // Start server
-app.listen(PORT, async () => {
-  console.log(`Server is running on port ${PORT}`);
-  await initDatabase();
-  await testConnection();
-  await seedAdminUser();
-});
+// Kiểm tra: Nếu không chạy trên Vercel thì mới dùng app.listen (Local)
+if (!process.env.VERCEL) {
+  app.listen(PORT, async () => {
+    console.log(`Server is running on port ${PORT}`);
+    await initDatabase();
+    await testConnection();
+    await seedAdminUser();
+  });
+} else {
+  // Môi trường Vercel (Serverless), Vercel tự quản lý port, chỉ cần gọi khởi tạo DB
+  initDatabase().then(() => testConnection()).then(() => seedAdminUser()).catch(console.error);
+}
 
 export default app;
