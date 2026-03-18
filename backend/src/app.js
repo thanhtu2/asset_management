@@ -35,18 +35,20 @@ const corsOptions = {
       'http://localhost:5173', 
       'http://localhost:5174',
       'http://127.0.0.1:5173',
-      'http://127.0.0.1:5174'
+      'http://127.0.0.1:5174',
+      process.env.FRONTEND_URL // Thêm biến môi trường cho Vercel domain
     ];
     
     // If no origin (server-to-server) or origin is allowed
-    if (!origin) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
-    } else if (origin.startsWith('http://192.168.89.118') || origin.startsWith('http://192.168.89.118')) {
+    } else if (origin.startsWith('http://192.168.') || origin.includes('vercel.app')) {
+      // Cho phép các máy trong mạng LAN và các domain có đuôi vercel.app
       callback(null, true);
     } else {
-      // For production, allow all origins for now to debug
       console.log('CORS check for origin:', origin);
-      callback(null, true);
+      // Trả về lỗi nếu origin không nằm trong danh sách cho phép
+      callback(new Error('Origin bị chặn bởi CORS'));
     }
   },
   credentials: true
