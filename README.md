@@ -426,6 +426,35 @@ Ghi nhận kết quả chi tiết của một phiên kiểm kê.
 - Chọn trạng thái tài sản
 - Nhập mã vạch, URL hình ảnh
 
+## ☁️ Triển khai Production (Vercel & Aiven)
+
+Hệ thống được thiết kế để hỗ trợ triển khai hoàn toàn miễn phí trên kiến trúc Serverless với Vercel và Database trên Cloud.
+
+### 1. Cơ sở dữ liệu (Aiven.io)
+1. Đăng ký và tạo dịch vụ **MySQL** trên [Aiven.io](https://aiven.io).
+2. Sử dụng phần mềm **MySQL Workbench** hoặc **DBeaver** để kết nối vào Database bằng thông số Aiven cấp (Bắt buộc chọn kết nối qua **SSL/Require**).
+3. Mở file `backend/src/config/init.sql`, sửa lệnh `USE asset_management;` thành `USE defaultdb;` (Tên DB mặc định của Aiven) và chạy (Execute) để khởi tạo các bảng dữ liệu.
+
+### 2. Triển khai Ứng dụng (Vercel)
+Dự án sử dụng kiến trúc Monorepo (chứa cả Frontend và Backend). Cấu hình điều hướng đã được thiết lập sẵn trong tệp `vercel.json` ở thư mục gốc.
+
+1. Đẩy mã nguồn lên GitHub.
+2. Đăng nhập Vercel và Import dự án.
+3. **Cài đặt cực kỳ quan trọng trên Vercel (Project Settings):**
+   - **Root Directory**: Bắt buộc **ĐỂ TRỐNG** (Không được điền `frontend`, xóa trắng nếu có).
+4. **Cấu hình Environment Variables (Biến môi trường):**
+   ```env
+   DB_HOST=mysql-xxxx.aivencloud.com (Lấy từ Aiven)
+   DB_PORT=17300 (Cổng từ Aiven)
+   DB_USER=avnadmin
+   DB_PASSWORD=mật_khẩu_aiven
+   DB_NAME=defaultdb
+   VITE_API_URL=/api
+   FRONTEND_URL=https://your-app.vercel.app (Không có dấu gạch chéo ở cuối)
+   JWT_SECRET=chuoi_ky_tu_bi_mat_cua_ban
+   ```
+5. Bấm **Deploy** (hoặc Redeploy tắt bộ nhớ đệm). Hệ thống sẽ tự động build giao diện và kích hoạt API Backend Serverless.
+
 ## 🔄 Triển khai LAN
 
 Để truy cập từ mạng LAN:
