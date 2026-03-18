@@ -57,6 +57,25 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Đảm bảo Database kết nối xong trước khi xử lý API trên Vercel (Cold-start fix)
+let dbInitialized = false;
+let dbInitPromise = null;
+app.use(async (req, res, next) => {
+  if (process.env.VERCEL && !dbInitialized) {
+    if (!dbInitPromise) {
+      dbInitPromise = initDatabase().then(() => testConnection()).then(() => seedAdminUser());
+    }
+    try {
+      await dbInitPromise;
+      dbInitialized = true;
+    } catch (error) {
+      console.error('Database init error:', error);
+      return res.status(500).json({ message: 'Lỗi khởi tạo Serverless Database' });
+    }
+  }
+  next();
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/assets', assetRoutes);
@@ -129,9 +148,6 @@ if (!process.env.VERCEL) {
     await testConnection();
     await seedAdminUser();
   });
-} else {
-  // Môi trường Vercel (Serverless), Vercel tự quản lý port, chỉ cần gọi khởi tạo DB
-  initDatabase().then(() => testConnection()).then(() => seedAdminUser()).catch(console.error);
 }
 
 export default app;
