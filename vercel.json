@@ -17,7 +17,15 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/src/app.js"
+      "dest": "/backend/src/app.js"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/frontend/dist/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/dist/index.html"
     }
   ]
 }
