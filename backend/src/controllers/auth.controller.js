@@ -144,7 +144,14 @@ export const changePassword = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
     
-    await User.update(req.user.id, { password: hashedPassword });
+    // Truyền đầy đủ các trường hiện tại để tránh lỗi null các cột bắt buộc
+    await User.update(req.user.id, { 
+      fullName: user.fullName,
+      role: user.role,
+      department_id: user.department_id,
+      isActive: user.isActive,
+      password: hashedPassword 
+    });
     
     res.json({ message: 'Đổi mật khẩu thành công' });
   } catch (error) {
