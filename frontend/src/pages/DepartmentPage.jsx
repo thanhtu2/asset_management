@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { departmentsAPI, usersAPI } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 
 const DepartmentPage = () => {
+  const { user } = useAuth();
   const [departments, setDepartments] = useState([]);
   const [allDepartments, setAllDepartments] = useState([]);
   const [users, setUsers] = useState([]);
@@ -120,7 +122,9 @@ const DepartmentPage = () => {
     <div>
       <div className="page-header">
         <h1>Quản lý phòng ban</h1>
-        <button onClick={() => handleOpenModal()} className="btn btn-primary">+ Thêm phòng ban</button>
+        {user?.permissions?.includes('CREATE_DEPARTMENT') && (
+          <button onClick={() => handleOpenModal()} className="btn btn-primary">+ Thêm phòng ban</button>
+        )}
       </div>
 
       <div className="card">
@@ -143,8 +147,12 @@ const DepartmentPage = () => {
                   <td>{dept.manager_name || '-'}</td>
                   <td>{dept.parent_name || '-'}</td>
                   <td className="actions">
-                    <button onClick={() => handleOpenModal(dept)} className="btn btn-sm btn-outline">Sửa</button>
-                    <button onClick={() => setDeleteModal({ show: true, id: dept.id })} className="btn btn-sm btn-danger">Xóa</button>
+                    {user?.permissions?.includes('EDIT_DEPARTMENT') && (
+                      <button onClick={() => handleOpenModal(dept)} className="btn btn-sm btn-outline">Sửa</button>
+                    )}
+                    {user?.permissions?.includes('DELETE_DEPARTMENT') && (
+                      <button onClick={() => setDeleteModal({ show: true, id: dept.id })} className="btn btn-sm btn-danger">Xóa</button>
+                    )}
                   </td>
                 </tr>
               ))}

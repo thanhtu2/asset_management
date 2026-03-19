@@ -1,5 +1,10 @@
 import axios from 'axios';
 
+// sử dụng api tĩnh dev
+// const API_BASE_URL = 'http://192.168.89.118:3001/api';
+
+
+
 // Chỉ sử dụng biến môi trường, loại bỏ IP fallback để tránh lỗi kết nối ngầm
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -51,6 +56,7 @@ export const authAPI = {
   login: (username, password) => apiClient.post('/auth/login', { username, password }),
   register: (userData) => apiClient.post('/auth/register', userData),
   getProfile: () => apiClient.get('/auth/profile'),
+  updateProfile: (data) => apiClient.put('/auth/profile', data),
   changePassword: (passwords) => apiClient.post('/auth/change-password', passwords),
 };
 
@@ -165,6 +171,20 @@ export const inventoryAPI = {
 // Dashboard API
 export const dashboardAPI = {
   getStats: () => apiClient.get('/dashboard'),
+};
+
+// Roles API
+export const rolesAPI = {
+  getAll: () => apiClient.get('/roles'),
+  create: (data) => apiClient.post('/roles', data),
+  getPermissions: (roleCode) => apiClient.get(`/roles/${roleCode}/permissions`),
+  updatePermissions: (roleCode, permissions) => apiClient.post(`/roles/${roleCode}/permissions`, { permissions }),
+};
+
+// Permissions API
+export const permissionsAPI = {
+  getAll: () => apiClient.get('/permissions'),
+  create: (data) => apiClient.post('/permissions', data),
 };
 
 export default apiClient;

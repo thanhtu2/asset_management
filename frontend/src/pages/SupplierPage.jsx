@@ -1,7 +1,9 @@
  import { useState, useEffect } from 'react';
 import { suppliersAPI } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 
 const SupplierPage = () => {
+  const { user } = useAuth();
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -115,7 +117,9 @@ const SupplierPage = () => {
     <div>
       <div className="page-header">
         <h1>Quản lý nhà cung cấp</h1>
-        <button onClick={() => handleOpenModal()} className="btn btn-primary">+ Thêm nhà cung cấp</button>
+        {user?.permissions?.includes('CREATE_SUPPLIER') && (
+          <button onClick={() => handleOpenModal()} className="btn btn-primary">+ Thêm nhà cung cấp</button>
+        )}
       </div>
 
       <div className="card">
@@ -142,8 +146,12 @@ const SupplierPage = () => {
                   <td>{supplier.email || '-'}</td>
                   <td>{supplier.address || '-'}</td>
                   <td className="actions">
-                    <button onClick={() => handleOpenModal(supplier)} className="btn btn-sm btn-outline">Sửa</button>
-                    <button onClick={() => setDeleteModal({ show: true, id: supplier.id })} className="btn btn-sm btn-danger">Xóa</button>
+                    {user?.permissions?.includes('EDIT_SUPPLIER') && (
+                      <button onClick={() => handleOpenModal(supplier)} className="btn btn-sm btn-outline">Sửa</button>
+                    )}
+                    {user?.permissions?.includes('DELETE_SUPPLIER') && (
+                      <button onClick={() => setDeleteModal({ show: true, id: supplier.id })} className="btn btn-sm btn-danger">Xóa</button>
+                    )}
                   </td>
                 </tr>
               ))}

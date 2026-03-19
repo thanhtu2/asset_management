@@ -13,13 +13,16 @@ const menuItems = [
 ];
 
 const adminMenuItems = [
-  { path: '/users', label: 'Người dùng', icon: '👤' },
+  { path: '/users', label: 'Người dùng', icon: '👤', permission: 'MANAGE_USERS' },
+  { path: '/roles', label: 'Phân quyền', icon: '🔐', permission: 'MANAGE_ROLES' },
 ];
 
 const MainLayout = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const visibleAdminItems = adminMenuItems.filter(item => user?.permissions?.includes(item.permission));
 
   const handleLogout = () => {
     logout();
@@ -72,13 +75,13 @@ const MainLayout = ({ children }) => {
         </ul>
 
         {/* Admin section */}
-        {user?.role === 'admin' && (
+        {visibleAdminItems.length > 0 && (
           <>
             <div style={{ padding: '16px 16px 6px', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase' }}>
               Quản trị
             </div>
             <ul className="sidebar-menu" style={{ flex: 'none' }}>
-              {adminMenuItems.map((item) => (
+              {visibleAdminItems.map((item) => (
                 <li key={item.path}>
                   <Link
                     to={item.path}
@@ -99,8 +102,12 @@ const MainLayout = ({ children }) => {
             {user?.fullName?.charAt(0).toUpperCase()}
           </div>
           <div className="details">
-            <div className="name">{user?.fullName}</div>
-            <div className="role">{user?.role === 'admin' ? 'Quản trị viên' : 'Người dùng'}</div>
+            <div className="name" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Link to="/profile" style={{ color: 'inherit', textDecoration: 'none' }} title="Hồ sơ cá nhân">
+                {user?.fullName} ⚙️
+              </Link>
+            </div>
+            <div className="role">{user?.role_name || user?.role}</div>
           </div>
           <button
             onClick={handleLogout}

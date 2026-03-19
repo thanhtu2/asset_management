@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { locationsAPI } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 
 const LocationPage = () => {
+  const { user } = useAuth();
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -129,7 +131,9 @@ const LocationPage = () => {
     <div>
       <div className="page-header">
         <h1>Quản lý vị trí</h1>
-        <button onClick={() => handleOpenModal()} className="btn btn-primary">+ Thêm vị trí</button>
+        {user?.permissions?.includes('CREATE_LOCATION') && (
+          <button onClick={() => handleOpenModal()} className="btn btn-primary">+ Thêm vị trí</button>
+        )}
       </div>
 
       <div className="card">
@@ -152,8 +156,12 @@ const LocationPage = () => {
                   <td>{location.address || '-'}</td>
                   <td>{location.parent_name || '-'}</td>
                   <td className="actions">
-                    <button onClick={() => handleOpenModal(location)} className="btn btn-sm btn-outline">Sửa</button>
-                    <button onClick={() => setDeleteModal({ show: true, id: location.id })} className="btn btn-sm btn-danger">Xóa</button>
+                    {user?.permissions?.includes('EDIT_LOCATION') && (
+                      <button onClick={() => handleOpenModal(location)} className="btn btn-sm btn-outline">Sửa</button>
+                    )}
+                    {user?.permissions?.includes('DELETE_LOCATION') && (
+                      <button onClick={() => setDeleteModal({ show: true, id: location.id })} className="btn btn-sm btn-danger">Xóa</button>
+                    )}
                   </td>
                 </tr>
               ))}

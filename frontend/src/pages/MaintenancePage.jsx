@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { maintenanceAPI, assetsAPI } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 
 const MaintenancePage = () => {
+  const { user } = useAuth();
   const [records, setRecords] = useState([]);
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -136,7 +138,9 @@ const MaintenancePage = () => {
     <div>
       <div className="page-header">
         <h1>Quản lý bảo trì</h1>
-        <button onClick={() => handleOpenModal()} className="btn btn-primary">+ Thêm bảo trì</button>
+        {user?.permissions?.includes('CREATE_MAINTENANCE') && (
+          <button onClick={() => handleOpenModal()} className="btn btn-primary">+ Thêm bảo trì</button>
+        )}
       </div>
 
       <div className="card">
@@ -186,9 +190,15 @@ const MaintenancePage = () => {
                   <td>{record.technician || '-'}</td>
                   <td>{record.next_maintenance_date ? new Date(record.next_maintenance_date).toLocaleDateString('vi-VN') : '-'}</td>
                   <td className="actions">
-                    <button onClick={() => handleCompleteRepair(record)} className="btn btn-sm btn-success" title="Hoàn thành sửa chữa">✓ Hoàn thành</button>
-                    <button onClick={() => handleOpenModal(record)} className="btn btn-sm btn-outline">Sửa</button>
-                    <button onClick={() => setDeleteModal({ show: true, id: record.id })} className="btn btn-sm btn-danger">Xóa</button>
+                    {user?.permissions?.includes('EDIT_MAINTENANCE') && (
+                      <>
+                        <button onClick={() => handleCompleteRepair(record)} className="btn btn-sm btn-success" title="Hoàn thành sửa chữa">✓ Hoàn thành</button>
+                        <button onClick={() => handleOpenModal(record)} className="btn btn-sm btn-outline">Sửa</button>
+                      </>
+                    )}
+                    {user?.permissions?.includes('DELETE_MAINTENANCE') && (
+                      <button onClick={() => setDeleteModal({ show: true, id: record.id })} className="btn btn-sm btn-danger">Xóa</button>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -55,6 +55,12 @@ export const generateQR = async (req, res) => {
 export const getAll = async (req, res) => {
   try {
     const { page = 1, limit = 10, ...filters } = req.query;
+    
+    // Gắn thông tin user đang request để lọc dữ liệu
+    if (req.user) {
+      filters.currentUser = req.user;
+    }
+
     console.log('getAll controller - page:', page, 'limit:', limit, 'filters:', filters);
     const result = await Asset.findAll(filters, page, limit);
     console.log('getAll controller - result:', result ? 'success' : 'null');
@@ -67,7 +73,7 @@ export const getAll = async (req, res) => {
 
 export const getAllSimple = async (req, res) => {
   try {
-    const assets = await Asset.findAllSimple();
+    const assets = await Asset.findAllSimple(req.user);
     res.json(assets);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -273,11 +279,19 @@ export const importAssets = async (req, res) => {
     const [locations]  = await pool.query('SELECT id, code FROM locations');
     const [departments]= await pool.query('SELECT id, code FROM departments');
     const [suppliers]  = await pool.query('SELECT id, code FROM suppliers');
+    const [users]      = await pool.query('SELECT id, fullName, username FROM users');
 
     const catMap  = Object.fromEntries(categories.map(r => [r.code.toUpperCase(), r.id]));
     const locMap  = Object.fromEntries(locations.map(r => [r.code.toUpperCase(), r.id]));
     const deptMap = Object.fromEntries(departments.map(r => [r.code.toUpperCase(), r.id]));
     const supMap  = Object.fromEntries(suppliers.map(r => [r.code.toUpperCase(), r.id]));
+
+    // Tạo object ánh xạ tên/username người dùng sang ID
+    const userMap = {};
+    users.forEach(u => {
+      if (u.fullName) userMap[u.fullName.toLowerCase().trim()] = u.id;
+      if (u.username) userMap[u.username.toLowerCase().trim()] = u.id;
+    });
 
     const validStatuses = ['new', 'good', 'needs_repair', 'disposed'];
     const results = { success: 0, failed: 0, errors: [] };
@@ -323,6 +337,7 @@ export const importAssets = async (req, res) => {
       const location_id  = location_code  ? (locMap[location_code.toUpperCase()]  || null) : null;
       const department_id= department_code? (deptMap[department_code.toUpperCase()]|| null) : null;
       const supplier_id  = supplier_code  ? (supMap[supplier_code.toUpperCase()]  || null) : null;
+      const assigned_to  = assigned_to_name ? (userMap[assigned_to_name.toLowerCase().trim()] || null) : null;
 
       // Parse numeric fields
       const purchase_price  = parseFloat(purchase_price_raw)  || 0;
@@ -347,10 +362,10 @@ export const importAssets = async (req, res) => {
       try {
         await pool.query(
           `INSERT INTO assets (asset_code, name, description, category_id, location_id, department_id,
-            supplier_id, purchase_date, purchase_price, current_value, status, barcode, assigned_to_name)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            supplier_id, purchase_date, purchase_price, current_value, status, barcode, assigned_to, assigned_to_name)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [asset_code, name, description || null, category_id, location_id, department_id,
-           supplier_id, purchase_date, purchase_price, current_value, status, barcode || null, assigned_to_name || null]
+           supplier_id, purchase_date, purchase_price, current_value, status, barcode || null, assigned_to, assigned_to_name || null]
         );
         results.success++;
       } catch (err) {
@@ -375,6 +390,12 @@ export const importAssets = async (req, res) => {
 export const exportAssets = async (req, res) => {
   try {
     const { page = 1, limit = 1000, ...filters } = req.query;
+    
+    // Gắn thông tin user đang request để lọc dữ liệu xuất Excel
+    if (req.user) {
+      filters.currentUser = req.user;
+    }
+
     const result = await Asset.findAll(filters, page, limit);
     const assets = result.data || result;
 

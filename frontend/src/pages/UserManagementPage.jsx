@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { usersAPI, departmentsAPI } from '../api';
+// Thêm rolesAPI để call danh sách vai trò
+import { rolesAPI } from '../api'; 
 
 const UserManagementPage = () => {
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editData, setEditData] = useState(null);
@@ -23,12 +26,14 @@ const UserManagementPage = () => {
 
   const fetchData = async () => {
     try {
-      const [usersRes, deptRes] = await Promise.all([
+      const [usersRes, deptRes, rolesRes] = await Promise.all([
         usersAPI.getAll(),
-        departmentsAPI.getAll()
+        departmentsAPI.getAll(),
+        rolesAPI.getAll()
       ]);
       setUsers(usersRes.data);
       setDepartments(Array.isArray(deptRes.data) ? deptRes.data : deptRes.data?.data || []);
+      setRoles(rolesRes.data?.data || rolesRes.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -126,7 +131,8 @@ const UserManagementPage = () => {
                   <td>{user.username}</td>
                   <td>{user.fullName}</td>
                   <td>{user.department_name || '-'}</td>
-                  <td>{user.role === 'admin' ? 'Quản trị viên' : 'Người dùng'}</td>
+                  {/* Tìm tên vai trò từ danh sách động, fallback về mã gốc nếu không có */}
+                  <td>{roles.find(r => r.code === user.role)?.name || user.role}</td>
                   <td>
                     <span className={`badge ${user.isActive ? 'badge-good' : 'badge-disposed'}`}>
                       {user.isActive ? 'Hoạt động' : 'Khóa'}
@@ -195,8 +201,10 @@ const UserManagementPage = () => {
                       value={formData.role}
                       onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                     >
-                      <option value="user">Người dùng</option>
-                      <option value="admin">Quản trị viên</option>
+                      <option value="">Chọn vai trò</option>
+                      {roles.map((r) => (
+                        <option key={r.code} value={r.code}>{r.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="form-group">

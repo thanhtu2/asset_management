@@ -4,12 +4,15 @@ import { QRCodeSVG } from 'qrcode.react';
 import { assetsAPI, categoriesAPI, locationsAPI, departmentsAPI } from '../api';
 import AssetImportModal from '../components/AssetImportModal';
 import AssetEditModal from '../components/AssetEditModal';
+import { useAuth } from '../contexts/AuthContext';
 
 const AssetListPage = () => {
+  const { user } = useAuth();
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     search: '',
+    assigned_to: '',
     category_id: '',
     location_id: '',
     department_id: '',
@@ -286,8 +289,12 @@ const AssetListPage = () => {
         <h1>Quản lý tài sản</h1>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={() => assetsAPI.exportAssets()} className="btn btn-outline">⬇ Xuất Excel</button>
-          <button onClick={() => setShowImportModal(true)} className="btn btn-outline">⬆ Import Excel</button>
-          <Link to="/assets/new" className="btn btn-primary">+ Thêm tài sản</Link>
+          {user?.permissions?.includes('CREATE_ASSET') && (
+            <>
+              <button onClick={() => setShowImportModal(true)} className="btn btn-outline">⬆ Import Excel</button>
+              <Link to="/assets/new" className="btn btn-primary">+ Thêm tài sản</Link>
+            </>
+          )}
         </div>
       </div>
 
@@ -315,9 +322,14 @@ const AssetListPage = () => {
           <div className="search-box">
             <input
               type="text"
-              placeholder="Tìm kiếm theo tên, mã tài sản..."
+              placeholder="Tìm kiếm tên, mã, người dùng..."
               value={filters.search}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  fetchAssets(true);
+                }
+              }}
             />
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -406,7 +418,7 @@ const AssetListPage = () => {
                   <td>{asset.category_name || '-'}</td>
                   <td>{asset.location_name || '-'}</td>
                   <td>{asset.department_name || '-'}</td>
-                  <td>{asset.assigned_to_name || '-'}</td>
+                  <td>{asset.user_full_name || asset.assigned_to_name || '-'}</td>
                   <td>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(asset.current_value || 0)}</td>
                   <td>{getStatusBadge(asset.status)}</td>
                   <td className="actions">
@@ -423,16 +435,20 @@ const AssetListPage = () => {
                     >
                       QR
                     </button>
-                    <button
-                      onClick={() => setEditModal({ show: true, assetId: asset.id })}
-                      className="btn btn-sm btn-outline"
-                    >Sửa</button>
-                    <button
-                      onClick={() => setDeleteModal({ show: true, id: asset.id })}
-                      className="btn btn-sm btn-danger"
-                    >
-                      Xóa
-                    </button>
+                    {user?.permissions?.includes('EDIT_ASSET') && (
+                      <button
+                        onClick={() => setEditModal({ show: true, assetId: asset.id })}
+                        className="btn btn-sm btn-outline"
+                      >Sửa</button>
+                    )}
+                    {user?.permissions?.includes('DELETE_ASSET') && (
+                      <button
+                        onClick={() => setDeleteModal({ show: true, id: asset.id })}
+                        className="btn btn-sm btn-danger"
+                      >
+                        Xóa
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -556,7 +572,7 @@ const AssetListPage = () => {
                 </div>
                 <div className="detail-item">
                   <label>Người sử dụng:</label>
-                  <span>{viewModal.asset.assigned_to_name || '-'}</span>
+                  <span>{viewModal.asset.user_full_name || viewModal.asset.assigned_to_name || '-'}</span>
                 </div>
                 <div className="detail-item">
                   <label>Ngày mua:</label>
@@ -585,15 +601,17 @@ const AssetListPage = () => {
               </div>
             </div>
             <div className="modal-footer">
-              <button
-                onClick={() => {
-                  setViewModal({ show: false, asset: null });
-                  setEditModal({ show: true, assetId: viewModal.asset.id });
-                }}
-                className="btn btn-primary"
-              >
-                ✏️ Sửa
-              </button>
+              {user?.permissions?.includes('EDIT_ASSET') && (
+                <button
+                  onClick={() => {
+                    setViewModal({ show: false, asset: null });
+                    setEditModal({ show: true, assetId: viewModal.asset.id });
+                  }}
+                  className="btn btn-primary"
+                >
+                  ✏️ Sửa
+                </button>
+              )}
               <button onClick={() => setViewModal({ show: false, asset: null })} className="btn btn-outline">
                 Đóng
               </button>
