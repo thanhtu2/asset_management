@@ -174,7 +174,7 @@ Các API endpoint được bảo vệ bằng JWT, yêu cầu `Authorization: Bea
 | `POST` | `/api/auth/login` | Đăng nhập. Body: `{ "username": "...", "password": "..." }` |
 | `POST` | `/api/auth/register` | Đăng ký người dùng mới (chỉ admin). |
 | `GET` | `/api/auth/profile` | Lấy thông tin người dùng đang đăng nhập. |
-| `POST` | `/api/auth/change-password` | Đổi mật khẩu. Body: `{ "oldPassword": "...", "newPassword": "..." }` |
+| `POST` | `/api/auth/change-password` | Đổi mật khẩu. Body: `{ "currentPassword": "...", "newPassword": "..." }` |
 
 ### Assets
 
@@ -183,13 +183,17 @@ Các API endpoint được bảo vệ bằng JWT, yêu cầu `Authorization: Bea
 | `GET` | `/api/assets` | Lấy danh sách tài sản (hỗ trợ phân trang, tìm kiếm, lọc). |
 | `GET` | `/api/assets/all` | Lấy danh sách rút gọn tất cả tài sản (cho dropdown). |
 | `GET` | `/api/assets/:id` | Lấy chi tiết một tài sản. |
+| `GET` | `/api/assets/code/:code` | Lấy chi tiết tài sản theo mã tài sản (asset_code). |
+| `GET` | `/api/assets/barcode/:barcode` | Lấy chi tiết tài sản theo mã vạch. |
 | `POST` | `/api/assets` | Tạo tài sản mới. |
 | `PUT` | `/api/assets/:id` | Cập nhật thông tin tài sản. |
+| `PUT` | `/api/assets/:id/status` | Cập nhật trạng thái nhanh cho tài sản (hỗ trợ tự động tạo bảo trì). |
 | `DELETE` | `/api/assets/:id` | Xóa tài sản. |
 | `GET` | `/api/assets/export` | Xuất danh sách tài sản ra file Excel. |
+| `GET` | `/api/assets/template` | Tải file Excel mẫu để import tài sản. |
 | `POST` | `/api/assets/import` | Nhập tài sản từ file Excel. |
 | `GET` | `/api/assets/:id/qrcode` | Tạo mã QR cho tài sản. |
-| `POST` | `/api/public/:id/report-damage` | API Public để người dùng báo hỏng tài sản qua QR code. |
+| `POST` | `/api/assets/public/:id/report-damage` | API Public để người dùng báo hỏng tài sản qua QR code. |
 
 **Query Parameters cho `GET /api/assets`:**
 - `page`: Số trang (mặc định: 1)
@@ -218,6 +222,8 @@ Các API cho các tài nguyên này có cấu trúc tương tự nhau.
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/maintenance` | Lấy danh sách các phiếu bảo trì. |
+| `GET` | `/api/maintenance/upcoming` | Lấy danh sách tài sản sắp đến hạn bảo trì. |
+| `GET` | `/api/maintenance/costs` | Lấy thống kê chi phí bảo trì. |
 | `POST` | `/api/maintenance` | Tạo phiếu bảo trì mới. |
 | `POST` | `/api/maintenance/complete-repair` | Hoàn thành một phiếu sửa chữa. |
 | `PUT` | `/api/maintenance/:id` | Cập nhật phiếu bảo trì. |
@@ -230,6 +236,12 @@ Các API cho các tài nguyên này có cấu trúc tương tự nhau.
 | `GET` | `/api/inventory` | Lấy danh sách các phiên kiểm kê. |
 | `POST` | `/api/inventory` | Tạo phiên kiểm kê mới. |
 | `POST` | `/api/inventory/:id/complete` | Hoàn thành một phiên kiểm kê. |
+| `GET` | `/api/inventory/:id/summary` | Lấy báo cáo tổng quan của phiên kiểm kê. |
+| `GET` | `/api/inventory/:id/summary-by-department` | Lấy báo cáo tổng quan kiểm kê phân theo phòng ban. |
+| `POST` | `/api/inventory/:id/add-assets` | Thêm danh sách tài sản chỉ định vào phiên kiểm kê. |
+| `POST` | `/api/inventory/:id/add-assets-by-department` | Thêm tất cả tài sản của một phòng ban vào phiên. |
+| `POST` | `/api/inventory/:id/add-all-assets` | Thêm toàn bộ tài sản trong hệ thống vào phiên kiểm kê. |
+| `GET` | `/api/inventory/:id/records-with-department` | Lấy danh sách bản ghi kiểm kê kèm thông tin phòng ban. |
 | `GET` | `/api/inventory/:sessionId/records` | Lấy danh sách tài sản trong một phiên. |
 | `POST` | `/api/inventory/:sessionId/scan` | Ghi nhận kết quả quét mã QR. |
 | `PUT` | `/api/inventory/:sessionId/records/:recordId` | Cập nhật thủ công một bản ghi kiểm kê. |
@@ -239,9 +251,21 @@ Các API cho các tài nguyên này có cấu trúc tương tự nhau.
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/users` | Lấy danh sách người dùng (chỉ admin). |
+| `GET` | `/api/users/export` | Xuất danh sách người dùng ra file Excel. |
 | `POST` | `/api/users` | Tạo người dùng mới (chỉ admin). |
 | `PUT` | `/api/users/:id` | Cập nhật người dùng (chỉ admin). |
 | `DELETE` | `/api/users/:id` | Xóa người dùng (chỉ admin). |
+
+### Roles & Permissions (Phân quyền)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/roles` | Lấy danh sách tất cả vai trò. |
+| `POST` | `/api/roles` | Tạo vai trò mới. |
+| `GET` | `/api/permissions` | Lấy danh sách tất cả quyền. |
+| `POST` | `/api/permissions` | Tạo quyền mới. |
+| `GET` | `/api/roles/:roleCode/permissions` | Lấy danh sách quyền của một vai trò. |
+| `POST` | `/api/roles/:roleCode/permissions` | Cập nhật danh sách quyền cho một vai trò. |
 
 ### Dashboard
 
@@ -304,11 +328,11 @@ Lưu trữ thông tin chi tiết về từng tài sản.
 | `purchase_date` | DATE | Ngày mua |
 | `purchase_price` | DECIMAL | Giá mua |
 | `current_value` | DECIMAL | Giá trị hiện tại (sau khấu hao) |
-| `status` | ENUM | Trạng thái ('Tốt', 'Cần sửa', 'Đang sửa', 'Mất', 'Thanh lý') |
+| `status` | ENUM | Trạng thái ('new', 'good', 'needs_repair', 'disposed') |
 | `barcode` | VARCHAR(100) | Mã vạch (duy nhất) |
 | `image_url` | VARCHAR(255) | URL hình ảnh |
 | `assigned_to` | INT | Khóa ngoại, liên kết đến `users(id)` |
-| `assigned_date` | DATE | Ngày bàn giao |
+| `assigned_to_name` | VARCHAR(255) | Tên người sử dụng (khi import) |
 
 ### Bảng `users`
 Quản lý thông tin người dùng và phân quyền.
@@ -319,7 +343,7 @@ Quản lý thông tin người dùng và phân quyền.
 | `username` | VARCHAR(50) | Tên đăng nhập (duy nhất) |
 | `password` | VARCHAR(255) | Mật khẩu (đã mã hóa) |
 | `fullName` | VARCHAR(100) | Họ và tên |
-| `role` | ENUM | Vai trò ('admin', 'user') |
+| `role` | VARCHAR(50) | Mã vai trò (khóa ngoại, liên kết đến `roles(code)`) |
 | `department_id` | INT | Khóa ngoại, liên kết đến `departments(id)` |
 | `isActive` | BOOLEAN | Trạng thái hoạt động |
 
@@ -371,10 +395,10 @@ Lưu trữ lịch sử bảo trì, sửa chữa tài sản.
 |---|---|---|
 | `id` | INT | Khóa chính, tự tăng |
 | `asset_id` | INT | Khóa ngoại, liên kết đến `assets(id)` |
-| `maintenance_type` | ENUM | Loại bảo trì ('Sửa chữa', 'Bảo dưỡng định kỳ') |
+| `maintenance_type` | ENUM | Loại bảo trì ('emergency', 'scheduled', 'repair') |
 | `description` | TEXT | Mô tả công việc |
-| `start_date` | DATE | Ngày bắt đầu |
-| `completion_date` | DATE | Ngày hoàn thành |
+| `maintenance_date` | DATE | Ngày bảo trì/báo hỏng |
+| `completion_date` | DATE | Ngày hoàn thành (tùy chọn) |
 | `cost` | DECIMAL | Chi phí |
 | `technician` | VARCHAR(100) | Kỹ thuật viên/Đơn vị thực hiện |
 | `status` | VARCHAR(50) | Trạng thái ('pending', 'in_progress', 'completed') |
@@ -400,10 +424,38 @@ Ghi nhận kết quả chi tiết của một phiên kiểm kê.
 | `session_id` | INT | Khóa ngoại, liên kết đến `inventory_sessions(id)` |
 | `asset_id` | INT | Khóa ngoại, liên kết đến `assets(id)` |
 | `expected_status` | VARCHAR(50) | Trạng thái dự kiến |
+| `status` | VARCHAR(30) | Trạng thái ghi nhận kiểm kê ('pending_check', 'checked') |
 | `actual_status` | VARCHAR(50) | Trạng thái thực tế ('found', 'missing', 'damaged', 'extra') |
+| `actual_quantity` | INT | Số lượng thực tế kiểm kê được |
 | `notes` | TEXT | Ghi chú |
 | `checked_at` | DATETIME | Thời điểm kiểm kê |
 | `checked_by` | INT | Khóa ngoại, liên kết đến `users(id)` |
+
+### Bảng `roles`
+Quản lý các vai trò trong hệ thống.
+
+| Trường | Loại | Mô tả |
+|---|---|---|
+| `code` | VARCHAR(50) | Khóa chính, mã vai trò (VD: 'admin', 'manager', 'user') |
+| `name` | VARCHAR(255) | Tên vai trò (VD: 'Quản trị viên') |
+| `description` | TEXT | Mô tả chi tiết |
+
+### Bảng `permissions`
+Quản lý các quyền hạn chi tiết trong hệ thống.
+
+| Trường | Loại | Mô tả |
+|---|---|---|
+| `code` | VARCHAR(50) | Khóa chính, mã quyền (VD: 'CREATE_USER', 'DELETE_ASSET') |
+| `name` | VARCHAR(255) | Tên quyền (VD: 'Tạo người dùng') |
+| `module` | VARCHAR(100) | Nhóm chức năng (VD: 'Quản lý người dùng') |
+
+### Bảng `role_permissions`
+Bảng trung gian để gán quyền cho vai trò.
+
+| Trường | Loại | Mô tả |
+|---|---|---|
+| `role_code` | VARCHAR(50) | Khóa ngoại, liên kết đến `roles(code)` |
+| `permission_code` | VARCHAR(50) | Khóa ngoại, liên kết đến `permissions(code)` |
 
 ## 🎨 Giao diện
 
