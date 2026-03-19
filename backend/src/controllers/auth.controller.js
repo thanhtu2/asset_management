@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import pool from '../config/database.js';
+import bcrypt from 'bcryptjs';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'asset_management_secret_key_2024';
 
@@ -116,19 +117,36 @@ export const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     
+    // 1. Kiểm tra đầu vào
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin' });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ message: 'Mật khẩu mới không được trùng với mật khẩu hiện tại' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+    }
+
     const user = await User.findById(req.user.id);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
     }
     
     const isValid = await User.verifyPassword(currentPassword, user.password);
     if (!isValid) {
-      return res.status(400).json({ message: 'Current password is incorrect' });
+      return res.status(400).json({ message: 'Mật khẩu hiện tại không chính xác' });
     }
     
-    await User.update(req.user.id, { password: newPassword });
+    // 2. Băm (hash) mật khẩu mới trước khi lưu vào database
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
     
-    res.json({ message: 'Password changed successfully' });
+    await User.update(req.user.id, { password: hashedPassword });
+    
+    res.json({ message: 'Đổi mật khẩu thành công' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
