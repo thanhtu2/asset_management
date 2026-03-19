@@ -74,6 +74,11 @@ const UserManagementPage = () => {
         department_id: formData.department_id || null
       };
 
+      // Khi sửa, nếu không nhập mật khẩu thì không gửi trường password lên server
+      if (editData && !data.password) {
+        delete data.password;
+      }
+
       if (editData) {
         await usersAPI.update(editData.id, data);
       } else {
@@ -173,18 +178,16 @@ const UserManagementPage = () => {
                     disabled={editData}
                   />
                 </div>
-                {!editData && (
-                  <div className="form-group">
-                    <label>Mật khẩu *</label>
-                    <input
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required={!editData}
-                      placeholder={editData ? 'Để trống nếu không đổi' : ''}
-                    />
-                  </div>
-                )}
+                <div className="form-group">
+                  <label>Mật khẩu {editData ? '' : '*'}</label>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required={!editData} // Chỉ bắt buộc khi tạo mới
+                    placeholder={editData ? 'Để trống nếu không đổi' : ''}
+                  />
+                </div>
                 <div className="form-group">
                   <label>Họ tên *</label>
                   <input
