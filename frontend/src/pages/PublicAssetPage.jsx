@@ -469,7 +469,7 @@ const PublicAssetPage = () => {
               </tr>
               <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
                 <td style={{ padding: '12px 0', color: '#666' }}>Người sử dụng</td>
-                <td style={{ padding: '12px 0', fontWeight: '500' }}>{asset.assigned_to_name || '-'}</td>
+                <td style={{ padding: '12px 0', fontWeight: '500' }}>{asset.user_full_name || asset.assigned_to_name || '-'}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
                 <td style={{ padding: '12px 0', color: '#666' }}>Ngày mua</td>

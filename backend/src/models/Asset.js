@@ -2,8 +2,8 @@ import pool from '../config/database.js';
 
 const Asset = {
   // Get all assets simple (for dropdowns) - no pagination
-  async findAllSimple() {
-    const [rows] = await pool.query(`
+  async findAllSimple(currentUser = null) {
+    let query = `
       SELECT a.id, a.asset_code, a.name, a.status,
              c.name as category_name,
              l.name as location_name,
@@ -12,8 +12,28 @@ const Asset = {
       LEFT JOIN categories c ON a.category_id = c.id
       LEFT JOIN locations l ON a.location_id = l.id
       LEFT JOIN departments d ON a.department_id = d.id
-      ORDER BY a.name ASC
-    `);
+      WHERE 1=1
+    `;
+    const params = [];
+
+    // Phân quyền dữ liệu theo role của user
+    if (currentUser) {
+      const { id, role, department_id } = currentUser;
+      if (role === 'user') {
+        query += ' AND a.assigned_to = ?';
+        params.push(id);
+      } else if (role === 'department-manager') {
+        if (department_id) {
+          query += ' AND a.department_id = ?';
+          params.push(department_id);
+        } else {
+          query += ' AND 1 = 0'; // Lãnh đạo phòng nhưng chưa được gán phòng ban
+        }
+      }
+    }
+
+    query += ' ORDER BY a.name ASC';
+    const [rows] = await pool.query(query, params);
     return rows;
   },
 
@@ -41,23 +61,31 @@ const Asset = {
     let countQuery = `
       SELECT COUNT(*) as total 
       FROM assets a 
+      LEFT JOIN users u ON a.assigned_to = u.id
       WHERE 1=1
     `;
     const params = [];
     const countParams = [];
 
     if (filters.search) {
-      query += ' AND (a.name LIKE ? OR a.asset_code LIKE ? OR a.barcode LIKE ?)';
-      countQuery += ' AND (a.name LIKE ? OR a.asset_code LIKE ? OR a.barcode LIKE ?)';
+      query += ' AND (a.name LIKE ? OR a.asset_code LIKE ? OR a.barcode LIKE ? OR u.fullName LIKE ? OR a.assigned_to_name LIKE ?)';
+      countQuery += ' AND (a.name LIKE ? OR a.asset_code LIKE ? OR a.barcode LIKE ? OR u.fullName LIKE ? OR a.assigned_to_name LIKE ?)';
       const searchTerm = `%${filters.search}%`;
-      params.push(searchTerm, searchTerm, searchTerm);
-      countParams.push(searchTerm, searchTerm, searchTerm);
+      params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+      countParams.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
     }
     if (filters.category_id) {
       query += ' AND a.category_id = ?';
       countQuery += ' AND a.category_id = ?';
       params.push(filters.category_id);
       countParams.push(filters.category_id);
+    }
+    if (filters.assigned_to) {
+      query += ' AND (u.fullName LIKE ? OR a.assigned_to_name LIKE ?)';
+      countQuery += ' AND (u.fullName LIKE ? OR a.assigned_to_name LIKE ?)';
+      const userTerm = `%${filters.assigned_to}%`;
+      params.push(userTerm, userTerm);
+      countParams.push(userTerm, userTerm);
     }
     if (filters.location_id) {
       query += ' AND a.location_id = ?';
@@ -76,6 +104,27 @@ const Asset = {
       countQuery += ' AND a.status = ?';
       params.push(filters.status);
       countParams.push(filters.status);
+    }
+
+    // Phân quyền dữ liệu theo role của user
+    if (filters.currentUser) {
+      const { id, role, department_id } = filters.currentUser;
+      if (role === 'user') {
+        query += ' AND a.assigned_to = ?';
+        countQuery += ' AND a.assigned_to = ?';
+        params.push(id);
+        countParams.push(id);
+      } else if (role === 'department-manager') {
+        if (department_id) {
+          query += ' AND a.department_id = ?';
+          countQuery += ' AND a.department_id = ?';
+          params.push(department_id);
+          countParams.push(department_id);
+        } else {
+          query += ' AND 1 = 0';
+          countQuery += ' AND 1 = 0';
+        }
+      }
     }
 
     // Get total count

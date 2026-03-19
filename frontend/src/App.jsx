@@ -13,6 +13,8 @@ import DepartmentPage from './pages/DepartmentPage';
 import MaintenancePage from './pages/MaintenancePage';
 import InventoryPage from './pages/InventoryPage';
 import UserManagementPage from './pages/UserManagementPage';
+import RoleManagementPage from './pages/RoleManagementPage';
+import ProfilePage from './pages/ProfilePage';
 import PublicAssetPage from './pages/PublicAssetPage';
 
 function App() {
@@ -101,13 +103,29 @@ function App() {
           } />
           
           <Route path="/users" element={
-            <ProtectedRoute adminOnly>
+            <ProtectedRoute requiredPermission="MANAGE_USERS">
               <MainLayout>
                 <UserManagementPage />
               </MainLayout>
             </ProtectedRoute>
           } />
           
+          <Route path="/roles" element={
+            <ProtectedRoute requiredPermission="MANAGE_ROLES">
+              <MainLayout>
+                <RoleManagementPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <ProfilePage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

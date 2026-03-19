@@ -1,5 +1,6 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
+import pool from '../config/database.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'asset_management_secret_key_2024';
 
@@ -22,12 +23,16 @@ export const login = async (req, res) => {
     }
     
     const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role },
+      { id: user.id, username: user.username, role: user.role, department_id: user.department_id },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
     
+    // Lấy danh sách quyền của Role từ database
+    const [perms] = await pool.query('SELECT permission_code FROM role_permissions WHERE role_code = ?', [user.role]);
+    
     const { password: _, ...userData } = user;
+    userData.permissions = perms.map(p => p.permission_code);
     
     res.json({ token, user: userData });
   } catch (error) {
@@ -67,7 +72,40 @@ export const getProfile = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
+    // Lấy danh sách quyền của Role từ database
+    const [perms] = await pool.query('SELECT permission_code FROM role_permissions WHERE role_code = ?', [user.role]);
+
     const { password: _, ...userData } = user;
+    userData.permissions = perms.map(p => p.permission_code);
+    res.json(userData);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const { fullName } = req.body;
+    
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const updatedUserData = {
+      fullName: fullName || user.fullName,
+      role: user.role,
+      department_id: user.department_id,
+      isActive: user.isActive
+    };
+    
+    const updatedUser = await User.update(req.user.id, updatedUserData);
+    
+    const [perms] = await pool.query('SELECT permission_code FROM role_permissions WHERE role_code = ?', [updatedUser.role]);
+    
+    const { password: _, ...userData } = updatedUser;
+    userData.permissions = perms.map(p => p.permission_code);
+    
     res.json(userData);
   } catch (error) {
     res.status(500).json({ message: error.message });

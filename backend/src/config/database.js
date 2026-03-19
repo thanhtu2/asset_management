@@ -68,6 +68,14 @@ const createDatabase = async () => {
       }
     }
     
+    // Fix inventory_records status enum to support all application statuses
+    try {
+      await connection.query("ALTER TABLE inventory_records MODIFY COLUMN status VARCHAR(30) DEFAULT 'pending_check' NOT NULL");
+      console.log('Modified inventory_records status column to VARCHAR');
+    } catch (e) {
+      // Ignore if it fails
+    }
+
     console.log('Database tables initialized!');
     
     // Fix ENUM status column if needed

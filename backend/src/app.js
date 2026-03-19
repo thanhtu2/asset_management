@@ -15,6 +15,8 @@ import departmentRoutes from './routes/department.routes.js';
 import maintenanceRoutes from './routes/maintenance.routes.js';
 import inventoryRoutes from './routes/inventory.routes.js';
 import userRoutes from './routes/user.routes.js';
+import roleRoutes from './routes/role.routes.js';
+import permissionRoutes from './routes/permission.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 
 import { initDatabase, testConnection, getPool } from './config/database.js';
@@ -53,6 +55,16 @@ const corsOptions = {
   },
   credentials: true
 };
+
+// kết nối local với server trên Vercel (nếu có) và các client trong mạng LAN(sử dụng để dev)
+// app.use(cors({
+//   // Thay thế bằng IP LAN của máy chủ và các client được phép
+//   origin: ['http://192.168.89.118:5173', 'http://192.168.89.118:5174', 'http://localhost:5173', 'http://localhost:5174', process.env.FRONTEND_URL],
+//   credentials: true
+// }));
+
+
+
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -86,6 +98,8 @@ app.use('/api/departments', departmentRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/permissions', permissionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
 // Health check

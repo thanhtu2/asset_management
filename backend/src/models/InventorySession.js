@@ -52,10 +52,10 @@ const InventorySession = {
         // 3. Populate inventory_records with pending status
         if (assets.length > 0) {
             const assetIds = assets.map(a => a.id);
-            const recordsData = assetIds.map(id => [sessionId, id, 0, 'pending_check']);
+            const recordsData = assetIds.map(id => [sessionId, id, 1, 0, 'pending_check']);
             
             await connection.query(
-                'INSERT INTO inventory_records (session_id, asset_id, actual_quantity, status) VALUES ?',
+                'INSERT INTO inventory_records (session_id, asset_id, expected_quantity, actual_quantity, status) VALUES ?',
                 [recordsData]
             );
         }
@@ -94,7 +94,7 @@ const InventorySession = {
   async addAssets(sessionId, assetIds) {
     for (const assetId of assetIds) {
       await pool.query(
-        'INSERT INTO inventory_records (session_id, asset_id, actual_quantity) VALUES (?, ?, 0) ON DUPLICATE KEY UPDATE session_id=session_id',
+        'INSERT INTO inventory_records (session_id, asset_id, expected_quantity, actual_quantity, status) VALUES (?, ?, 1, 0, "pending_check") ON DUPLICATE KEY UPDATE session_id=session_id',
         [sessionId, assetId]
       );
     }
@@ -184,7 +184,7 @@ const InventorySession = {
     const assetIds = assets.map(a => a.id);
     for (const assetId of assetIds) {
       await pool.query(
-        'INSERT INTO inventory_records (session_id, asset_id, actual_quantity) VALUES (?, ?, 0) ON DUPLICATE KEY UPDATE session_id=session_id',
+        'INSERT INTO inventory_records (session_id, asset_id, expected_quantity, actual_quantity, status) VALUES (?, ?, 1, 0, "pending_check") ON DUPLICATE KEY UPDATE session_id=session_id',
         [sessionId, assetId]
       );
     }
@@ -202,7 +202,7 @@ const InventorySession = {
     const assetIds = assets.map(a => a.id);
     for (const assetId of assetIds) {
       await pool.query(
-        'INSERT INTO inventory_records (session_id, asset_id, actual_quantity) VALUES (?, ?, 0) ON DUPLICATE KEY UPDATE session_id=session_id',
+        'INSERT INTO inventory_records (session_id, asset_id, expected_quantity, actual_quantity, status) VALUES (?, ?, 1, 0, "pending_check") ON DUPLICATE KEY UPDATE session_id=session_id',
         [sessionId, assetId]
       );
     }
@@ -308,8 +308,8 @@ const InventorySession = {
         }
         
         await connection.query(
-          `INSERT INTO inventory_records (session_id, asset_id, status, actual_quantity, notes,
-           checked_by, checked_at) VALUES (?, ?, ?, 1, ?, ?, NOW())`,
+          `INSERT INTO inventory_records (session_id, asset_id, expected_quantity, actual_quantity, status, notes,
+           checked_by, checked_at) VALUES (?, ?, 0, 1, ?, ?, ?, NOW())`,
           [sessionId, asset.id, recordStatus, notes, userId]
         );
       }

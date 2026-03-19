@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { assetsAPI, categoriesAPI, locationsAPI, departmentsAPI, suppliersAPI } from '../api';
+import { assetsAPI, categoriesAPI, locationsAPI, departmentsAPI, suppliersAPI, usersAPI } from '../api';
 
 const AssetFormPage = () => {
   const { id } = useParams();
@@ -15,6 +15,7 @@ const AssetFormPage = () => {
   const [locations, setLocations] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
+  const [users, setUsers] = useState([]);
 
   const [formData, setFormData] = useState({
     asset_code: '',
@@ -29,7 +30,9 @@ const AssetFormPage = () => {
     current_value: 0,
     status: 'new',
     barcode: '',
-    image_url: ''
+    image_url: '',
+    assigned_to: '',
+    assigned_to_name: ''
   });
 
   useEffect(() => {
@@ -41,17 +44,19 @@ const AssetFormPage = () => {
 
   const fetchFilters = async () => {
     try {
-      const [catRes, locRes, deptRes, supRes] = await Promise.all([
+      const [catRes, locRes, deptRes, supRes, usersRes] = await Promise.all([
         categoriesAPI.getAllSimple(),
         locationsAPI.getAllSimple(),
         departmentsAPI.getAllSimple(),
-        suppliersAPI.getAll()
+        suppliersAPI.getAll(),
+        usersAPI.getAll()
       ]);
       // Handle both paginated and non-paginated responses
       setCategories(catRes.data?.data || catRes.data || []);
       setLocations(locRes.data?.data || locRes.data || []);
       setDepartments(deptRes.data?.data || deptRes.data || []);
       setSuppliers(supRes.data?.data || supRes.data || []);
+      setUsers(usersRes.data?.data || usersRes.data || []);
     } catch (error) {
       console.error('Error fetching filters:', error);
     }
@@ -74,7 +79,9 @@ const AssetFormPage = () => {
         current_value: asset.current_value || 0,
         status: asset.status || 'new',
         barcode: asset.barcode || '',
-        image_url: asset.image_url || ''
+        image_url: asset.image_url || '',
+        assigned_to: asset.assigned_to || '',
+        assigned_to_name: asset.assigned_to_name || ''
       });
     } catch (error) {
       console.error('Error fetching asset:', error);
@@ -86,6 +93,16 @@ const AssetFormPage = () => {
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
+    
+    if (name === 'assigned_to') {
+      const selectedUser = users.find(u => u.id.toString() === value);
+      setFormData({
+        ...formData,
+        assigned_to: value,
+        assigned_to_name: selectedUser ? (selectedUser.fullName || selectedUser.username) : ''
+      });
+      return;
+    }
     setFormData({
       ...formData,
       [name]: type === 'number' ? parseFloat(value) || 0 : value
@@ -103,7 +120,9 @@ const AssetFormPage = () => {
         category_id: formData.category_id || null,
         location_id: formData.location_id || null,
         department_id: formData.department_id || null,
-        supplier_id: formData.supplier_id || null
+        supplier_id: formData.supplier_id || null,
+        assigned_to: formData.assigned_to ? parseInt(formData.assigned_to) : null,
+        assigned_to_name: formData.assigned_to_name || null
       };
 
       if (isEdit) {
@@ -159,7 +178,18 @@ const AssetFormPage = () => {
             </div>
           </div>
 
-          <div className="form-group">
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Người sử dụng</label>
+              <select name="assigned_to" value={formData.assigned_to} onChange={handleChange}>
+                <option value="">Chọn người sử dụng</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>{u.fullName || u.username}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
             <label>Mô tả</label>
             <textarea
               name="description"
@@ -168,6 +198,7 @@ const AssetFormPage = () => {
               rows="3"
               placeholder="Mô tả tài sản"
             />
+          </div>
           </div>
 
           <div className="form-row">
