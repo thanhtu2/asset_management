@@ -17,7 +17,10 @@ Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doa
 - Gán tài sản cho bộ phận/người dùng
 - Theo dõi tình trạng tài sản (Mới, Tốt, Cần sửa, Đã thanh lý)
 - Hỗ trợ mã vạch/QR code
+- Hỗ trợ mã vạch/QR code (Xem và in tem nhãn QR đơn lẻ hoặc hàng loạt)
 - Tìm kiếm và lọc tài sản nâng cao
+- Import/Export dữ liệu quản lý bằng Excel
+- Trang tra cứu tài sản Public (Quét QR không cần đăng nhập để báo hỏng)
 
 ### 2. Quản lý danh mục (Categories)
 - Thêm, sửa, xóa danh mục tài sản
@@ -46,9 +49,13 @@ Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doa
 
 ### 7. Kiểm kê tài sản (Inventory)
 - Tạo phiên kiểm kê
+- Tạo phiên kiểm kê (Toàn bộ hệ thống hoặc theo từng phòng ban)
 - Danh sách tài sản cần kiểm kê
 - Ghi nhận kết quả (Có/Mất/Hỏng)
+- Ghi nhận kết quả (Chờ kiểm/Tìm thấy/Sai vị trí/Thiếu/Hỏng/Thừa) bằng tay hoặc **Quét mã QR trực tiếp**
+- Đề xuất sửa chữa/thanh lý trực tiếp tài sản hỏng ngay trong phiên kiểm kê
 - Báo cáo chênh lệch sau kiểm kê
+- Báo cáo tổng hợp số liệu theo phòng ban
 - Lịch sử kiểm kê
 
 ### 8. Báo cáo & Thống kê (Dashboard)
@@ -56,11 +63,17 @@ Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doa
 - Tổng giá trị tài sản
 - Thống kê theo trạng thái
 - Thống kê theo danh mục, bộ phận, vị trí
+- Cảnh báo danh sách tài sản sắp đến hạn bảo trì
 
 ### 9. Quản lý người dùng (Users)
+### 9. Quản lý người dùng (Users) & Phân quyền (RBAC)
 - Đăng nhập/Đăng xuất an toàn
 - Phân quyền (Admin/User)
+- Phân quyền động (Role-Based Access Control) cho phép gán quyền chi tiết đến từng thao tác
+- Giao diện Quản lý vai trò (Roles) và Quyền hạn (Permissions)
 - Quản lý người dùng (chỉ Admin)
+- Admin có thể chủ động đặt lại mật khẩu cho người dùng bất kỳ
+- Xuất danh sách người dùng ra Excel
 
 ## 🛠️ Công nghệ
 
@@ -477,6 +490,27 @@ Bảng trung gian để gán quyền cho vai trò.
 - Chọn ngày mua, giá mua, giá trị hiện tại
 - Chọn trạng thái tài sản
 - Nhập mã vạch, URL hình ảnh
+- Nút đề xuất mua mới (nếu tài sản ở trạng thái Đã thanh lý)
+
+### Trang tra cứu Public (Scan QR)
+- Giao diện tối ưu cho Mobile (Mobile-first)
+- Tích hợp Camera quét mã QR trực tiếp qua thư viện `html5-qrcode`
+- Người dùng vãng lai (chưa đăng nhập) có thể tra cứu và báo hỏng thiết bị
+- Nhân viên đã đăng nhập có thể cập nhật mọi trạng thái tài sản
+
+### Quản lý Kiểm kê (Inventory)
+- Theo dõi tiến độ phiên kiểm kê
+- Thêm tài sản hàng loạt, thêm theo phòng ban
+- Thống kê màu sắc rõ ràng (Chờ, Tìm thấy, Thiếu, Hỏng, Thừa)
+- Cửa sổ (Modal) xử lý: Tạo phiếu bảo trì cho tài sản hỏng hoặc đưa vào danh sách chờ thanh lý.
+
+### Quản lý Phân quyền (RBAC)
+- Dropdown chọn vai trò (Role) để xem cấu hình
+- Giao diện danh sách quyền (Permissions) được nhóm trực quan theo chức năng (Module)
+- Checkbox bật/tắt quyền hạn theo thời gian thực
+
+### Xử lý lỗi Encoding (Database)
+- Hệ thống cung cấp sẵn script `backend/src/config/fix_encoding.sql` để tự động khắc phục triệt để lỗi font tiếng Việt (chuyển đổi charset từ `latin1` sang `utf8mb4`) nếu dữ liệu cũ import vào gặp lỗi hiển thị.
 
 ## ☁️ Triển khai Production (Vercel & Aiven)
 
