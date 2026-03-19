@@ -1,7 +1,6 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import pool from '../config/database.js';
-import bcrypt from 'bcryptjs';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'asset_management_secret_key_2024';
 
@@ -140,17 +139,13 @@ export const changePassword = async (req, res) => {
       return res.status(400).json({ message: 'Mật khẩu hiện tại không chính xác' });
     }
     
-    // 2. Băm (hash) mật khẩu mới trước khi lưu vào database
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-    
     // Truyền đầy đủ các trường hiện tại để tránh lỗi null các cột bắt buộc
     await User.update(req.user.id, { 
       fullName: user.fullName,
       role: user.role,
       department_id: user.department_id,
       isActive: user.isActive,
-      password: hashedPassword 
+      password: newPassword 
     });
     
     res.json({ message: 'Đổi mật khẩu thành công' });
