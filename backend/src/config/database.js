@@ -21,9 +21,9 @@ const createDatabase = async () => {
     console.log('---------------------------------------');
 
     const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '3306', 10),
-      user: process.env.DB_USER || 'root',
+      host: (process.env.DB_HOST || 'localhost').trim(),
+      port: parseInt((process.env.DB_PORT || '3306').toString().trim(), 10),
+      user: (process.env.DB_USER || 'root').trim(),
       password: process.env.DB_PASSWORD || '123456',
       ssl: {
         rejectUnauthorized: false
@@ -32,7 +32,8 @@ const createDatabase = async () => {
     
     // Bọc trong try-catch vì Aiven Cloud có thể chặn quyền CREATE DATABASE đối với user avnadmin
     try {
-      await connection.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME || 'asset_management'}`);
+      const dbName = (process.env.DB_NAME || 'asset_management').trim();
+      await connection.query(`CREATE DATABASE IF NOT EXISTS ${dbName}`);
       console.log('Database created or already exists!');
     } catch (dbError) {
       console.log('Bỏ qua tạo DB do Cloud provider quản lý quyền:', dbError.message);
@@ -44,7 +45,8 @@ const createDatabase = async () => {
       if (fs.existsSync(initSqlPath)) {
         const initSql = fs.readFileSync(initSqlPath, 'utf8');
         
-        await connection.query(`USE ${process.env.DB_NAME || 'asset_management'}`);
+        const dbName = (process.env.DB_NAME || 'asset_management').trim();
+        await connection.query(`USE ${dbName}`);
         
         // Split by semicolon and execute each statement
         const statements = initSql.split(';').filter(stmt => stmt.trim());
@@ -123,11 +125,11 @@ export const initDatabase = async () => {
   await createDatabase();
   
   pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '3306', 10),
-    user: process.env.DB_USER || 'root',
+    host: (process.env.DB_HOST || 'localhost').trim(),
+    port: parseInt((process.env.DB_PORT || '3306').toString().trim(), 10),
+    user: (process.env.DB_USER || 'root').trim(),
     password: process.env.DB_PASSWORD || '123456',
-    database: process.env.DB_NAME || 'asset_management',
+    database: (process.env.DB_NAME || 'asset_management').trim(),
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
