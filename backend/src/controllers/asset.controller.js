@@ -3,6 +3,7 @@ import MaintenanceRecord from '../models/MaintenanceRecord.js';
 import QRCode from 'qrcode';
 import * as XLSX from 'xlsx';
 import pool from '../config/database.js';
+import { createNotification } from '../notification.service.js';
 
 // Generate QR code for an asset
 export const generateQR = async (req, res) => {
@@ -120,6 +121,15 @@ export const getByBarcode = async (req, res) => {
 export const create = async (req, res) => {
   try {
     const asset = await Asset.create(req.body);
+    
+    // Thông báo có tài sản mới
+    await createNotification(
+      null, 
+      'Tài sản mới', 
+      `Tài sản "${req.body.name}" vừa được thêm vào hệ thống.`, 
+      'success'
+    );
+
     res.status(201).json(asset);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -132,6 +142,15 @@ export const update = async (req, res) => {
     if (!asset) {
       return res.status(404).json({ message: 'Asset not found' });
     }
+    
+    // Thông báo cập nhật thông tin
+    await createNotification(
+      null,
+      'Cập nhật tài sản',
+      `Tài sản "${req.body.name || 'ID: ' + req.params.id}" đã được chỉnh sửa thông tin.`,
+      'info'
+    );
+
     res.json(asset);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -182,6 +201,14 @@ export const updateStatus = async (req, res) => {
       message = 'Đã cập nhật trạng thái và tạo phiếu bảo trì';
       maintenanceCreated = true;
     }
+    
+    // Thông báo cập nhật trạng thái
+    await createNotification(
+      null, 
+      'Thay đổi trạng thái', 
+      `Tài sản ID: ${req.params.id} đã chuyển sang trạng thái: ${status}`, 
+      status === 'needs_repair' ? 'warning' : 'info'
+    );
 
     res.json({ message, asset, maintenanceCreated });
   } catch (error) {
@@ -211,6 +238,14 @@ export const reportDamage = async (req, res) => {
       technician: null,
       next_maintenance_date: null
     });
+    
+    // Thông báo có thiết bị báo hỏng từ Public
+    await createNotification(
+      null,
+      '⚠️ Báo hỏng thiết bị (Public)',
+      `Tài sản ID: ${assetId} vừa được báo hỏng. Lý do: ${desc}`,
+      'warning'
+    );
 
     res.json({
       message: 'Đã báo cáo hư hỏng và tạo phiếu bảo trì',

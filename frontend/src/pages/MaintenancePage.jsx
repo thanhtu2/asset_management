@@ -190,11 +190,17 @@ const MaintenancePage = () => {
                   <td>{record.technician || '-'}</td>
                   <td>{record.next_maintenance_date ? new Date(record.next_maintenance_date).toLocaleDateString('vi-VN') : '-'}</td>
                   <td className="actions">
-                    {user?.permissions?.includes('EDIT_MAINTENANCE') && (
-                      <>
+                    {record.status === 'completed' ? (
+                      <span style={{ display: 'inline-block', backgroundColor: '#dcfce7', color: '#166534', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500', marginRight: '4px' }} title="Đã hoàn thành bảo trì">
+                        ✓ Đã bảo trì
+                      </span>
+                    ) : (
+                      user?.permissions?.includes('EDIT_MAINTENANCE') && (
                         <button onClick={() => handleCompleteRepair(record)} className="btn btn-sm btn-success" title="Hoàn thành sửa chữa">✓ Hoàn thành</button>
-                        <button onClick={() => handleOpenModal(record)} className="btn btn-sm btn-outline">Sửa</button>
-                      </>
+                      )
+                    )}
+                    {user?.permissions?.includes('EDIT_MAINTENANCE') && (
+                      <button onClick={() => handleOpenModal(record)} className="btn btn-sm btn-outline">Sửa</button>
                     )}
                     {user?.permissions?.includes('DELETE_MAINTENANCE') && (
                       <button onClick={() => setDeleteModal({ show: true, id: record.id })} className="btn btn-sm btn-danger">Xóa</button>

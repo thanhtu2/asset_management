@@ -46,6 +46,7 @@ Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doa
 - Phiếu bảo trì/sửa chữa
 - Theo dõi chi phí bảo trì
 - Lên lịch bảo trì tiếp theo
+- Đánh dấu và dán nhãn trực quan các phiếu bảo trì đã hoàn tất (Ngăn thao tác trùng lặp)
 
 ### 7. Kiểm kê tài sản (Inventory)
 - Tạo phiên kiểm kê
@@ -65,7 +66,6 @@ Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doa
 - Thống kê theo danh mục, bộ phận, vị trí
 - Cảnh báo danh sách tài sản sắp đến hạn bảo trì
 
-### 9. Quản lý người dùng (Users)
 ### 9. Quản lý người dùng (Users) & Phân quyền (RBAC)
 - Đăng nhập/Đăng xuất an toàn
 - Phân quyền (Admin/User)
@@ -74,6 +74,15 @@ Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doa
 - Quản lý người dùng (chỉ Admin)
 - Admin có thể chủ động đặt lại mật khẩu cho người dùng bất kỳ
 - Xuất danh sách người dùng ra Excel
+
+### 10. Hệ thống thông báo (Notifications)
+- Chuông thông báo trực tuyến trên giao diện (Navbar)
+- Thông báo tự động khi có tài sản mới được thêm hoặc cập nhật thông tin
+- Thông báo tự động (Cảnh báo đỏ) khi có thiết bị được báo hỏng từ trang quét QR Public
+- Cron Job chạy ngầm hàng ngày: Tự động rà quét và gửi cảnh báo các tài sản sắp đến hạn bảo trì (trong 7 ngày tới)
+- Phân loại thông báo (Info, Success, Warning, Maintenance)
+- Hiệu ứng rung chuông (Animation) mượt mà, trực quan ngay khi có thông báo mới theo thời gian thực
+- Trải nghiệm người dùng (UX) tối ưu: Tự động đóng hộp thoại khi click ra ngoài vùng thông báo
 
 ## 🛠️ Công nghệ
 
@@ -286,6 +295,14 @@ Các API cho các tài nguyên này có cấu trúc tương tự nhau.
 |---|---|---|
 | `GET` | `/api/dashboard` | Lấy các thống kê tổng quan cho dashboard. |
 
+### Notifications (Thông báo)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/notifications` | Lấy danh sách thông báo của người dùng hiện tại. |
+| `PUT` | `/api/notifications/:id/read` | Đánh dấu một thông báo là đã đọc. |
+| `PUT` | `/api/notifications/read-all` | Đánh dấu tất cả thông báo là đã đọc. |
+
 ## 🔧 Phân trang
 
 Một số API hỗ trợ phân trang với tham số:
@@ -470,6 +487,19 @@ Bảng trung gian để gán quyền cho vai trò.
 | `role_code` | VARCHAR(50) | Khóa ngoại, liên kết đến `roles(code)` |
 | `permission_code` | VARCHAR(50) | Khóa ngoại, liên kết đến `permissions(code)` |
 
+### Bảng `notifications`
+Lưu trữ các thông báo trong hệ thống.
+
+| Trường | Loại | Mô tả |
+|---|---|---|
+| `id` | INT | Khóa chính, tự tăng |
+| `user_id` | INT | Khóa ngoại (NULL = thông báo chung toàn hệ thống), liên kết đến `users(id)` |
+| `title` | VARCHAR(255) | Tiêu đề thông báo |
+| `message` | TEXT | Nội dung chi tiết thông báo |
+| `type` | VARCHAR(50) | Loại thông báo ('info', 'success', 'warning', 'maintenance') |
+| `is_read` | BOOLEAN | Trạng thái đã đọc (TRUE/FALSE) |
+| `created_at` | TIMESTAMP | Thời gian tạo thông báo |
+
 ## 🎨 Giao diện
 
 ### Trang chủ (Dashboard)
@@ -495,7 +525,7 @@ Bảng trung gian để gán quyền cho vai trò.
 ### Trang tra cứu Public (Scan QR)
 - Giao diện tối ưu cho Mobile (Mobile-first)
 - Tích hợp Camera quét mã QR trực tiếp qua thư viện `html5-qrcode`
-- Người dùng vãng lai (chưa đăng nhập) có thể tra cứu và báo hỏng thiết bị
+- Người dùng vãng lai (chưa đăng nhập) có thể tra cứu nhanh thông tin và báo hỏng thiết bị mà không bị chặn bởi tường lửa xác thực (Auth)
 - Nhân viên đã đăng nhập có thể cập nhật mọi trạng thái tài sản
 
 ### Quản lý Kiểm kê (Inventory)
@@ -508,6 +538,11 @@ Bảng trung gian để gán quyền cho vai trò.
 - Dropdown chọn vai trò (Role) để xem cấu hình
 - Giao diện danh sách quyền (Permissions) được nhóm trực quan theo chức năng (Module)
 - Checkbox bật/tắt quyền hạn theo thời gian thực
+
+### Chuông thông báo (Notification Bell)
+- Tích hợp ngay trên thanh Header (MainLayout)
+- Hiển thị số lượng thông báo chưa đọc dạng Badge đỏ nổi bật
+- Tự động cập nhật dữ liệu (Polling) định kỳ mà không cần tải lại trang
 
 ### Xử lý lỗi Encoding (Database)
 - Hệ thống cung cấp sẵn script `backend/src/config/fix_encoding.sql` để tự động khắc phục triệt để lỗi font tiếng Việt (chuyển đổi charset từ `latin1` sang `utf8mb4`) nếu dữ liệu cũ import vào gặp lỗi hiển thị.
