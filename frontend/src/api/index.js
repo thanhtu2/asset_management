@@ -5,8 +5,9 @@ import axios from 'axios';
 
 
 
-// Chỉ sử dụng biến môi trường, loại bỏ IP fallback để tránh lỗi kết nối ngầm
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+// Chỉ sử dụng biến môi trường.
+// Nếu không có biến môi trường (như trên Vercel), tự động fallback về relative path '/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 if (!API_BASE_URL) {
   console.error("VITE_API_URL is missing. Please check your .env file!");
