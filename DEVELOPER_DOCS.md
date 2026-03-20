@@ -147,6 +147,11 @@ Sử dụng CSDL quan hệ **MySQL**, thiết kế bao gồm các cụm bảng c
 * Hệ thống này có cấu trúc **Monorepo**.
 * File `vercel.json` định tuyến API gọi từ Frontend `/api/*` chọc thẳng vào các Serverless functions của Node.js.
 * **Cực kỳ quan trọng:** Không được set `Root Directory` trong Vercel Settings (phải để trống) để Vercel đọc được `vercel.json` ở thư mục gốc.
+* **Cron Job trên Vercel:** Thư viện `node-cron` sẽ **KHÔNG** hoạt động khi deploy lên Vercel do đặc thù Serverless sẽ tự động "ngủ" (sleep) ngay sau khi phản hồi request. Để chạy Cron (VD: gửi thông báo bảo trì hàng ngày), bắt buộc phải biến hàm đó thành 1 API Endpoint (`/api/cron/...`) và gọi thông qua cấu hình `"crons"` bên trong file `vercel.json`.
+
+### Lưu ý khi làm việc với Aiven MySQL (Cloud DB)
+* **Giới hạn tên Database:** Gói miễn phí của Aiven **chỉ cho phép sử dụng duy nhất một database có tên là `defaultdb`** và khóa quyền `CREATE DATABASE`. Bắt buộc phải để biến môi trường `DB_NAME=defaultdb` trên Vercel, nếu để tên khác (như `asset_management`) server sẽ báo lỗi 500. Bạn phải mở MySQL Workbench, `USE defaultdb;` và chạy lệnh SQL tạo bảng trực tiếp vào đó.
+* **Lỗi `connect ETIMEDOUT` (Sập Server lúc khởi động):** Mặc định Aiven bật tường lửa chặn mọi kết nối. Vì Vercel sử dụng IP động, bạn **bắt buộc** phải vào giao diện quản trị Aiven > **Allowed IP Addresses** > Thêm luật `0.0.0.0/0` để mở khóa mạng. Chỉ cần thiếu bước này, Vercel sẽ không thể kết nối tới DB.
 
 ### Xử lý lỗi phổ biến
 *   **Lỗi 401 văng ra trang Login liên tục:** Do JWT hết hạn, hãy xóa localStorage application và login lại, hoặc kiểm tra biến `JWT_SECRET` trên server.
