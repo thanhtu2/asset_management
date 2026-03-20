@@ -51,8 +51,8 @@ const corsOptions = {
       callback(null, true);
     } else {
       console.log('CORS check for origin:', origin);
-      // Trả về lỗi nếu origin không nằm trong danh sách cho phép
-      callback(new Error('Origin bị chặn bởi CORS'));
+      // Từ chối kết nối nhẹ nhàng, không ném Error để tránh văng lỗi 500
+      callback(null, false);
     }
   },
   credentials: true
