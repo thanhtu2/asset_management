@@ -4,10 +4,13 @@ import { authMiddleware } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
+// Đưa API danh sách (dropdown) lên trước để Public quét QR có thể gọi được
+router.get('/simple', getAllSimple);
+
+// Các API phía dưới đều yêu cầu Auth
 router.use(authMiddleware);
 
 router.get('/', getAll);
-router.get('/simple', getAllSimple);
 router.get('/:id', getById);
 router.post('/', create);
 router.put('/:id', update);

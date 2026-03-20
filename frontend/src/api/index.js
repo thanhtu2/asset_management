@@ -187,4 +187,9 @@ export const permissionsAPI = {
   create: (data) => apiClient.post('/permissions', data),
 };
 
+export const notificationsAPI = {
+  getAll: () => apiClient.get('/notifications'),
+  markAsRead: (id) => apiClient.put(`/notifications/${id}/read`),
+};
+
 export default apiClient;

@@ -18,8 +18,10 @@ import userRoutes from './routes/user.routes.js';
 import roleRoutes from './routes/role.routes.js';
 import permissionRoutes from './routes/permission.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
 
 import { initDatabase, testConnection, getPool } from './config/database.js';
+import { initCronJobs } from './cron.service.js';
 
 // Lùi ra 2 cấp thư mục (từ src/ ra backend/ rồi ra root/) để đọc file .env
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -101,6 +103,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -161,6 +164,7 @@ if (!process.env.VERCEL) {
     await initDatabase();
     await testConnection();
     await seedAdminUser();
+    initCronJobs(); // Khởi chạy cron jobs (Lưu ý: Không dùng trên Vercel Serverless)
   });
 }
 

@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import NotificationBell from '../components/NotificationBell';
 
 const menuItems = [
   { path: '/',            label: 'Dashboard',      icon: '📊' },
@@ -53,6 +54,7 @@ const MainLayout = ({ children }) => {
             </div>
           </div>
         </div>
+        
 
         {/* Menu section label */}
         <div style={{ padding: '16px 16px 6px', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase' }}>
@@ -135,6 +137,10 @@ const MainLayout = ({ children }) => {
 
       {/* ── Main Content ──────────────────────────────── */}
       <main className="main-content">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', position: 'relative', zIndex: 999 }}>
+          <NotificationBell />
+        </div>
+
         {children}
       </main>
     </div>
