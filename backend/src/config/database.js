@@ -13,9 +13,16 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 // First connection without database to create it
 const createDatabase = async () => {
   try {
+    console.log('--- KIỂM TRA KẾT NỐI DB TRÊN VERCEL ---');
+    console.log('Host:', process.env.DB_HOST);
+    console.log('Port:', process.env.DB_PORT);
+    console.log('User:', process.env.DB_USER);
+    console.log('DB Name:', process.env.DB_NAME);
+    console.log('---------------------------------------');
+
     const connection = await mysql.createConnection({
       host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 3306,
+      port: parseInt(process.env.DB_PORT || '3306', 10),
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '123456',
       ssl: {
@@ -117,7 +124,7 @@ export const initDatabase = async () => {
   
   pool = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
+    port: parseInt(process.env.DB_PORT || '3306', 10),
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '123456',
     database: process.env.DB_NAME || 'asset_management',
