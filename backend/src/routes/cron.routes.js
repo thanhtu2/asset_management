@@ -1,5 +1,5 @@
 import express from 'express';
-import { pool } from '../config/database.js';
+import { getPool } from '../config/database.js';
 import { createNotification } from '../notification.service.js';
 
 const router = express.Router();
@@ -9,8 +9,10 @@ router.get('/maintenance-check', async (req, res) => {
   console.log('✅ Vercel Cron Job: Kiểm tra bảo trì định kỳ triggered');
   
   try {
-    // Tìm assets cần bảo trì trong 7 ngày tới (same logic as cron.service)
-    const [upcoming] = await pool.query(`
+    const db = getPool();
+    
+    // Tìm assets cần bảo trì trong 7 ngày tới
+    const [upcoming] = await db.query(`
       SELECT a.id, a.asset_code, a.name, m.next_maintenance_date 
       FROM assets a
       JOIN maintenance_records m ON a.id = m.asset_id
@@ -21,7 +23,7 @@ router.get('/maintenance-check', async (req, res) => {
     let processed = 0;
     for (const item of upcoming) {
       await createNotification(
-        null,  // null = system notification for all
+        null,
         'Bảo trì sắp đến hạn',
         `Tài sản "${item.name}" (${item.asset_code}) cần được bảo trì vào ngày ${new Date(item.next_maintenance_date).toLocaleDateString('vi-VN')}.`,
         'maintenance'
