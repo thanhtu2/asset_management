@@ -1,12 +1,13 @@
 import cron from 'node-cron';
-import pool from './config/database.js';
+import { getPool } from './config/database.js';
 import { createNotification } from './notification.service.js';
 
 const runMaintenanceCheck = async () => {
   console.log('Đang kiểm tra lịch bảo trì định kỳ...');
   try {
-    // Tìm các tài sản có ngày bảo trì tiếp theo trong vòng 7 ngày tới
-    const [upcoming] = await pool.query(`
+    const db = getPool();
+    
+    const [upcoming] = await db.query(`
       SELECT a.id, a.asset_code, a.name, m.next_maintenance_date 
       FROM assets a
       JOIN maintenance_records m ON a.id = m.asset_id
