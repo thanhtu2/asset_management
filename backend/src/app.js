@@ -19,6 +19,7 @@ import roleRoutes from './routes/role.routes.js';
 import permissionRoutes from './routes/permission.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
+import cronRoutes from './routes/cron.routes.js';
 
 import { initDatabase, testConnection, getPool } from './config/database.js';
 import { initCronJobs } from './cron.service.js';
@@ -91,6 +92,7 @@ app.use(async (req, res, next) => {
 });
 
 // Routes
+app.use('/api/cron', cronRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/assets', assetRoutes);
 app.use('/api/categories', categoryRoutes);

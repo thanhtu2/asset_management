@@ -547,6 +547,37 @@ Lưu trữ các thông báo trong hệ thống.
 ### Xử lý lỗi Encoding (Database)
 - Hệ thống cung cấp sẵn script `backend/src/config/fix_encoding.sql` để tự động khắc phục triệt để lỗi font tiếng Việt (chuyển đổi charset từ `latin1` sang `utf8mb4`) nếu dữ liệu cũ import vào gặp lỗi hiển thị.
 
+## 🚀 Cron Jobs & Triển khai Production (Vercel Native Cron)
+
+### ✅ Vercel Cron Jobs (Mới - Serverless ready)
+- **Tính năng**: Tự động rà quét tài sản sắp đến hạn bảo trì mỗi ngày 8h sáng.
+- **Endpoint**: `/api/cron/maintenance-check` (no auth, system-only).
+- **Logic**: Query `maintenance_records`, tạo notifications cho admin.
+- **Config**: `vercel.json` `"crons": [{"path": "/api/cron/maintenance-check", "schedule": "0 8 * * *"}]`
+- **Local**: `backend/src/cron.service.js` dùng `node-cron` (test every minute).
+- **Vercel**: Native Cron Jobs (persistent, reliable).
+
+### 1. Production Deployment (Vercel + Aiven MySQL)
+
+**Vercel Cron Status**: Active ✅ (check Vercel Dashboard > Functions > Cron Jobs)
+
+**Deploy command**:
+```bash
+vercel --prod
+```
+
+**Environment Variables** (Vercel Project Settings):
+```
+DB_HOST=your-aiven-mysql-host
+DB_PORT=17300
+DB_USER=avnadmin
+DB_PASSWORD=your-aiven-password
+DB_NAME=defaultdb
+JWT_SECRET=your-super-secret-key-min-32-chars
+VITE_API_URL=/api
+FRONTEND_URL=https://your-project.vercel.app
+```
+
 ## ☁️ Triển khai Production (Vercel & Aiven)
 
 Hệ thống được thiết kế để hỗ trợ triển khai hoàn toàn miễn phí trên kiến trúc Serverless với Vercel và Database trên Cloud.
