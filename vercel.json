@@ -13,6 +13,12 @@
       "use": "@vercel/node"
     }
   ],
+  "crons": [
+    {
+      "path": "/api/cron/maintenance-check",
+      "schedule": "0 8 * * *"
+    }
+  ],
   "routes": [
     {
       "src": "/api/(.*)",

@@ -143,6 +143,17 @@ Sử dụng CSDL quan hệ **MySQL**, thiết kế bao gồm các cụm bảng c
 3. Chạy `init.sql` vào MySQL cục bộ để tạo Schema.
 4. Chạy `npm run dev` ở backend (cổng 3001) và frontend (cổng 5173).
 
+### Lưu ý khi làm việc với Vercel (Cron Jobs Serverless)
+
+**Cron Job Support ✅**
+* `node-cron` chỉ hoạt động local. Vercel dùng Native Cron Jobs config trong `vercel.json`.
+* Endpoint `/api/cron/maintenance-check` được Vercel tự gọi theo schedule `"0 8 * * *"` (8AM daily).
+* Logic chia sẻ qua `cron.service.js` export `runMaintenanceCheck()` function (reuse code).
+* Monitor: Vercel Dashboard > Functions > Cron Jobs tab (logs + executions history).
+* Limit: Hobby tier 1000 invocations/month (enough for daily cron).
+
+**Root Directory**: **PHẢI để TRỐNG** (Vercel đọc `vercel.json` gốc project).
+
 ### Lưu ý khi làm việc với Vercel
 * Hệ thống này có cấu trúc **Monorepo**.
 * File `vercel.json` định tuyến API gọi từ Frontend `/api/*` chọc thẳng vào các Serverless functions của Node.js.
