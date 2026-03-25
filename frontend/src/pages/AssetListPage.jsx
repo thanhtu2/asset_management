@@ -142,15 +142,20 @@ const AssetListPage = () => {
   const handleBulkQRLoad = async () => {
     setBulkLoading(true);
     try {
-      const qrPromises = selectedAssets.map(async (assetId) => {
-        const response = await assetsAPI.getQRCode(assetId);
-        return response.data;
-      });
-      const results = await Promise.all(qrPromises);
+      const results = [];
+      // Chia nhỏ request ra thành từng đợt (batch) 5 tài sản/lần 
+      // để tránh lỗi "Too many connections" làm sập Database Backend
+      const batchSize = 5;
+      for (let i = 0; i < selectedAssets.length; i += batchSize) {
+        const batch = selectedAssets.slice(i, i + batchSize);
+        const batchPromises = batch.map(assetId => assetsAPI.getQRCode(assetId).then(res => res.data));
+        const batchResults = await Promise.all(batchPromises);
+        results.push(...batchResults);
+      }
       setBulkQrData(results);
     } catch (error) {
       console.error('Error loading bulk QR:', error);
-      alert('Không thể tải QR code');
+      alert('Không thể tải QR code. Vui lòng thử lại.');
     } finally {
       setBulkLoading(false);
     }

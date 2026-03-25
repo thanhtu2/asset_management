@@ -412,6 +412,16 @@ export const importAssets = async (req, res) => {
       }
     }
 
+    // Tạo thông báo tổng hợp hệ thống sau khi import xong
+    if (results.success > 0) {
+      await createNotification(
+        null,
+        'Import tài sản thành công',
+        `Hệ thống vừa import thành công ${results.success} tài sản từ file Excel.${results.failed > 0 ? ` (Có ${results.failed} dòng bị lỗi/bỏ qua)` : ''}`,
+        'success'
+      );
+    }
+
     res.json({
       message: `Import hoàn tất: ${results.success} thành công, ${results.failed} thất bại`,
       ...results
