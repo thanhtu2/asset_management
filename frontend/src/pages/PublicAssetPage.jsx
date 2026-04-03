@@ -104,7 +104,7 @@ const PublicAssetPage = () => {
       // Cần thêm hàm `reportDamage` vào `assetsAPI` của bạn.
       // Ví dụ trong `src/api/index.js`:
       // reportDamage: (id, description) => axios.post(`/assets/public/${id}/report-damage`, { description }),
-      if (!user && selectedStatus === 'needs_repair') {
+      if (!user && selectedStatus === 'cần sửa chữa và hỏng') {
         if (!assetsAPI.reportDamage) {
           throw new Error("assetsAPI.reportDamage chưa được định nghĩa. Vui lòng xem ví dụ trong PublicAssetPage.jsx.");
         }
@@ -227,18 +227,18 @@ const PublicAssetPage = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      good: { class: 'badge-good', label: 'Tốt' },
-      needs_repair: { class: 'badge-needs_repair', label: 'Cần sửa' }
+      'đang sử dụng': { class: 'badge-good', label: 'Đang sử dụng' },
+      'cần sửa chữa': { class: 'badge-needs_repair', label: 'Cần sửa chữa' }
     };
-    const badge = badges[status] || badges.new;
+    const badge = badges[status] || { class: 'badge-new', label: status };
     return <span className={`badge ${badge.class}`}>{badge.label}</span>;
   };
 
   // Get available statuses based on login status
   const getAvailableStatuses = () => {
     const allStatuses = [
-      { value: 'good', label: 'Tốt' },
-      { value: 'needs_repair', label: 'Cần sửa' }
+      { value: 'đang sử dụng', label: 'Đang sử dụng' },
+      { value: 'cần sửa chữa', label: 'Cần sửa chữa' }
     ];
     
     // If user is logged in, show all statuses
@@ -246,8 +246,8 @@ const PublicAssetPage = () => {
       return allStatuses;
     }
     
-    // If user is not logged in, only show "Cần sửa" (report damage only)
-    return allStatuses.filter(s => s.value === 'needs_repair');
+    // If user is not logged in, only show "Cần sửa chữa và hỏng" (report damage only)
+    return allStatuses.filter(s => s.value === 'cần sửa chữa và hỏng');
   };
 
   const formatDate = (date) => {
@@ -571,7 +571,7 @@ const PublicAssetPage = () => {
                 </label>
               ))}
             </div>
-            {selectedStatus === 'needs_repair' && (
+            {selectedStatus === 'cần sửa chữa và hỏng' && (
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
                   Mô tả tình trạng:

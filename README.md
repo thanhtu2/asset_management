@@ -15,7 +15,7 @@ Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doa
 - Phân loại tài sản theo danh mục
 - Theo dõi vị trí tài sản
 - Gán tài sản cho bộ phận/người dùng
-- Theo dõi tình trạng tài sản (Mới, Tốt, Cần sửa, Đã thanh lý)
+- Theo dõi tình trạng tài sản (chờ cấp, đang sử dụng, cần sửa chữa và hỏng, đã thanh lý)
 - Hỗ trợ mã vạch/QR code
 - Hỗ trợ mã vạch/QR code (Xem và in tem nhãn QR đơn lẻ hoặc hàng loạt)
 - Tìm kiếm và lọc tài sản nâng cao
@@ -204,7 +204,7 @@ Các API endpoint được bảo vệ bằng JWT, yêu cầu `Authorization: Bea
 |---|---|---|
 | `GET` | `/api/assets` | Lấy danh sách tài sản (hỗ trợ phân trang, tìm kiếm, lọc). |
 | `GET` | `/api/assets/all` | Lấy danh sách rút gọn tất cả tài sản (cho dropdown). |
-| `GET` | `/api/assets/:id` | Lấy chi tiết một tài sản. |
+| `GET` | `/api/assets/:id` | Lấy chi tiết một tài sản (*current_value computed dynamically*). |
 | `GET` | `/api/assets/code/:code` | Lấy chi tiết tài sản theo mã tài sản (asset_code). |
 | `GET` | `/api/assets/barcode/:barcode` | Lấy chi tiết tài sản theo mã vạch. |
 | `POST` | `/api/assets` | Tạo tài sản mới. |
@@ -357,8 +357,9 @@ Lưu trữ thông tin chi tiết về từng tài sản.
 | `supplier_id` | INT | Khóa ngoại, liên kết đến `suppliers(id)` |
 | `purchase_date` | DATE | Ngày mua |
 | `purchase_price` | DECIMAL | Giá mua |
-| `current_value` | DECIMAL | Giá trị hiện tại (sau khấu hao) |
-| `status` | ENUM | Trạng thái ('new', 'good', 'needs_repair', 'disposed') |
+| `current_value` | DECIMAL | Giá trị hiện tại (*computed on-the-fly via controller.calculateCurrentValue(), categories.depreciation_rate*) |
+| `salvage_value` | DECIMAL | Giá trị thu hồi/thanh lý ước tính (mặc định là 0) |
+| `status` | VARCHAR(50) | Trạng thái ('chờ cấp', 'đang sử dụng', 'cần sửa chữa và hỏng', 'đã thanh lý') |
 | `barcode` | VARCHAR(100) | Mã vạch (duy nhất) |
 | `image_url` | VARCHAR(255) | URL hình ảnh |
 | `assigned_to` | INT | Khóa ngoại, liên kết đến `users(id)` |
@@ -386,6 +387,7 @@ Phân loại tài sản.
 | `name` | VARCHAR(255) | Tên danh mục |
 | `code` | VARCHAR(50) | Mã danh mục |
 | `description` | TEXT | Mô tả |
+| `depreciation_rate` | DECIMAL(5,2) | **Tỷ lệ khấu hao hàng năm (%)** - Used by `calculateCurrentValue()` for assets straight-line monthly depreciation |
 
 ### Bảng `locations`
 Quản lý các vị trí (phòng ban, kho, chi nhánh).
@@ -612,20 +614,17 @@ Dự án sử dụng kiến trúc Monorepo (chứa cả Frontend và Backend). C
 Để truy cập từ mạng LAN:
 
 1. Cấu hình IP tĩnh cho máy chủ
-2. Cập nhật CORS trong `backend/src/app.js`:
-```javascript
-app.use(cors({
-  // Thay thế bằng IP LAN của máy chủ và các client được phép
-  origin: ['http://<SERVER_IP>:5173', 'http://<CLIENT_IP>:5173'],
-  credentials: true
-}));
+2. Mở file `frontend/.env` (tạo mới nếu chưa có) và thêm URL trỏ tới Backend bằng IP LAN:
+```env
+# Thay 192.168.x.x bằng IP máy tính chạy server của bạn
+VITE_API_URL=http://192.168.x.x:3001/api
+```
+3. Khởi động ứng dụng React với tham số `--host` để thiết bị khác có thể quét mã truy cập:
+```bash
+npm run dev -- --host
 ```
 
-3. Cập nhật API URL trong `frontend/src/api/index.js`:
-```
-javascript
-const API_BASE_URL = 'http://192.168.89.118:3001/api';
-```
+*💡 **Lưu ý:** Mã nguồn dự án đã được tối ưu hóa sự linh động. Khi test local, Backend tự động mở CORS cho các dải IP `192.168.*` hoặc `localhost`. Khi triển khai lên Vercel (nơi không có biến `VITE_API_URL`), Frontend sẽ tự động fallback về relative path `/api`. Bạn không cần phải chỉnh sửa trực tiếp vào file code.*
 
 ## 📝 Giấy phép
 

@@ -15,31 +15,35 @@ export const getStats = async (req, res) => {
     // Calculate assets by specific conditions
     // New assets (created this month)
     const [newAssets] = await pool.query(`
-      SELECT COUNT(*) as count 
-      FROM assets 
-      WHERE MONTH(created_at) = MONTH(CURDATE()) 
-        AND YEAR(created_at) = YEAR(CURDATE())
-    `);
-    
+    SELECT COUNT(*) as count 
+    FROM assets 
+    WHERE status = 'chờ cấp'
+  `);
     // Good assets (status = 'good')
     const [goodAssets] = await pool.query(`
       SELECT COUNT(*) as count 
       FROM assets 
-      WHERE status = 'good'
+      WHERE status = 'đang sử dụng'
     `);
     
     // Needs repair assets
     const [needsRepairAssets] = await pool.query(`
       SELECT COUNT(*) as count 
       FROM assets 
-      WHERE status = 'needs_repair'
+      WHERE status = 'cần sửa chữa'
+    `);
+
+    const [damagedAssets] = await pool.query(`
+      SELECT COUNT(*) as count 
+      FROM assets 
+      WHERE status = 'hỏng'
     `);
     
     // Disposed assets
     const [disposedAssets] = await pool.query(`
       SELECT COUNT(*) as count 
       FROM assets 
-      WHERE status = 'disposed'
+      WHERE status = 'đã thanh lý'
     `);
     
     // Assets by category
@@ -115,8 +119,12 @@ export const getStats = async (req, res) => {
       assetsByStatus,
       assetsByCategory,
       assetsByDepartment,
+      damagedAssets: damagedAssets[0].count,
       byLocation,
-      totalValue: totalValue[0] || { total_purchase: 0, total_current: 0 },
+      totalValue: {
+        total_purchase: totalValue[0]?.total_purchase ?? 0,
+        total_current: totalValue[0]?.total_current ?? 0,
+      },     
       recentAssets,
       upcomingMaintenance,
       maintenanceCosts: maintenanceCosts[0] || { total_cost: 0, total_records: 0 },

@@ -105,7 +105,7 @@ const MaintenancePage = () => {
   };
 
   const handleCompleteRepair = async (record) => {
-    if (!window.confirm(`Hoàn thành sửa chữa cho tài sản "${record.asset_name}"?\n\nTrạng thái tài sản sẽ được chuyển thành "Tốt".`)) {
+    if (!window.confirm(`Hoàn thành sửa chữa cho tài sản "${record.asset_name}"?\n\nTrạng thái tài sản sẽ được chuyển thành "Đang sử dụng".`)) {
       return;
     }
     try {
