@@ -5,9 +5,10 @@ import { dashboardAPI } from '../api';
 /* Accent colour per stat card */
 const STAT_CARDS = [
   { key: 'totalAssets',       label: 'Tổng số tài sản',  icon: '📦', accent: '#2563eb' },
-  { key: 'newAssets',         label: 'Tài sản mới',       icon: '✨', accent: '#7c3aed' },
-  { key: 'goodAssets',        label: 'Tài sản tốt',       icon: '✅', accent: '#10b981' },
+  { key: 'newAssets',         label: 'Chờ cấp',       icon: '✨', accent: '#7c3aed' },
+  { key: 'goodAssets',        label: 'Đang sử dụng',       icon: '✅', accent: '#10b981' },
   { key: 'needsRepairAssets', label: 'Cần sửa chữa',      icon: '🔧', accent: '#f59e0b' },
+  { key: 'damagedAssets',     label: 'Hỏng',       icon: '⚠️', accent: '#dc2626' },
   { key: 'disposedAssets',    label: 'Đã thanh lý',       icon: '🗑️', accent: '#ef4444' },
   { key: 'totalValue',        label: 'Tổng giá trị',      icon: '💰', accent: '#0ea5e9', isValue: true },
 ];

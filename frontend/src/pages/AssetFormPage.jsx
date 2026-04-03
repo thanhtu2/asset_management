@@ -28,7 +28,7 @@ const AssetFormPage = () => {
     purchase_date: '',
     purchase_price: 0,
     current_value: 0,
-    status: 'new',
+    status: 'chờ cấp',
     barcode: '',
     image_url: '',
     assigned_to: '',
@@ -41,6 +41,34 @@ const AssetFormPage = () => {
       fetchAsset();
     }
   }, [id]);
+
+  // Tự động tính toán giá trị hiện tại
+  useEffect(() => {
+    if (formData.purchase_price > 0 && formData.category_id && formData.purchase_date) {
+      const category = categories.find(c => c.id.toString() === formData.category_id.toString());
+      if (category && category.depreciation_rate > 0) {
+        const purchaseDate = new Date(formData.purchase_date);
+        const now = new Date();
+        
+        // Tính số tháng đã trôi qua
+        let monthsPassed = (now.getFullYear() - purchaseDate.getFullYear()) * 12;
+        monthsPassed -= purchaseDate.getMonth();
+        monthsPassed += now.getMonth();
+        monthsPassed = monthsPassed <= 0 ? 0 : monthsPassed;
+
+        const annualDepreciationRate = category.depreciation_rate / 100;
+        const monthlyDepreciation = (formData.purchase_price * annualDepreciationRate) / 12;
+        
+        const totalDepreciation = monthlyDepreciation * monthsPassed;
+        
+        let calculatedValue = formData.purchase_price - totalDepreciation;
+        // Giá trị không được âm
+        calculatedValue = Math.max(0, calculatedValue);
+
+        setFormData(prev => ({ ...prev, current_value: Math.round(calculatedValue) }));
+      }
+    }
+  }, [formData.purchase_price, formData.category_id, formData.purchase_date, categories]);
 
   const fetchFilters = async () => {
     try {
@@ -77,7 +105,7 @@ const AssetFormPage = () => {
         purchase_date: asset.purchase_date || '',
         purchase_price: asset.purchase_price || 0,
         current_value: asset.current_value || 0,
-        status: asset.status || 'new',
+        status: asset.status || 'chờ cấp',
         barcode: asset.barcode || '',
         image_url: asset.image_url || '',
         assigned_to: asset.assigned_to || '',
@@ -268,12 +296,14 @@ const AssetFormPage = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label>Giá trị hiện tại</label>
+              <label>Giá trị hiện tại (tự động tính)</label>
               <input
                 type="number"
                 name="current_value"
                 value={formData.current_value}
-                onChange={handleChange}
+                readOnly
+                style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+                onChange={handleChange} // Giữ lại để tương thích với logic chung, nhưng readOnly sẽ ngăn người dùng nhập
                 min="0"
                 step="1000"
               />
@@ -281,10 +311,10 @@ const AssetFormPage = () => {
             <div className="form-group">
               <label>Trạng thái</label>
               <select name="status" value={formData.status} onChange={handleChange}>
-                <option value="new">Mới</option>
-                <option value="good">Tốt</option>
-                <option value="needs_repair">Cần sửa</option>
-                <option value="disposed">Đã thanh lý</option>
+                <option value="chờ cấp">Chờ cấp</option>
+                <option value="đang sử dụng">Đang sử dụng</option>
+                <option value="cần sửa chữa và hỏng">Cần sửa chữa và hỏng</option>
+                <option value="đã thanh lý">Đã thanh lý</option>
               </select>
             </div>
           </div>
@@ -319,7 +349,7 @@ const AssetFormPage = () => {
             <Link to="/assets" className="btn btn-outline">Hủy</Link>
             
             {/* Suggest New Purchase Button */}
-            {isEdit && formData.status === 'disposed' && (
+            {isEdit && formData.status === 'đã thanh lý' && (
               <Link 
                 to={`/assets/new?name=${encodeURIComponent(formData.name)}&category_id=${formData.category_id}&department_id=${formData.department_id}`}
                 className="btn btn-success"

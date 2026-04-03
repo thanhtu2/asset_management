@@ -67,8 +67,8 @@ Sử dụng CSDL quan hệ **MySQL**, thiết kế bao gồm các cụm bảng c
 
 1.  **Cụm Danh mục & Cấu hình:** `categories`, `locations`, `departments`, `suppliers`. Các bảng này đóng vai trò lookup (khóa ngoại) cho bảng Tài sản.
 2.  **Cụm Tài sản & Bảo trì:**
-    *   `assets`: Bảng Master. Các trạng thái: `new`, `good`, `needs_repair`, `disposed`.
-    *   `maintenance_records`: Lưu lịch sử sửa chữa. Logic: Khi đổi trạng thái Asset sang `needs_repair`, hệ thống *tự động* trigger tạo 1 record bảo trì (Emergency). Trạng thái hoàn thành (`status = 'completed'`) sẽ vô hiệu hóa thao tác thừa trên UI.
+    *   `assets`: Bảng Master. Các trạng thái: `chờ cấp`, `đang sử dụng`, `cần sửa chữa và hỏng`, `đã thanh lý`.
+    *   `maintenance_records`: Lưu lịch sử sửa chữa. Logic: Khi đổi trạng thái Asset sang `cần sửa chữa và hỏng`, hệ thống *tự động* trigger tạo 1 record bảo trì (Emergency). Trạng thái hoàn thành (`status = 'completed'`) sẽ vô hiệu hóa thao tác thừa trên UI.
 3.  **Cụm Kiểm kê (Inventory):**
     *   `inventory_sessions`: Phiên kiểm kê (Tên, ngày, phòng ban).
     *   `inventory_records`: Ghi nhận chi tiết từng tài sản trong phiên. Các trạng thái: `pending_check`, `found`, `found_wrong_location`, `missing`, `damaged`, `extra`.
@@ -92,8 +92,8 @@ Sử dụng CSDL quan hệ **MySQL**, thiết kế bao gồm các cụm bảng c
 ### 4.2. Luồng Quét QR & Chế độ Public / Private
 *   **Mã hóa QR:** QR sinh ra ở backend (`generateQR`) chứa URL trực tiếp: `https://domain.com/asset/<id>`.
 *   **Quét qua Camera:** Thư viện `html5-qrcode` ở `PublicAssetPage.jsx` đọc data. Frontend dùng Regex/URL Parser tách ID/Code để tìm tài sản.
-*   **Public Access:** Nếu người dùng quét QR nhưng *chưa đăng nhập*, frontend chỉ cho phép xem thông tin và hiện nút **Báo hỏng** (`needs_repair`). Request sẽ gọi vào API Public (`/api/assets/public/:id/report-damage`).
-*   **Private Access:** Nếu *đã đăng nhập*, user có thể cập nhật mọi trạng thái (Good, Disposed,...) gọi qua các API nội bộ bị khóa bởi JWT.
+*   **Public Access:** Nếu người dùng quét QR nhưng *chưa đăng nhập*, frontend chỉ cho phép xem thông tin và hiện nút **Báo hỏng** (`cần sửa chữa và hỏng`). Request sẽ gọi vào API Public (`/api/assets/public/:id/report-damage`).
+*   **Private Access:** Nếu *đã đăng nhập*, user có thể cập nhật mọi trạng thái (Đang sử dụng, Đã thanh lý,...) gọi qua các API nội bộ bị khóa bởi JWT.
 
 ### 4.3. Import Excel Dữ Liệu
 *   Sử dụng thư viện `xlsx`.
@@ -102,14 +102,14 @@ Sử dụng CSDL quan hệ **MySQL**, thiết kế bao gồm các cụm bảng c
 ### 4.4. Luồng Kiểm Kê Tài Sản (Inventory)
 1.  **Khởi tạo:** Tạo `Session` -> Cập nhật list tài sản vào `Inventory Records` (status mặc định là `pending_check`).
 2.  **Quét/Check thực tế:** Sử dụng súng quét mã vạch hoặc Camera. API `/inventory/:sessionId/scan` sẽ đánh dấu tài sản thành `found` (hoặc `found_wrong_location`).
-3.  **Xử lý bất thường:** Trong lúc kiểm kê, nếu thấy tài sản hỏng, user nhấn "Báo hỏng". Hệ thống cập nhật record kiểm kê thành `damaged` VÀ gọi song song sang API Asset để đổi trạng thái Asset thành `needs_repair` (tạo auto phiếu bảo trì).
+3.  **Xử lý bất thường:** Trong lúc kiểm kê, nếu thấy tài sản hỏng, user nhấn "Báo hỏng". Hệ thống cập nhật record kiểm kê thành `damaged` VÀ gọi song song sang API Asset để đổi trạng thái Asset thành `cần sửa chữa và hỏng` (tạo auto phiếu bảo trì).
 4.  **Hoàn thành:** Cập nhật Session `status = completed`. Tính toán số lượng chênh lệch, lưu lịch sử.
 
 ### 4.5. Luồng Bảo Trì (Maintenance)
 1.  **Tạo mới:** Phiếu bảo trì có thể được tạo thủ công hoặc tự động sinh ra khi người dùng (hoặc khách Public) báo hỏng tài sản.
 2.  **Hoàn thành sửa chữa:** Khi người dùng nhấn nút "Hoàn thành", hệ thống sẽ đồng thời:
     *   Đổi `status` của phiếu bảo trì thành `completed`.
-    *   Đổi `status` của tài sản liên quan trở lại thành `good`.
+    *   Đổi `status` của tài sản liên quan trở lại thành `đang sử dụng`.
     *   Giao diện thay thế nút bấm bằng nhãn **✓ Đã bảo trì** (màu xanh) để trực quan hóa và khóa thao tác trùng lặp.
 
 ### 4.6. Hệ thống Thông báo (Notification Bell)
@@ -118,6 +118,13 @@ Sử dụng CSDL quan hệ **MySQL**, thiết kế bao gồm các cụm bảng c
     *   Sử dụng `useRef` (`prevCountRef`) để lưu trữ số lượng thông báo chưa đọc của lần render trước. 
     *   Mỗi khi số lượng thông báo chưa đọc thực sự tăng lên, trigger đổi state `isRinging = true` để áp dụng class CSS kích hoạt `@keyframes smoothBellRing` trong vòng 1.2s.
 *   **Click-outside:** Dùng `useRef` gắn vào container chứa dropdown và lắng nghe sự kiện `mousedown` trên toàn `document` để đóng hộp thoại thông báo mượt mà khi click ra ngoài.
+
+### 4.7. Luồng Xử Lý Khấu Hao Tài Sản (Depreciation Logic)
+Hệ thống tính khấu hao theo phương pháp **đường thẳng tính theo tháng** (Straight-line monthly depreciation) và tính toán **động (on-the-fly)** ở Backend mỗi khi có request lấy dữ liệu.
+*   **Nguồn dữ liệu:** Dữ liệu tính toán lấy từ Bảng `assets` (Giá mua, ngày mua, giá trị thu hồi) kết hợp thông qua JOIN với bảng `categories` (Tỷ lệ khấu hao hàng năm tính bằng `%`).
+*   **Logic Backend (`asset.controller.js`):** Hàm `calculateCurrentValue(asset)` tự động được gọi để tính toán: Tính số tháng đã qua kể từ ngày mua, nhân với mức khấu hao mỗi tháng để ra tổng khấu hao, từ đó suy ra `current_value`. Logic cũng đảm bảo giá trị này không bao giờ rớt xuống dưới mức `salvage_value` (Giá trị thu hồi) hoặc `0`.
+*   **Hiển thị Frontend (`AssetListPage.jsx`):** Bổ trợ thêm các hàm `assetMonthsPassed` và `formatMonthlyDep` để hiển thị trực quan "Số tháng đã khấu hao" và "Mức khấu hao/tháng" lên giao diện Modal chi tiết tài sản.
+*   **Ưu điểm thiết kế:** Việc không lưu cứng cột `current_value` vào Database giúp bỏ qua sự phụ thuộc vào Cron Job chạy ngầm mỗi đêm. Giá trị tài sản luôn luôn chính xác theo thời gian thực (real-time) tại thời điểm gọi API.
 
 ---
 
@@ -142,6 +149,12 @@ Sử dụng CSDL quan hệ **MySQL**, thiết kế bao gồm các cụm bảng c
 2. Tạo file `.env` ở Backend, config `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`.
 3. Chạy `init.sql` vào MySQL cục bộ để tạo Schema.
 4. Chạy `npm run dev` ở backend (cổng 3001) và frontend (cổng 5173).
+
+**💡 Mẹo test thực tế trên mạng LAN (VD: Test tính năng quét QR qua Camera điện thoại):**
+Để điện thoại có thể truy cập, bạn nên chạy bằng IP mạng LAN (`192.168.x.x`) thay vì `localhost`. Dự án đã được thiết kế linh hoạt cho việc này:
+*   **Backend (`app.js`)**: Cấu hình CORS đã tự động cho phép mọi kết nối đến từ dải IP bắt đầu bằng `http://192.168.*` và các domain đuôi `.vercel.app`.
+*   **Frontend (`.env`)**: Bạn chỉ cần tạo `.env` tại thư mục frontend và thêm: `VITE_API_URL=http://192.168.x.x:3001/api`. Cấu trúc code Axios sẽ ưu tiên lấy biến môi trường này; nếu không có (như khi deploy thẳng lên Vercel), nó sẽ tự động fallback về đường dẫn tương đối `/api`.
+*   Mở command line tại thư mục `frontend/`, chạy `npm run dev -- --host` để lắng nghe trên mọi Network Interface.
 
 ### Lưu ý khi làm việc với Vercel (Cron Jobs Serverless)
 

@@ -56,7 +56,8 @@ const createDatabase = async () => {
               await connection.query(statement);
             } catch (e) {
               // Ignore errors for CREATE DATABASE and USE statements
-              if (!e.message.includes('Unknown database') && !e.message.includes('Already exists')) {
+              const errMsg = e.message || e.sqlMessage || '';
+              if (!errMsg.includes('Unknown database') && !errMsg.includes('Already exists')) {
                 console.log('Statement executed:', statement.substring(0, 50) + '...');
               }
             }
@@ -72,7 +73,8 @@ const createDatabase = async () => {
       await connection.query('ALTER TABLE inventory_records ADD COLUMN actual_quantity INT DEFAULT 0 AFTER status');
       console.log('Added actual_quantity column to inventory_records');
     } catch (e) {
-      if (!e.message.includes('Duplicate column')) {
+      const errMsg = e.message || e.sqlMessage || '';
+      if (!errMsg.includes('Duplicate column')) {
         // Ignore if column already exists
       }
     }

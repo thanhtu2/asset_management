@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // sử dụng api tĩnh dev
-// const API_BASE_URL = 'http://192.168.89.118:3001/api';
+// const API_BASE_URL = 'http://192.168.90.105:3001/api';
 
 
 
@@ -113,7 +113,8 @@ export const locationsAPI = {
 // Departments API
 export const departmentsAPI = {
   getAll: (params) => apiClient.get('/departments', { params }),
-  getAllSimple: () => apiClient.get('/departments/simple'),
+  getAllSimple: () => apiClient.get('/departments?simple=true'),
+  // getAllSimple: () => apiClient.get('/departments/simple'),
   create: (data) => apiClient.post('/departments', data),
   update: (id, data) => apiClient.put(`/departments/${id}`, data),
   delete: (id) => apiClient.delete(`/departments/${id}`),
@@ -191,6 +192,16 @@ export const permissionsAPI = {
 export const notificationsAPI = {
   getAll: () => apiClient.get('/notifications'),
   markAsRead: (id) => apiClient.put(`/notifications/${id}/read`),
+};
+
+// Purchase Proposals API
+export const purchaseProposalsAPI = {
+  // getAll: (params) => apiClient.get('/purchases', { params }),
+  getAll: (params) => apiClient.get('/purchases', { params }),
+  getById: (id) => apiClient.get(`/purchases/${id}`),
+  create: (data) => apiClient.post('/purchases', data),
+  update: (id, data) => apiClient.put(`/purchases/${id}`, data),
+  delete: (id) => apiClient.delete(`/purchases/${id}`),
 };
 
 export default apiClient;

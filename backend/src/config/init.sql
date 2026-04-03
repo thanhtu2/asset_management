@@ -200,3 +200,91 @@ INSERT IGNORE INTO departments (name, code) VALUES
 -- Insert default suppliers
 INSERT IGNORE INTO suppliers (name, code, contact_person, phone, email) VALUES
 ('Công ty TNHH ABC', 'SUP001', 'Nguyễn Văn A', '0901234567', 'abc@supplier.com');
+
+-- NEW TABLES FOR PURCHASE PROPOSALS
+
+-- Xóa các bảng phân quyền cũ để clear dữ liệu trùng lặp
+DROP TABLE IF EXISTS role_permissions;
+DROP TABLE IF EXISTS permissions;
+DROP TABLE IF EXISTS roles;
+
+-- Roles table
+CREATE TABLE IF NOT EXISTS roles (
+  code VARCHAR(50) PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  description TEXT
+);
+
+-- Permissions table  
+CREATE TABLE IF NOT EXISTS permissions (
+  code VARCHAR(50) PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  module VARCHAR(100)
+);
+
+-- Role-Permissions junction
+CREATE TABLE IF NOT EXISTS role_permissions (
+  role_code VARCHAR(50),
+  permission_code VARCHAR(50),
+  PRIMARY KEY (role_code, permission_code),
+  FOREIGN KEY (role_code) REFERENCES roles(code),
+  FOREIGN KEY (permission_code) REFERENCES permissions(code)
+);
+
+-- Purchase Proposals table
+CREATE TABLE IF NOT EXISTS purchase_proposals (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  code VARCHAR(50) UNIQUE NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  requester_id INT NOT NULL,
+  department_id INT,
+  status ENUM('draft', 'department_pending', 'director_pending', 'approved', 'rejected') DEFAULT 'draft',
+  department_leader_id INT NULL,
+  department_comment TEXT,
+  director_id INT NULL,
+  director_comment TEXT,
+  total_amount DECIMAL(15,2) DEFAULT 0,
+  items JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (requester_id) REFERENCES users(id),
+  FOREIGN KEY (department_id) REFERENCES departments(id),
+  FOREIGN KEY (department_leader_id) REFERENCES users(id),
+  FOREIGN KEY (director_id) REFERENCES users(id)
+);
+
+-- Seed default roles
+INSERT IGNORE INTO roles (code, name, description) VALUES 
+('admin', 'Quản trị viên', 'Toàn quyền hệ thống'),
+('manager', 'Quản lý tài sản', 'Quản lý tài sản, kiểm kê, bảo trì'),
+('user', 'Người dùng', 'Chỉ xem và sử dụng tài sản được cấp'),
+('purchase-requester', 'Người đề xuất mua sắm', 'Người tạo phiếu đề xuất mua sắm'),
+('department-leader', 'Lãnh đạo phòng', 'Trưởng phòng duyệt đề xuất của phòng'),
+('director', 'Giám đốc', 'Giám đốc phê duyệt cuối cùng');
+
+-- Seed default permissions
+INSERT IGNORE INTO permissions (code, name, module) VALUES
+('VIEW_DASHBOARD', 'Xem Dashboard', 'Hệ thống'),
+('VIEW_REPORTS', 'Xem Báo cáo', 'Hệ thống'),
+('MANAGE_USERS', 'Quản lý người dùng', 'Hệ thống'),
+('MANAGE_ROLES', 'Quản lý phân quyền', 'Hệ thống'),
+('VIEW_ASSETS', 'Xem danh sách tài sản', 'Tài sản'),
+('CREATE_ASSET', 'Thêm tài sản', 'Tài sản'),
+('EDIT_ASSET', 'Sửa tài sản', 'Tài sản'),
+('DELETE_ASSET', 'Xóa tài sản', 'Tài sản'),
+('MANAGE_CATEGORIES', 'Quản lý danh mục', 'Danh mục'),
+('MANAGE_LOCATIONS', 'Quản lý vị trí', 'Danh mục'),
+('MANAGE_DEPARTMENTS', 'Quản lý phòng ban', 'Danh mục'),
+('MANAGE_SUPPLIERS', 'Quản lý nhà cung cấp', 'Danh mục'),
+('MANAGE_MAINTENANCE', 'Quản lý bảo trì', 'Bảo trì'),
+('MANAGE_INVENTORY', 'Quản lý kiểm kê', 'Kiểm kê'),
+('MANAGE_PURCHASE_PROPOSALS', 'Quản lý phiếu đề xuất mua sắm', 'Mua sắm'),
+('CREATE_PURCHASE_PROPOSAL', 'Tạo phiếu đề xuất', 'Mua sắm'),
+('VIEW_PURCHASE_PROPOSALS', 'Xem phiếu đề xuất', 'Mua sắm'),
+('APPROVE_DEPARTMENT_PURCHASE', 'Duyệt phòng ban', 'Mua sắm'),
+('APPROVE_DIRECTOR_PURCHASE', 'Giám đốc chấp nhận', 'Mua sắm');
+
+-- Cấp toàn bộ quyền (Full permissions) cho Admin
+INSERT IGNORE INTO role_permissions (role_code, permission_code)
+SELECT 'admin', code FROM permissions;

@@ -16,6 +16,8 @@ import UserManagementPage from './pages/UserManagementPage';
 import RoleManagementPage from './pages/RoleManagementPage';
 import ProfilePage from './pages/ProfilePage';
 import PublicAssetPage from './pages/PublicAssetPage';
+import PurchaseProposalPage from './pages/PurchaseProposalPage';
+import { departmentsAPI } from './api';
 
 function App() {
   return (
@@ -114,6 +116,14 @@ function App() {
             <ProtectedRoute requiredPermission="MANAGE_ROLES">
               <MainLayout>
                 <RoleManagementPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/purchases" element={
+            <ProtectedRoute requiredPermission="MANAGE_PURCHASE_PROPOSALS">
+              <MainLayout>
+                <PurchaseProposalPage />
               </MainLayout>
             </ProtectedRoute>
           } />

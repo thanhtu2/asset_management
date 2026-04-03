@@ -48,6 +48,7 @@ const Asset = {
              c.name as category_name,
              l.name as location_name,
              d.name as department_name,
+             c.depreciation_rate as depreciation_rate,
              s.name as supplier_name,
              u.fullName as user_full_name
       FROM assets a

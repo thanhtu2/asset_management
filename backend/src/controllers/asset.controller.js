@@ -5,6 +5,29 @@ import * as XLSX from 'xlsx';
 import pool from '../config/database.js';
 import { createNotification } from '../notification.service.js';
 
+const calculateCurrentValue = (asset) => {
+  if (!asset || !asset.purchase_price || !asset.purchase_date || !asset.depreciation_rate) {
+    return asset?.current_value ?? asset?.purchase_price ?? 0;
+  }
+
+  const purchaseDate = new Date(asset.purchase_date);
+  const now = new Date();
+  
+  let monthsPassed = (now.getFullYear() - purchaseDate.getFullYear()) * 12;
+  monthsPassed -= purchaseDate.getMonth();
+  monthsPassed += now.getMonth();  // ✅ FIXED!
+  
+  if (monthsPassed < 0) monthsPassed = 0;
+
+  const annualDepreciationRate = asset.depreciation_rate / 100;
+  const monthlyDepreciation = (asset.purchase_price * annualDepreciationRate) / 12;
+  const totalDepreciation = monthlyDepreciation * monthsPassed;
+  let calculatedValue = asset.purchase_price - totalDepreciation;
+  
+  const salvageValue = asset.salvage_value || 0;
+  return Math.max(salvageValue, calculatedValue, 0);
+};
+
 // Generate QR code for an asset
 export const generateQR = async (req, res) => {
   try {
@@ -65,6 +88,15 @@ export const getAll = async (req, res) => {
     console.log('getAll controller - page:', page, 'limit:', limit, 'filters:', filters);
     const result = await Asset.findAll(filters, page, limit);
     console.log('getAll controller - result:', result ? 'success' : 'null');
+
+    // Dynamically calculate current_value for each asset
+    if (result && result.data && Array.isArray(result.data)) {
+      result.data = result.data.map(asset => ({
+        ...asset,
+        current_value: calculateCurrentValue(asset)
+      }));
+    }
+
     res.json(result);
   } catch (error) {
     console.error('getAll controller error:', error);
@@ -88,6 +120,9 @@ export const getById = async (req, res, next) => {
     if (!asset) {
       return res.status(404).json({ message: 'Asset not found' });
     }
+
+    // Dynamically calculate current_value for the single asset
+    asset.current_value = calculateCurrentValue(asset);
     res.json(asset);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -100,6 +135,9 @@ export const getByCode = async (req, res) => {
     if (!asset) {
       return res.status(404).json({ message: 'Asset not found' });
     }
+
+    // Dynamically calculate current_value for the single asset
+    asset.current_value = calculateCurrentValue(asset);
     res.json(asset);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -112,6 +150,9 @@ export const getByBarcode = async (req, res) => {
     if (!asset) {
       return res.status(404).json({ message: 'Asset not found' });
     }
+
+    // Dynamically calculate current_value for the single asset
+    asset.current_value = calculateCurrentValue(asset);
     res.json(asset);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -172,7 +213,7 @@ export const remove = async (req, res) => {
 export const updateStatus = async (req, res) => {
   try {
     const { status, description } = req.body;
-    const validStatuses = ['new', 'good', 'needs_repair', 'disposed'];
+    const validStatuses = ['chờ cấp', 'đang sử dụng', 'cần sửa chữa', 'Hỏng', 'đã thanh lý'];
     
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({ message: 'Trạng thái không hợp lệ' });
@@ -187,8 +228,8 @@ export const updateStatus = async (req, res) => {
     let maintenanceCreated = false;
 
     // If status is "needs_repair", create a maintenance record
-    if (status === 'needs_repair') {
-      const desc = description || 'Cần sửa chữa (cập nhật bởi người dùng)';
+    if (status === 'cần sửa chữa và hỏng') {
+      const desc = description || 'Cần sửa chữa và hỏng (cập nhật bởi người dùng)';
       await MaintenanceRecord.create({
         asset_id: parseInt(req.params.id),
         maintenance_date: new Date(),
@@ -207,7 +248,7 @@ export const updateStatus = async (req, res) => {
       null, 
       'Thay đổi trạng thái', 
       `Tài sản ID: ${req.params.id} đã chuyển sang trạng thái: ${status}`, 
-      status === 'needs_repair' ? 'warning' : 'info'
+      status === 'cần sửa chữa và hỏng' ? 'warning' : 'info'
     );
 
     res.json({ message, asset, maintenanceCreated });
@@ -221,8 +262,8 @@ export const reportDamage = async (req, res) => {
     const { description } = req.body;
     const assetId = req.params.id;
 
-    // 1. Update asset status to "needs_repair"
-    const asset = await Asset.update(assetId, { status: 'needs_repair' });
+    // 1. Update asset status to "cần sửa chữa và hỏng"
+    const asset = await Asset.update(assetId, { status: 'cần sửa chữa và hỏng' });
     if (!asset) {
       return res.status(404).json({ message: 'Tài sản không tồn tại' });
     }
@@ -270,16 +311,16 @@ export const getStats = async (req, res) => {
 // Download Excel template for asset import
 export const downloadTemplate = (req, res) => {
   const headers = [
-    'Mã tài sản', 'Tên tài sản', 'Mô tả',
-    'Mã danh mục', 'Mã vị trí', 'Mã phòng ban', 'Mã nhà cung cấp',
-    'Người sử dụng', 'Ngày mua (YYYY-MM-DD)', 'Giá mua', 'Giá trị hiện tại',
-    'Trạng thái (new/good/needs_repair/disposed)', 'Mã vạch'
+    'Mã tài sản', 'Tên tài sản', 'Mô tả', 'Mã danh mục', 'Mã vị trí',
+    'Mã phòng ban', 'Mã nhà cung cấp', 'Người sử dụng', 'Ngày mua (YYYY-MM-DD)',
+    'Giá mua', 'Giá trị thu hồi', 'Giá trị hiện tại',
+    'Trạng thái (chờ cấp/đang sử dụng/cần sửa chữa/hỏng/đã thanh lý)', 'Mã vạch'
   ];
   const sample = [
-    'TS001', 'Máy tính Dell', 'Máy tính để bàn',
-    'COMPUTER', 'OFFICE1', 'IT', 'SUP001',
-    'Nguyễn Văn B', '2024-01-15', '15000000', '12000000',
-    'good', 'BC001'
+    'TS001', 'Máy tính Dell', 'Máy tính để bàn', 'COMPUTER', 'OFFICE1', 'IT',
+    'SUP001', 'Nguyễn Văn B', '2024-01-15',
+    '15000000', '500000', '12000000',
+    'đang sử dụng', 'BC001'
   ];
 
   const ws = XLSX.utils.aoa_to_sheet([headers, sample]);
@@ -328,7 +369,7 @@ export const importAssets = async (req, res) => {
       if (u.username) userMap[u.username.toLowerCase().trim()] = u.id;
     });
 
-    const validStatuses = ['new', 'good', 'needs_repair', 'disposed'];
+    const validStatuses = ['chờ cấp', 'đang sử dụng', 'cần sửa chữa và hỏng', 'đã thanh lý'];
     const results = { success: 0, failed: 0, errors: [] };
     const dataRows = rows.slice(1); // skip header row
 
@@ -350,14 +391,15 @@ export const importAssets = async (req, res) => {
       const supplier_code = row[6] ? String(row[6]).trim() : '';
       const assigned_to_name = row[7] ? String(row[7]).trim() : '';
       const purchase_date_raw = row[8];
-      const purchase_price_raw = row[9] || 0;
-      const current_value_raw = row[10] || purchase_price_raw;
-      const status_raw = row[11] ? String(row[11]).trim() : '';
-      const barcode = row[12] ? String(row[12]).trim() : '';
+      const purchase_price_raw = row[9];
+      const salvage_value_raw = row[10];
+      const current_value_raw = row[11];
+      const status_raw = row[12] ? String(row[12]).trim() : '';
+      const barcode = row[13] ? String(row[13]).trim() : '';
 
       // Validate required fields
       if (!asset_code) {
-        results.failed++;
+        results.failed++; 
         results.errors.push({ row: rowNum, message: 'Thiếu mã tài sản' });
         continue;
       }
@@ -375,8 +417,10 @@ export const importAssets = async (req, res) => {
       const assigned_to  = assigned_to_name ? (userMap[assigned_to_name.toLowerCase().trim()] || null) : null;
 
       // Parse numeric fields
-      const purchase_price  = parseFloat(purchase_price_raw)  || 0;
-      const current_value   = parseFloat(current_value_raw)   || purchase_price;
+      const purchase_price = parseFloat(purchase_price_raw) || 0;
+      const salvage_value = parseFloat(salvage_value_raw) || 0;
+      // If current_value is not provided, use purchase_price as a fallback
+      const current_value = parseFloat(current_value_raw) || purchase_price;
 
       // Parse date (handle Excel serial numbers too)
       let purchase_date = null;
@@ -392,15 +436,15 @@ export const importAssets = async (req, res) => {
       }
 
       // Validate status
-      const status = validStatuses.includes(status_raw) ? status_raw : 'new';
+      const status = validStatuses.includes(status_raw) ? status_raw : 'chờ cấp';
 
       try {
         await pool.query(
           `INSERT INTO assets (asset_code, name, description, category_id, location_id, department_id,
-            supplier_id, purchase_date, purchase_price, current_value, status, barcode, assigned_to, assigned_to_name)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            supplier_id, purchase_date, purchase_price, salvage_value, current_value, status, barcode, assigned_to, assigned_to_name)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [asset_code, name, description || null, category_id, location_id, department_id,
-           supplier_id, purchase_date, purchase_price, current_value, status, barcode || null, assigned_to, assigned_to_name || null]
+           supplier_id, purchase_date, purchase_price, salvage_value, current_value, status, barcode || null, assigned_to, assigned_to_name || null]
         );
         results.success++;
       } catch (err) {
@@ -466,17 +510,17 @@ export const exportAssets = async (req, res) => {
       'Người sử dụng': asset.user_full_name || asset.assigned_to_name || '',
       'Ngày mua (YYYY-MM-DD)': asset.purchase_date ? new Date(asset.purchase_date).toISOString().slice(0, 10) : '',
       'Giá mua': asset.purchase_price || 0,
+      'Giá trị thu hồi': asset.salvage_value || 0,
       'Giá trị hiện tại': asset.current_value || 0,
-      'Trạng thái (new/good/needs_repair/disposed)': asset.status || 'new',
+      'Trạng thái': asset.status || 'chờ cấp',
       'Mã vạch': asset.barcode || ''
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
     ws['!cols'] = [
       { wch: 15 }, { wch: 25 }, { wch: 30 }, { wch: 15 },
-      { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 20 },
-      { wch: 20 }, { wch: 15 }, { wch: 12 }, { wch: 15 },
-      { wch: 35 }, { wch: 15 }
+      { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 20 },
+      { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 }
     ];
 
     const wb = XLSX.utils.book_new();

@@ -48,6 +48,23 @@ const AssetListPage = () => {
     fetchAssets();
   }, [filters, pagination.page, pagination.limit]);
 
+  //Hàm helper tính số tháng đã qua kể từ ngày mua để phục vụ cho việc khấu hao tài sản
+  const assetMonthsPassed = (asset) => {
+    if (!asset.purchase_date) return 0;
+    const purchaseDate = new Date(asset.purchase_date);
+    const now = new Date();
+    let months = (now.getFullYear() - purchaseDate.getFullYear()) * 12;
+    months -= purchaseDate.getMonth();
+    months += now.getMonth();
+    return Math.max(0, months);
+  };
+
+  const formatMonthlyDep = (asset) => {
+    if (!asset.depreciation_rate || !asset.purchase_price) return 0;
+    const monthly = (asset.purchase_price * (asset.depreciation_rate / 100)) / 12;
+    return new Intl.NumberFormat('vi-VN').format(Math.round(monthly));
+  };
+
   const fetchFilters = async () => {
     try {
       const [catRes, locRes, deptRes] = await Promise.all([
@@ -118,12 +135,13 @@ const AssetListPage = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      new: { class: 'badge-new', label: 'Mới' },
-      good: { class: 'badge-good', label: 'Tốt' },
-      needs_repair: { class: 'badge-needs_repair', label: 'Cần sửa' },
-      disposed: { class: 'badge-disposed', label: 'Đã thanh lý' }
+      'chờ cấp': { class: 'badge-new', label: 'Chờ cấp' },
+      'đang sử dụng': { class: 'badge-good', label: 'Đang sử dụng' },
+      'cần sửa chữa': { class: 'badge-needs_repair', label: 'Cần sửa chữa' },
+      'hỏng': { class: 'badge-damaged', label: 'Hỏng' },
+      'đã thanh lý': { class: 'badge-disposed', label: 'Đã thanh lý' }
     };
-    const badge = badges[status] || badges.new;
+    const badge = badges[status] || { class: 'badge-new', label: status };
     return <span className={`badge ${badge.class}`}>{badge.label}</span>;
   };
 
@@ -361,10 +379,11 @@ const AssetListPage = () => {
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
             >
               <option value="">Tất cả trạng thái</option>
-              <option value="new">Mới</option>
-              <option value="good">Tốt</option>
-              <option value="needs_repair">Cần sửa</option>
-              <option value="disposed">Đã thanh lý</option>
+              <option value="chờ cấp">Chờ cấp</option>
+              <option value="đang sử dụng">Đang sử dụng</option>
+              <option value="cần sửa chữa">Cần sửa chữa</option>
+              <option value="hỏng">Hỏng</option>
+              <option value="đã thanh lý">Đã thanh lý</option>
             </select>
             <button onClick={() => fetchAssets(true)} className="btn btn-primary">
               Tìm kiếm
@@ -590,6 +609,14 @@ const AssetListPage = () => {
                 <div className="detail-item">
                   <label>Giá trị hiện tại:</label>
                   <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(viewModal.asset.current_value || 0)}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Thời gian khấu hao:</label>
+                  <span>{assetMonthsPassed(viewModal.asset)} tháng</span>
+                </div>
+                <div className="detail-item">
+                  <label>Mức khấu hao/tháng:</label>  
+                  <span>{formatMonthlyDep(viewModal.asset)} ₫</span>
                 </div>
                 <div className="detail-item">
                   <label>Trạng thái:</label>

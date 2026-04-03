@@ -10,7 +10,8 @@ const menuItems = [
   { path: '/suppliers',  label: 'Nhà cung cấp',   icon: '🏢' },
   { path: '/departments',label: 'Phòng ban',        icon: '👥' },
   { path: '/maintenance',label: 'Bảo trì',        icon: '🔧' },
-  { path: '/inventory',  label: 'Kiểm kê',        icon: '📋' },
+{ path: '/inventory',  label: 'Kiểm kê',        icon: '📋' },
+  { path: '/purchases', label: 'Đề xuất mua sắm', icon: '🛒', permission: 'MANAGE_PURCHASE_PROPOSALS' },
 ];
 
 const adminMenuItems = [
