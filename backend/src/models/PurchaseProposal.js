@@ -21,15 +21,19 @@ const PurchaseProposal = {
     let whereClause = 'WHERE 1=1';
 
     if (currentUser) {
-      const { id, role, department_id } = currentUser;
+      const { id, role, department_id, permissions = [] } = currentUser;
       
-      if (role === 'admin') {
+      const isAdmin = role === 'admin' || permissions.includes('MANAGE_PURCHASE_PROPOSALS');
+      const isDirector = role === 'director' || permissions.includes('APPROVE_DIRECTOR_PURCHASE');
+      const isDeptLeader = role === 'department-leader' || permissions.includes('APPROVE_DEPARTMENT_PURCHASE');
+
+      if (isAdmin) {
         // Admin xem được tất cả mọi phiếu
-      } else if (role === 'director') {
+      } else if (isDirector) {
         // Giám đốc xem được các phiếu đã duyệt qua phòng, hoặc do chính mình tạo
         whereClause += ' AND (pp.status IN ("director_pending", "approved", "rejected") OR pp.requester_id = ?)';
         params.push(id);
-      } else if (role === 'department-leader') {
+      } else if (isDeptLeader) {
         // Trưởng phòng xem được các phiếu của phòng (trừ phiếu nháp của nhân viên), hoặc do chính mình tạo
         if (department_id) {
           whereClause += ' AND ((pp.department_id = ? AND pp.status != "draft") OR pp.requester_id = ?)';
@@ -122,10 +126,15 @@ const PurchaseProposal = {
     const newStatus = updateData.status;
     if (newStatus && newStatus !== proposal.status) {
       const userRole = currentUser?.role || 'user';
+      const permissions = currentUser?.permissions || [];
+
+      const isAdmin = userRole === 'admin' || permissions.includes('MANAGE_PURCHASE_PROPOSALS');
+      const isDirector = userRole === 'director' || permissions.includes('APPROVE_DIRECTOR_PURCHASE');
+      const isDeptLeader = userRole === 'department-leader' || permissions.includes('APPROVE_DEPARTMENT_PURCHASE');
       
-      if (newStatus === 'director_pending' && ['department-leader', 'admin'].includes(userRole)) {
+      if (newStatus === 'director_pending' && (isDeptLeader || isAdmin)) {
         updateData.department_leader_id = currentUser?.id;
-      } else if (newStatus === 'approved' && ['director', 'admin'].includes(userRole)) {
+      } else if (newStatus === 'approved' && (isDirector || isAdmin)) {
         updateData.director_id = currentUser?.id;
       }
       
