@@ -1,8 +1,9 @@
 import jwt from 'jsonwebtoken';
+import pool from '../config/database.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'asset_management_secret_key_2024';
 
-export const authMiddleware = (req, res, next) => {
+export const authMiddleware = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     console.log('Auth middleware - path:', req.path, 'authHeader:', authHeader ? 'present' : 'missing');
@@ -14,6 +15,9 @@ export const authMiddleware = (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
     
+    const [perms] = await pool.query('SELECT permission_code FROM role_permissions WHERE role_code = ?', [decoded.role]);
+    decoded.permissions = perms.map(p => p.permission_code);
+
     req.user = decoded;
     console.log('Auth middleware - success, user:', decoded);
     next();

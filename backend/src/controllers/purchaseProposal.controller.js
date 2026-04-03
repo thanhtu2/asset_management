@@ -61,15 +61,20 @@ export const update = async (req, res) => {
     // Permission checks
     const isOwner = proposal.requester_id === req.user?.id;
     const userRole = req.user?.role || 'user';
+    const permissions = req.user?.permissions || [];
+    
+    const isAdmin = userRole === 'admin' || permissions.includes('MANAGE_PURCHASE_PROPOSALS');
+    const isDirector = userRole === 'director' || permissions.includes('APPROVE_DIRECTOR_PURCHASE');
+    const isDeptLeader = userRole === 'department-leader' || permissions.includes('APPROVE_DEPARTMENT_PURCHASE');
     
     let canEdit = false;
-    if (userRole === 'admin') {
+    if (isAdmin) {
       canEdit = true;
     } else if (isOwner && ['draft', 'rejected'].includes(proposal.status)) {
       canEdit = true; // Người tạo có quyền sửa khi đang nháp hoặc bị từ chối
-    } else if (userRole === 'department-leader' && proposal.status === 'department_pending') {
+    } else if (isDeptLeader && proposal.status === 'department_pending') {
       canEdit = true;
-    } else if (userRole === 'director' && proposal.status === 'director_pending') {
+    } else if (isDirector && proposal.status === 'director_pending') {
       canEdit = true;
     }
 
@@ -86,7 +91,7 @@ export const update = async (req, res) => {
         'rejected': ['draft', 'department_pending']
       };
       
-      if (userRole !== 'admin' && !validTransitions[proposal.status]?.includes(updateData.status)) {
+      if (!isAdmin && !validTransitions[proposal.status]?.includes(updateData.status)) {
         return res.status(400).json({ message: 'Trạng thái chuyển không hợp lệ' });
       }
     }
