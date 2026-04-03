@@ -31,12 +31,12 @@ const PurchaseProposal = {
         // Admin xem được tất cả mọi phiếu
       } else if (isDirector) {
         // Giám đốc xem được các phiếu đã duyệt qua phòng, hoặc do chính mình tạo
-        whereClause += ' AND (pp.status IN ("director_pending", "approved", "rejected") OR pp.requester_id = ?)';
+        whereClause += " AND (pp.status IN ('director_pending', 'approved', 'rejected') OR pp.requester_id = ?)";
         params.push(id);
       } else if (isDeptLeader) {
         // Trưởng phòng xem được các phiếu của phòng (trừ phiếu nháp của nhân viên), hoặc do chính mình tạo
         if (department_id) {
-          whereClause += ' AND ((pp.department_id = ? AND pp.status != "draft") OR pp.requester_id = ?)';
+          whereClause += " AND ((pp.department_id = ? AND pp.status != 'draft') OR pp.requester_id = ?)";
           params.push(department_id, id);
         } else {
           whereClause += ' AND pp.requester_id = ?';
@@ -175,7 +175,7 @@ const PurchaseProposal = {
         title = 'Phiếu đề xuất đã duyệt phòng';
         message = `Phiếu ${proposal.code} đã được trưởng phòng duyệt.`;
         // Notify director (find director role user)
-        const [directors] = await pool.query('SELECT id FROM users WHERE role = "director"');
+        const [directors] = await pool.query('SELECT id FROM users WHERE role = ?', ['director']);
         recipients = directors.map(d => d.id);
         break;
       case 'approved':
