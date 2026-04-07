@@ -122,7 +122,7 @@ const DepartmentPage = () => {
     <div>
       <div className="page-header">
         <h1>Quản lý phòng ban</h1>
-        {user?.permissions?.includes('CREATE_DEPARTMENT') && (
+        {user?.permissions?.includes('MANAGE_DEPARTMENTS') && (
           <button onClick={() => handleOpenModal()} className="btn btn-primary">+ Thêm phòng ban</button>
         )}
       </div>
@@ -147,10 +147,10 @@ const DepartmentPage = () => {
                   <td>{dept.manager_name || '-'}</td>
                   <td>{dept.parent_name || '-'}</td>
                   <td className="actions">
-                    {user?.permissions?.includes('EDIT_DEPARTMENT') && (
+                {user?.permissions?.includes('MANAGE_DEPARTMENTS') && (
                       <button onClick={() => handleOpenModal(dept)} className="btn btn-sm btn-outline">Sửa</button>
                     )}
-                    {user?.permissions?.includes('DELETE_DEPARTMENT') && (
+                {user?.permissions?.includes('MANAGE_DEPARTMENTS') && (
                       <button onClick={() => setDeleteModal({ show: true, id: dept.id })} className="btn btn-sm btn-danger">Xóa</button>
                     )}
                   </td>

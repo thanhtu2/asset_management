@@ -17,6 +17,7 @@ import RoleManagementPage from './pages/RoleManagementPage';
 import ProfilePage from './pages/ProfilePage';
 import PublicAssetPage from './pages/PublicAssetPage';
 import PurchaseProposalPage from './pages/PurchaseProposalPage';
+import AuditLogPage from './pages/AuditLogPage';
 import { departmentsAPI } from './api';
 
 function App() {
@@ -116,6 +117,14 @@ function App() {
             <ProtectedRoute requiredPermission="MANAGE_ROLES">
               <MainLayout>
                 <RoleManagementPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/audit-logs" element={
+            <ProtectedRoute requiredPermission="MANAGE_USERS">
+              <MainLayout>
+                <AuditLogPage />
               </MainLayout>
             </ProtectedRoute>
           } />

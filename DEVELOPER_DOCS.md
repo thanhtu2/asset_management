@@ -14,6 +14,7 @@ Tài liệu này mô tả chi tiết về cấu trúc hệ thống, quy ước m
 *   **Thư viện nổi bật:**
     *   `qrcode`: Render mã QR dưới dạng Base64 Data URL.
     *   `html5-qrcode`: Xử lý giao diện Camera và thuật toán quét mã QR ngay trên trình duyệt (hỗ trợ Mobile).
+    *   **Thiết kế UI/UX:** Tối ưu hóa trải nghiệm người dùng với các thành phần nhẹ, không lạm dụng thư viện ngoài (Tích hợp inline SVG cho tính năng Toggle Password Visibility ở các form, Animation chuông thông báo thuần CSS).
 
 ### 1.2. Backend (Server-side)
 *   **Core:** Node.js, Express.js.
@@ -125,6 +126,12 @@ Hệ thống tính khấu hao theo phương pháp **đường thẳng tính theo
 *   **Logic Backend (`asset.controller.js`):** Hàm `calculateCurrentValue(asset)` tự động được gọi để tính toán: Tính số tháng đã qua kể từ ngày mua, nhân với mức khấu hao mỗi tháng để ra tổng khấu hao, từ đó suy ra `current_value`. Logic cũng đảm bảo giá trị này không bao giờ rớt xuống dưới mức `salvage_value` (Giá trị thu hồi) hoặc `0`.
 *   **Hiển thị Frontend (`AssetListPage.jsx`):** Bổ trợ thêm các hàm `assetMonthsPassed` và `formatMonthlyDep` để hiển thị trực quan "Số tháng đã khấu hao" và "Mức khấu hao/tháng" lên giao diện Modal chi tiết tài sản.
 *   **Ưu điểm thiết kế:** Việc không lưu cứng cột `current_value` vào Database giúp bỏ qua sự phụ thuộc vào Cron Job chạy ngầm mỗi đêm. Giá trị tài sản luôn luôn chính xác theo thời gian thực (real-time) tại thời điểm gọi API.
+
+### 4.8. Luồng Ghi nhận Lịch sử Thao tác (Audit Logs)
+Khác với hệ thống Chuông thông báo (nhằm mục đích nhắc nhở công việc), hệ thống Audit Logs được thiết kế cho mục đích **Bảo mật và Truy vết (Accountability)**.
+*   **Database:** Mọi thay đổi được lưu vào bảng `audit_logs` với các trường quan trọng: `user_id`, `action` (CREATE/UPDATE/DELETE), `entity_type`, `entity_id`, `old_values`, `new_values`, `ip_address`.
+*   **Backend Logic:** Hàm `AuditLog.log()` được gọi ngầm (silently) ngay sau khi thao tác Cập nhật/Xóa/Thêm hoàn tất thành công trong các Controller (VD: `user.controller.js`, `asset.controller.js`).
+*   **Bảo mật:** Không cung cấp bất kỳ API Endpoint nào để Xóa (DELETE) hay Sửa (PUT) bản ghi trong bảng này, đảm bảo tuyệt đối tính toàn vẹn của dữ liệu kiểm toán.
 
 ---
 

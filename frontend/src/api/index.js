@@ -194,6 +194,11 @@ export const notificationsAPI = {
   markAsRead: (id) => apiClient.put(`/notifications/${id}/read`),
 };
 
+// Audit Logs API
+export const auditLogsAPI = {
+  getAll: (params) => apiClient.get('/audit-logs', { params }),
+};
+
 // Purchase Proposals API
 export const purchaseProposalsAPI = {
   // getAll: (params) => apiClient.get('/purchases', { params }),

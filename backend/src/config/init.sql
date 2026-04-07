@@ -254,6 +254,21 @@ CREATE TABLE IF NOT EXISTS purchase_proposals (
   FOREIGN KEY (director_id) REFERENCES users(id)
 );
 
+-- Audit Logs table
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NULL,
+  action VARCHAR(50) NOT NULL,
+  entity_type VARCHAR(50) NOT NULL,
+  entity_id VARCHAR(50),
+  old_values JSON NULL,
+  new_values JSON NULL,
+  description TEXT,
+  ip_address VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
 -- Seed default roles
 INSERT IGNORE INTO roles (code, name, description) VALUES 
 ('admin', 'Quản trị viên', 'Toàn quyền hệ thống'),

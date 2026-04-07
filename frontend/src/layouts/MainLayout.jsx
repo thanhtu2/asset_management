@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import NotificationBell from '../components/NotificationBell';
@@ -17,12 +18,14 @@ const menuItems = [
 const adminMenuItems = [
   { path: '/users', label: 'Người dùng', icon: '👤', permission: 'MANAGE_USERS' },
   { path: '/roles', label: 'Phân quyền', icon: '🔐', permission: 'MANAGE_ROLES' },
+  { path: '/audit-logs', label: 'Lịch sử hệ thống', icon: '📝', permission: 'MANAGE_USERS' },
 ];
 
 const MainLayout = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const visibleAdminItems = adminMenuItems.filter(item => user?.permissions?.includes(item.permission));
 
@@ -33,8 +36,13 @@ const MainLayout = ({ children }) => {
 
   return (
     <div className="app-container">
+      {/* Overlay cho Mobile */}
+      {isMobileMenuOpen && (
+        <div className="sidebar-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>
+      )}
+
       {/* ── Sidebar ───────────────────────────────────── */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
 
         {/* Logo */}
         <div className="sidebar-header">
@@ -69,6 +77,7 @@ const MainLayout = ({ children }) => {
               <Link
                 to={item.path}
                 className={location.pathname === item.path ? 'active' : ''}
+                onClick={() => setIsMobileMenuOpen(false)}
               >
                 <span style={{ fontSize: 16 }}>{item.icon}</span>
                 <span>{item.label}</span>
@@ -89,6 +98,7 @@ const MainLayout = ({ children }) => {
                   <Link
                     to={item.path}
                     className={location.pathname === item.path ? 'active' : ''}
+                    onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <span style={{ fontSize: 16 }}>{item.icon}</span>
                     <span>{item.label}</span>
@@ -106,7 +116,7 @@ const MainLayout = ({ children }) => {
           </div>
           <div className="details">
             <div className="name" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Link to="/profile" style={{ color: 'inherit', textDecoration: 'none' }} title="Hồ sơ cá nhân">
+              <Link to="/profile" style={{ color: 'inherit', textDecoration: 'none' }} title="Hồ sơ cá nhân" onClick={() => setIsMobileMenuOpen(false)}>
                 {user?.fullName} ⚙️
               </Link>
             </div>
@@ -138,8 +148,16 @@ const MainLayout = ({ children }) => {
 
       {/* ── Main Content ──────────────────────────────── */}
       <main className="main-content">
-        <div style={{ display: 'flex', justifyContent: 'flex-end', position: 'relative', zIndex: 999 }}>
-          <NotificationBell />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', position: 'relative', zIndex: 999 }}>
+          {/* Nút Hamburger cho Mobile (Chỉ hiện khi màn hình nhỏ) */}
+          <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(true)} style={{ display: 'none' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <div style={{ marginLeft: 'auto' }}>
+            <NotificationBell />
+          </div>
         </div>
 
         {children}
