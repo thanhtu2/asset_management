@@ -4,6 +4,7 @@ import QRCode from 'qrcode';
 import * as XLSX from 'xlsx';
 import pool from '../config/database.js';
 import { createNotification } from '../notification.service.js';
+import AuditLog from '../models/AuditLog.js';
 
 const calculateCurrentValue = (asset) => {
   if (!asset || !asset.purchase_price || !asset.purchase_date || !asset.depreciation_rate) {
@@ -171,6 +172,9 @@ export const create = async (req, res) => {
       'success'
     );
 
+    // Ghi log
+    await AuditLog.log(req.user?.id, 'CREATE', 'ASSET', asset.id, null, req.body, `Thêm mới tài sản: ${req.body.name}`, req.ip);
+
     res.status(201).json(asset);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -179,11 +183,15 @@ export const create = async (req, res) => {
 
 export const update = async (req, res) => {
   try {
+    const oldAsset = await Asset.findById(req.params.id);
     const asset = await Asset.update(req.params.id, req.body);
     if (!asset) {
       return res.status(404).json({ message: 'Asset not found' });
     }
     
+    // Ghi log
+    await AuditLog.log(req.user?.id, 'UPDATE', 'ASSET', req.params.id, oldAsset, req.body, `Cập nhật tài sản: ${req.body.name || req.params.id}`, req.ip);
+
     // Thông báo cập nhật thông tin
     await createNotification(
       null,
@@ -200,10 +208,15 @@ export const update = async (req, res) => {
 
 export const remove = async (req, res) => {
   try {
+    const oldAsset = await Asset.findById(req.params.id);
     const success = await Asset.delete(req.params.id);
     if (!success) {
       return res.status(404).json({ message: 'Asset not found' });
     }
+    
+    // Ghi log
+    await AuditLog.log(req.user?.id, 'DELETE', 'ASSET', req.params.id, oldAsset, null, `Xóa tài sản: ${oldAsset?.name || req.params.id}`, req.ip);
+
     res.json({ message: 'Asset deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -219,6 +232,7 @@ export const updateStatus = async (req, res) => {
       return res.status(400).json({ message: 'Trạng thái không hợp lệ' });
     }
 
+    const oldAsset = await Asset.findById(req.params.id);
     const asset = await Asset.update(req.params.id, { status });
     if (!asset) {
       return res.status(404).json({ message: 'Asset not found' });
@@ -243,6 +257,9 @@ export const updateStatus = async (req, res) => {
       maintenanceCreated = true;
     }
     
+    // Ghi log
+    await AuditLog.log(req.user?.id, 'UPDATE', 'ASSET', req.params.id, { status: oldAsset?.status }, { status }, `Cập nhật trạng thái tài sản thành "${status}"`, req.ip);
+
     // Thông báo cập nhật trạng thái
     await createNotification(
       null, 
@@ -280,6 +297,9 @@ export const reportDamage = async (req, res) => {
       next_maintenance_date: null
     });
     
+    // Ghi log (Khách từ Public quét mã QR báo hỏng, không có User ID)
+    await AuditLog.log(null, 'UPDATE', 'ASSET', assetId, null, { status: 'cần sửa chữa và hỏng' }, `Khách báo hỏng tài sản từ mã QR: ${desc}`, req.ip);
+
     // Thông báo có thiết bị báo hỏng từ Public
     await createNotification(
       null,
@@ -464,6 +484,9 @@ export const importAssets = async (req, res) => {
         `Hệ thống vừa import thành công ${results.success} tài sản từ file Excel.${results.failed > 0 ? ` (Có ${results.failed} dòng bị lỗi/bỏ qua)` : ''}`,
         'success'
       );
+      
+      // Ghi log tác vụ Import
+      await AuditLog.log(req.user?.id, 'CREATE', 'ASSET_IMPORT', null, null, null, `Import thành công ${results.success} tài sản từ Excel`, req.ip);
     }
 
     res.json({
