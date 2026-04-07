@@ -115,7 +115,7 @@ const LoginPage = () => {
         </form>
 
         <p style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: '#94a3b8' }}>
-          © 2025 Asset Management System
+          © 2026 Asset Management System
         </p>
       </div>
 
