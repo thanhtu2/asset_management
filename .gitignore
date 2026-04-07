@@ -4,3 +4,4 @@ backend/node_modules/
 .vite/
 dist/
 .env
+.env*
