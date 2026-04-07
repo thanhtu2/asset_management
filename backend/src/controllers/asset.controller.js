@@ -189,8 +189,27 @@ export const update = async (req, res) => {
       return res.status(404).json({ message: 'Asset not found' });
     }
     
+    // Tạo mô tả chi tiết các trường bị thay đổi
+    const fieldMap = {
+      name: 'tên tài sản', description: 'mô tả', purchase_price: 'giá mua', 
+      salvage_value: 'giá trị thu hồi', status: 'trạng thái', 
+      barcode: 'mã vạch', category_id: 'ID danh mục', location_id: 'ID vị trí', 
+      department_id: 'ID phòng ban', supplier_id: 'ID nhà cung cấp', assigned_to_name: 'người sử dụng'
+    };
+    let changes = [];
+    Object.keys(req.body).forEach(key => {
+      const oldVal = oldAsset[key] ?? '';
+      const newVal = req.body[key] ?? '';
+      if (oldVal != newVal && key !== 'current_value' && key !== 'image_url') {
+        changes.push(`${fieldMap[key] || key} từ "${oldVal}" thành "${newVal}"`);
+      }
+    });
+    const logDesc = changes.length > 0 
+      ? `Cập nhật tài sản ${oldAsset.asset_code}: sửa ${changes.join(', ')}` 
+      : `Cập nhật tài sản: ${oldAsset.asset_code}`;
+
     // Ghi log
-    await AuditLog.log(req.user?.id, 'UPDATE', 'ASSET', req.params.id, oldAsset, req.body, `Cập nhật tài sản: ${req.body.name || req.params.id}`, req.ip);
+    await AuditLog.log(req.user?.id, 'UPDATE', 'ASSET', req.params.id, oldAsset, req.body, logDesc, req.ip);
 
     // Thông báo cập nhật thông tin
     await createNotification(

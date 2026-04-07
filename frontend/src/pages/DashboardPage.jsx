@@ -78,7 +78,7 @@ const DashboardPage = () => {
       <div className="stats-grid">
         {STAT_CARDS.map(({ key, label, icon, accent, isValue }) => {
           const raw = key === 'totalValue' 
-            ? (stats?.totalValue?.total_current || stats?.totalValue?.total_purchase || 0)
+            ? (stats?.total_value || (typeof stats?.totalValue === 'object' ? (stats?.totalValue?.total_current || stats?.totalValue?.total_purchase) : stats?.totalValue) || 0)
             : (stats?.[key] || 0);
           const display = isValue ? formatVND(raw) : raw;
           return (
