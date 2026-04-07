@@ -804,17 +804,38 @@
    ========================================================= */
 @media (max-width: 768px) {
   .sidebar {
-    width: 64px;
+    transform: translateX(-100%);
+    width: 260px !important;
+    z-index: 1050;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .sidebar-header h2,
-  .sidebar-menu a span:last-child,
-  .user-info .details {
-    display: none;
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 1040;
   }
 
   .main-content {
-    margin-left: 64px;
+    margin-left: 0;
+  }
+
+  .mobile-menu-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: white;
+    border: 1px solid var(--color-border);
+    cursor: pointer;
   }
 
   .form-row {

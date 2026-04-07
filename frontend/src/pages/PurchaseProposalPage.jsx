@@ -211,6 +211,15 @@ const PurchaseProposalPage = () => {
   };
   const currentStep = getCurrentStep();
 
+  // Logic kiểm tra quyền hạn chỉnh sửa & phê duyệt
+  const isEditable = !activeProposal?.id || ['draft', 'rejected'].includes(activeProposal?.status);
+  const canApproveDept = user?.role === 'admin' || user?.permissions?.includes('APPROVE_DEPT_PROPOSAL');
+  const canApproveDirector = user?.role === 'admin' || user?.permissions?.includes('APPROVE_DIRECTOR_PROPOSAL');
+  const showApprovalSidebar = activeProposal?.id && (
+    (activeProposal?.status === 'department_pending' && canApproveDept) ||
+    (activeProposal?.status === 'director_pending' && canApproveDirector)
+  );
+
   return (
     <div className="purchase-proposal-page">
       {!activeProposal ? (
@@ -311,30 +320,32 @@ const PurchaseProposalPage = () => {
             {/* Thông tin chung */}
             <div className="form-section">
               <h3>Thông tin chung</h3>
-              <div className="grid-2">
-            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <div className="form-row">
+            <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
               <label>Tiêu đề đề xuất *</label>
               <input 
                 value={activeProposal.title || ''} 
                 onChange={e => setActiveProposal({...activeProposal, title: e.target.value})} 
                 placeholder="VD: Đề xuất mua máy tính cho phòng CNTT..."
+                disabled={!isEditable}
               />
             </div>
-                <div className="form-group">
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label>Đơn vị đề xuất</label>
               <select 
                 value={activeProposal.department_id || ''} 
                 onChange={e => setActiveProposal({...activeProposal, department_id: e.target.value})}
+                disabled={!isEditable}
               >
                 <option value="">-- Chọn phòng ban --</option>
                 {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label>Người đề xuất</label>
               <input value={activeProposal.requester_name || user?.fullName || ''} readOnly style={{backgroundColor: '#f5f5f5'}} />
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label>Ngày đề xuất</label>
               <input value={new Date(activeProposal.created_at).toLocaleDateString('vi-VN')} readOnly style={{backgroundColor: '#f5f5f5'}} />
                 </div>
@@ -355,7 +366,7 @@ const PurchaseProposalPage = () => {
                       <th>SL</th>
                       <th>Đơn giá</th>
                       <th>Thành tiền</th>
-                      <th></th>
+                      {isEditable && <th></th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -363,28 +374,28 @@ const PurchaseProposalPage = () => {
                   <tr key={index}>
                     <td>{index + 1}</td>
                     <td>
-                      <input value={item.name || ''} onChange={e => updateItem(index, 'name', e.target.value)} placeholder="Tên tài sản" />
+                      <input disabled={!isEditable} value={item.name || ''} onChange={e => updateItem(index, 'name', e.target.value)} placeholder="Tên tài sản" />
                     </td>
                     <td>
-                      <input value={item.spec || ''} onChange={e => updateItem(index, 'spec', e.target.value)} placeholder="Đặc tính kỹ thuật" />
+                      <input disabled={!isEditable} value={item.spec || ''} onChange={e => updateItem(index, 'spec', e.target.value)} placeholder="Đặc tính kỹ thuật" />
                     </td>
                     <td>
-                      <input value={item.unit || ''} onChange={e => updateItem(index, 'unit', e.target.value)} placeholder="ĐVT" style={{width: '70px'}} />
+                      <input disabled={!isEditable} value={item.unit || ''} onChange={e => updateItem(index, 'unit', e.target.value)} placeholder="ĐVT" style={{width: '70px'}} />
                     </td>
                     <td>
-                      <input type="number" min="1" value={item.quantity || 1} onChange={e => updateItem(index, 'quantity', e.target.value)} style={{width: '70px'}} />
+                      <input disabled={!isEditable} type="number" min="1" value={item.quantity || 1} onChange={e => updateItem(index, 'quantity', e.target.value)} style={{width: '70px'}} />
                     </td>
                     <td>
-                      <input type="number" value={item.unit_price || 0} onChange={e => updateItem(index, 'unit_price', e.target.value)} />
+                      <input disabled={!isEditable} type="number" value={item.unit_price || 0} onChange={e => updateItem(index, 'unit_price', e.target.value)} />
                     </td>
                     <td>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((item.quantity || 0) * (item.unit_price || 0))}</td>
-                    <td><button className="btn btn-danger btn-sm" onClick={() => removeItem(index)}>✕</button></td>
+                    {isEditable && <td><button className="btn btn-danger btn-sm" onClick={() => removeItem(index)}>✕</button></td>}
                   </tr>
                 ))}
                   </tbody>
                 </table>
               </div>
-          <button className="btn btn-outline mt-2" onClick={addItem}>+ Thêm dòng</button>
+          {isEditable && <button className="btn btn-outline mt-2" onClick={addItem}>+ Thêm dòng</button>}
               <div className="totals">
             <div>Tạm tính: <strong>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(activeProposal.total_amount || 0)}</strong></div>
             <div>Thuế VAT (10%): <strong>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((activeProposal.total_amount || 0) * 0.1)}</strong></div>
@@ -397,7 +408,7 @@ const PurchaseProposalPage = () => {
               <h3>Lý do & mô tả bổ sung</h3>
               <div className="form-group">
                 <label>Lý do đề xuất mua sắm</label>
-            <textarea rows="4" value={activeProposal.description || ''} onChange={e => setActiveProposal({...activeProposal, description: e.target.value})} placeholder="Nhập lý do..." />
+            <textarea disabled={!isEditable} rows="4" value={activeProposal.description || ''} onChange={e => setActiveProposal({...activeProposal, description: e.target.value})} placeholder="Nhập lý do..." />
               </div>
             </div>
           </div>
@@ -440,7 +451,7 @@ const PurchaseProposalPage = () => {
 
           {/* Action buttons */}
       {(!activeProposal.id || ['draft', 'rejected'].includes(activeProposal.status)) && (
-        <div className="action-buttons">
+        <div className="action-buttons" style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
           <button className="btn btn-outline" onClick={() => setSearchParams({})}>Hủy</button>
           <button className="btn btn-secondary" onClick={() => handleSave('draft')}>Lưu nháp</button>
           <button className="btn btn-primary" onClick={() => handleSave('department_pending')}>Gửi duyệt ↗</button>
@@ -469,25 +480,21 @@ const PurchaseProposalPage = () => {
           </div>
 
           {/* Processing sidebar */}
-      {activeProposal.id && activeProposal.status !== 'approved' && activeProposal.status !== 'draft' && (
+      {showApprovalSidebar && (
         <div className="processing-sidebar">
           <h4>Thao tác phê duyệt</h4>
           <div className="comment-area">
             <label>Ý kiến / Ghi chú</label>
             <textarea id="approval-comment" placeholder="Nhập nhận xét (nếu có)..."></textarea>
           </div>
-          {(user?.role === 'admin' || 
-            (activeProposal.status === 'department_pending' && user?.role === 'department-leader') ||
-            (activeProposal.status === 'director_pending' && user?.role === 'director')) && (
-            <div className="flex gap-2 mt-4">
-              <button className="btn btn-outline flex-1" onClick={() => handleSave('draft')}>← Trả lại</button>
-              <button className="btn btn-danger flex-1" onClick={() => handleSave('rejected')}>Từ chối</button>
-              <button className="btn btn-success flex-1" onClick={() => {
+          <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+            <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => handleSave('draft')}>← Trả lại</button>
+            <button className="btn btn-danger" style={{ flex: 1 }} onClick={() => handleSave('rejected')}>Từ chối</button>
+            <button className="btn btn-success" style={{ flex: 1 }} onClick={() => {
                 if (activeProposal.status === 'department_pending') handleSave('director_pending');
                 else handleSave('approved');
               }}>Phê duyệt</button>
-            </div>
-          )}
+          </div>
         </div>
       )}
 

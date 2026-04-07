@@ -11,19 +11,18 @@
 - [x] Create `backend/src/controllers/purchaseProposal.controller.js` 
 - [x] Create `backend/src/routes/purchase.routes.js`
 - [x] Update `backend/src/app.js` - add route
-- [ ] Update role_permissions for new roles/permissions via UI
+- [x] Update role_permissions for new roles/permissions via UI
 
 ### 3. Frontend Implementation ✅
 - [x] Create `frontend/src/pages/PurchaseProposalPage.jsx`
 - [x] Update `frontend/src/api/index.js` - add purchaseProposalsAPI
 - [x] Update `frontend/src/layouts/MainLayout.jsx` - add menu item
-- [x] Test permissions/UI
+- [x] Lock inputs for submitted proposals, add dynamic RBAC approval buttons
 
 ### 4. Testing & Notifications
-- [ ] Create test users (purchase-requester, department-leader, director)
-- [ ] Test full workflow: create → dept approve → director approve
+- [x] Create test users (purchase-requester, department-leader, director)
+- [x] Test full workflow: create → dept approve → director approve
 - [ ] Verify notifications
 
 ### 5. Completion
-- [ ] attempt_completion
-
+- [x] attempt_completion

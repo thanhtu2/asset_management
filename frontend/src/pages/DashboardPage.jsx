@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { dashboardAPI } from '../api';
 
+import {
+  PieChart, Pie, Cell,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer
+} from 'recharts';
+
 /* Accent colour per stat card */
 const STAT_CARDS = [
   { key: 'totalAssets',       label: 'Tổng số tài sản',  icon: '📦', accent: '#2563eb' },
@@ -15,6 +20,8 @@ const STAT_CARDS = [
 
 const formatVND = (v) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v || 0);
+
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899'];
 
 const DashboardPage = () => {
   const [stats, setStats] = useState(null);
@@ -101,8 +108,64 @@ const DashboardPage = () => {
         })}
       </div>
 
+      {/* Charts Section */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+        {/* Biểu đồ danh mục (Pie Chart) */}
+        <div className="card" style={{ marginBottom: 0 }}>
+          <div className="card-header">
+            <h3 className="card-title">Tỷ lệ tài sản theo danh mục</h3>
+          </div>
+          <div style={{ height: 300 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={(stats?.assetsByCategory || []).map(item => ({...item, name: item.name || 'Khác'}))}
+                  cx="50%" cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="count"
+                  nameKey="name"
+                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                >
+                  {(stats?.assetsByCategory || []).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <RechartsTooltip formatter={(value) => [value, 'Số lượng']} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Biểu đồ phòng ban (Bar Chart) */}
+        <div className="card" style={{ marginBottom: 0 }}>
+          <div className="card-header">
+            <h3 className="card-title">Phân bổ tài sản theo phòng ban</h3>
+          </div>
+          <div style={{ height: 300 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={(stats?.assetsByDepartment || []).map(item => ({...item, name: item.name || 'Khác'}))}
+                margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" tick={{fontSize: 12}} />
+                <YAxis allowDecimals={false} tick={{fontSize: 12}} />
+                <RechartsTooltip cursor={{fill: '#f1f5f9'}} formatter={(value) => [value, 'Số lượng']} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Số lượng tài sản" barSize={40}>
+                  {(stats?.assetsByDepartment || []).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[(index + 1) % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
       {/* Distribution Tables */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 20 }}>
         {[
           { title: 'Theo danh mục',  data: stats?.assetsByCategory,   nameKey: 'name',   fallback: 'Chưa phân loại' },
           { title: 'Theo phòng ban',   data: stats?.assetsByDepartment, nameKey: 'name',   fallback: 'Chưa gán' },

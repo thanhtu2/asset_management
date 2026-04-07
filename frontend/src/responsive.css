@@ -1,0 +1,113 @@
+/* CSS Responsive cho Thiết bị di động (Smartphone) */
+
+@media screen and (max-width: 768px) {
+  /* 0. Khắc phục lỗi Layout bị kéo giãn ngang (Bug Flexbox kinh điển) */
+  .main-content {
+    width: 100vw !important; /* Ép cứng chiều rộng 100% màn hình */
+    min-width: 0 !important; /* Ngăn Flex-item bị phình to theo bảng bên trong */
+    padding: 15px !important;
+    margin-left: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  /* 1. Layout tổng thể & Header */
+  .page-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 15px !important;
+  }
+
+  .page-header > div:last-child,
+  .page-header > div:nth-child(2) {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .page-header button,
+  .page-header a.btn {
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* 2. Bảng dữ liệu (Table Container) - Cho phép lướt ngang */
+  .table-container {
+    width: 100% !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  table {
+    min-width: 700px; /* Bắt buộc bảng không bị ép quá đà, phải vuốt ngang để xem */
+  }
+
+  th, td {
+    white-space: nowrap;
+  }
+
+  /* 3. Form Layouts / Modal */
+  .form-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 15px !important;
+  }
+
+  .form-group {
+    width: 100% !important;
+    margin-bottom: 15px !important;
+  }
+
+  .modal {
+    width: 95% !important;
+    margin: 10px auto !important;
+    max-height: 90vh !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-body {
+    overflow-y: auto;
+    overflow-x: auto; /* Cho phép các bảng phụ trong modal lướt ngang */
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .modal-footer button {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  /* 4. Action Buttons in Table */
+  td.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  /* 5. Toolbar (Thanh tìm kiếm & Lọc) */
+  .toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .toolbar > div {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .toolbar select, .toolbar button, .search-box, .search-box input {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}

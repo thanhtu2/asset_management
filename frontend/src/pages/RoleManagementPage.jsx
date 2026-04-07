@@ -125,21 +125,21 @@ const RoleManagementPage = () => {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header" style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'space-between' }}>
         <div>
           <h1>Quản lý Phân quyền (RBAC)</h1>
           <p style={{ color: '#666', fontSize: '14px', marginTop: '4px' }}>
             Cấu hình quyền truy cập cho từng vai trò trong hệ thống
           </p>
         </div>
-        <div>
-          <button onClick={() => setShowRoleModal(true)} className="btn btn-outline" style={{ marginRight: '10px' }}>+ Thêm vai trò</button>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button onClick={() => setShowRoleModal(true)} className="btn btn-outline">+ Thêm vai trò</button>
           <button onClick={() => setShowPermModal(true)} className="btn btn-outline">+ Thêm quyền mới</button>
         </div>
       </div>
 
       <div className="card" style={{ padding: '20px' }}>
-        <div className="form-group" style={{ maxWidth: '400px', marginBottom: '30px' }}>
+        <div className="form-group" style={{ width: '100%', maxWidth: '400px', marginBottom: '30px' }}>
           <label style={{ fontWeight: 600, fontSize: '15px' }}>Chọn vai trò cần phân quyền:</label>
           <select 
             value={selectedRole} 
@@ -155,7 +155,7 @@ const RoleManagementPage = () => {
 
         {selectedRole ? (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
               {Object.entries(groupedPermissions).map(([moduleName, perms]) => (
                 <div key={moduleName} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '15px' }}>
                   <h3 style={{ marginTop: 0, marginBottom: '15px', color: '#1e293b', borderBottom: '2px solid #f1f5f9', paddingBottom: '8px' }}>

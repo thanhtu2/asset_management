@@ -1,5 +1,6 @@
 import User from '../models/User.js';
 import * as XLSX from 'xlsx';
+import AuditLog from '../models/AuditLog.js';
 
 export const getAll = async (req, res) => {
   try {
@@ -25,6 +26,7 @@ export const getById = async (req, res) => {
 export const create = async (req, res) => {
   try {
     const user = await User.create(req.body);
+    await AuditLog.log(req.user?.id, 'CREATE', 'USER', user.id, null, req.body, `Tạo người dùng mới: ${req.body.username}`, req.ip);
     res.status(201).json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -37,6 +39,7 @@ export const update = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+    await AuditLog.log(req.user?.id, 'UPDATE', 'USER', req.params.id, null, req.body, `Cập nhật người dùng: ${req.body.username || req.params.id}`, req.ip);
     res.json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -49,6 +52,7 @@ export const remove = async (req, res) => {
     if (!success) {
       return res.status(404).json({ message: 'User not found' });
     }
+    await AuditLog.log(req.user?.id, 'DELETE', 'USER', req.params.id, null, null, `Xóa người dùng ID: ${req.params.id}`, req.ip);
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });

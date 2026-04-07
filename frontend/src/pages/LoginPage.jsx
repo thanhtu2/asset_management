@@ -7,6 +7,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,19 +33,19 @@ const LoginPage = () => {
     <div className="login-container">
       {/* Decorative blobs */}
       <div style={{
-        position: 'absolute', width: 400, height: 400,
+        position: 'absolute', width: 'max(300px, 50vw)', height: 'max(300px, 50vw)',
         borderRadius: '50%',
         background: 'radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%)',
         top: '-80px', left: '-80px', pointerEvents: 'none',
       }} />
       <div style={{
-        position: 'absolute', width: 300, height: 300,
+        position: 'absolute', width: 'max(200px, 40vw)', height: 'max(200px, 40vw)',
         borderRadius: '50%',
         background: 'radial-gradient(circle, rgba(37,99,235,0.3) 0%, transparent 70%)',
         bottom: '0px', right: '60px', pointerEvents: 'none',
       }} />
 
-      <div className="login-box" style={{ position: 'relative', zIndex: 1 }}>
+      <div className="login-box" style={{ position: 'relative', zIndex: 1, margin: '0 15px', width: '100%', maxWidth: '400px' }}>
         {/* Logo */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
           <div style={{
@@ -85,14 +86,48 @@ const LoginPage = () => {
           </div>
           <div className="form-group">
             <label>Mật khẩu</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="Nhập mật khẩu"
-              autoComplete="current-password"
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="Nhập mật khẩu"
+                autoComplete="current-password"
+                style={{ width: '100%', paddingRight: '40px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#666',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '4px'
+                }}
+                title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+              >
+                {showPassword ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
 
           <button

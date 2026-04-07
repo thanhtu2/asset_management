@@ -21,6 +21,7 @@ import dashboardRoutes from './routes/dashboard.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import cronRoutes from './routes/cron.routes.js';
 import purchaseRoutes from './routes/purchase.routes.js';
+import auditRoutes from './routes/audit.routes.js';
 
 import { initDatabase, testConnection, getPool } from './config/database.js';
 import { initCronJobs } from './cron.service.js';
@@ -108,6 +109,7 @@ app.use('/api/permissions', permissionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/purchases', purchaseRoutes);
+app.use('/api/audit-logs', auditRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

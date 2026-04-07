@@ -67,11 +67,12 @@ Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doa
 - Cảnh báo danh sách tài sản sắp đến hạn bảo trì
 
 ### 9. Quản lý người dùng (Users) & Phân quyền (RBAC)
-- Đăng nhập/Đăng xuất an toàn
+- Đăng nhập/Đăng xuất an toàn (Tích hợp tính năng ẩn/hiện mật khẩu trực quan)
 - Phân quyền (Admin/User)
 - Phân quyền động (Role-Based Access Control) cho phép gán quyền chi tiết đến từng thao tác
 - Giao diện Quản lý vai trò (Roles) và Quyền hạn (Permissions)
 - Quản lý người dùng (chỉ Admin)
+- Trải nghiệm người dùng (UX) tối ưu: Hỗ trợ nút bật/tắt (toggle) hiển thị mật khẩu khi thao tác thêm/sửa người dùng
 - Admin có thể chủ động đặt lại mật khẩu cho người dùng bất kỳ
 - Xuất danh sách người dùng ra Excel
 
@@ -83,6 +84,12 @@ Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doa
 - Phân loại thông báo (Info, Success, Warning, Maintenance)
 - Hiệu ứng rung chuông (Animation) mượt mà, trực quan ngay khi có thông báo mới theo thời gian thực
 - Trải nghiệm người dùng (UX) tối ưu: Tự động đóng hộp thoại khi click ra ngoài vùng thông báo
+
+### 11. Lịch sử thao tác (Audit Logs) [ENTERPRISE]
+- Ghi lại 100% mọi hành động Thêm/Sửa/Xóa dữ liệu quan trọng (Người dùng, Tài sản, Phiếu kiểm kê...) dưới tầng Database.
+- Truy vết chi tiết: Ai là người thực hiện, thao tác gì, lúc nào, thay đổi trên đối tượng nào, từ địa chỉ IP nào.
+- Cung cấp "Camera an ninh" giám sát bảo mật và quy trách nhiệm (Accountability) độc lập, không ai có thể can thiệp xóa hay sửa đổi log.
+- Giao diện bảng theo dõi trực quan dành riêng cho Ban Giám đốc và Quản trị viên hệ thống.
 
 ## 🛠️ Công nghệ
 
