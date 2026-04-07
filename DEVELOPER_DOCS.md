@@ -131,6 +131,7 @@ Hệ thống tính khấu hao theo phương pháp **đường thẳng tính theo
 Khác với hệ thống Chuông thông báo (nhằm mục đích nhắc nhở công việc), hệ thống Audit Logs được thiết kế cho mục đích **Bảo mật và Truy vết (Accountability)**.
 *   **Database:** Mọi thay đổi được lưu vào bảng `audit_logs` với các trường quan trọng: `user_id`, `action` (CREATE/UPDATE/DELETE), `entity_type`, `entity_id`, `old_values`, `new_values`, `ip_address`.
 *   **Backend Logic:** Hàm `AuditLog.log()` được gọi ngầm (silently) ngay sau khi thao tác Cập nhật/Xóa/Thêm hoàn tất thành công trong các Controller (VD: `user.controller.js`, `asset.controller.js`).
+*   **Field-level Diffing (So sánh chi tiết):** Trong các thao tác UPDATE (ví dụ cập nhật tài sản), hệ thống sử dụng `fieldMap` để đối chiếu từng field giữa dữ liệu cũ (`oldAsset`) và dữ liệu mới (`req.body`). Từ đó tự động sinh ra chuỗi mô tả tiếng Việt trực quan (VD: *"Sửa giá mua từ 2 thành 1"*).
 *   **Bảo mật:** Không cung cấp bất kỳ API Endpoint nào để Xóa (DELETE) hay Sửa (PUT) bản ghi trong bảng này, đảm bảo tuyệt đối tính toàn vẹn của dữ liệu kiểm toán.
 
 ---

@@ -88,6 +88,7 @@ Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doa
 ### 11. Lịch sử thao tác (Audit Logs) [ENTERPRISE]
 - Ghi lại 100% mọi hành động Thêm/Sửa/Xóa dữ liệu quan trọng (Người dùng, Tài sản, Phiếu kiểm kê...) dưới tầng Database.
 - Truy vết chi tiết: Ai là người thực hiện, thao tác gì, lúc nào, thay đổi trên đối tượng nào, từ địa chỉ IP nào.
+- So sánh và ghi nhận chính xác từng trường dữ liệu bị thay đổi (VD: "Sửa giá mua từ 15000000 thành 10000000").
 - Cung cấp "Camera an ninh" giám sát bảo mật và quy trách nhiệm (Accountability) độc lập, không ai có thể can thiệp xóa hay sửa đổi log.
 - Giao diện bảng theo dõi trực quan dành riêng cho Ban Giám đốc và Quản trị viên hệ thống.
 
