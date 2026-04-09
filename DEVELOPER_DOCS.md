@@ -20,6 +20,7 @@ Tài liệu này mô tả chi tiết về cấu trúc hệ thống, quy ước m
 *   **Core:** Node.js, Express.js.
 *   **Database:** MySQL 8.0+ (Sử dụng thư viện `mysql2/promise` kết hợp connection pool).
 *   **Authentication:** JSON Web Token (JWT) & `bcryptjs` (Mã hóa mật khẩu).
+*   **Security:** `express-rate-limit` (Chống Brute-force attack).
 *   **Thư viện nổi bật:**
     *   `xlsx`: Xử lý import/export dữ liệu Excel (Tài sản, người dùng).
     *   `multer`: Xử lý upload file (đọc buffer file Excel từ memory).
@@ -133,6 +134,12 @@ Khác với hệ thống Chuông thông báo (nhằm mục đích nhắc nhở c
 *   **Backend Logic:** Hàm `AuditLog.log()` được gọi ngầm (silently) ngay sau khi thao tác Cập nhật/Xóa/Thêm hoàn tất thành công trong các Controller (VD: `user.controller.js`, `asset.controller.js`).
 *   **Field-level Diffing (So sánh chi tiết):** Trong các thao tác UPDATE (ví dụ cập nhật tài sản), hệ thống sử dụng `fieldMap` để đối chiếu từng field giữa dữ liệu cũ (`oldAsset`) và dữ liệu mới (`req.body`). Từ đó tự động sinh ra chuỗi mô tả tiếng Việt trực quan (VD: *"Sửa giá mua từ 2 thành 1"*).
 *   **Bảo mật:** Không cung cấp bất kỳ API Endpoint nào để Xóa (DELETE) hay Sửa (PUT) bản ghi trong bảng này, đảm bảo tuyệt đối tính toàn vẹn của dữ liệu kiểm toán.
+
+### 4.9. Luồng Bảo mật (Security Implementations)
+*   **Rate Limiting (Chống Brute-force):** API `/api/auth/login` được bảo vệ bởi `express-rate-limit`. Giới hạn tối đa 5 request đăng nhập mỗi 15 phút cho cùng một địa chỉ IP. Tránh nguy cơ dò quét và tấn công mật khẩu tài khoản Admin.
+*   **XSS Protection (Chống Cross-Site Scripting):** Tại các chức năng in ấn (In mã vạch hàng loạt ở `AssetListPage.jsx`), dữ liệu tài sản (`asset_code`, `name`) được làm sạch qua hàm `escapeHTML()` trước khi chèn vào `innerHTML`, ngăn chặn chèn mã độc Javascript vào DOM.
+*   **SQL Injection Protection:** Database Driver `mysql2/promise` tự động escape các tham số đầu vào bằng Parameterized Queries.
+*   **API Exposure:** Các endpoint nhạy cảm (thêm, sửa, xóa) được bọc bởi `authMiddleware` và RBAC để chống lộ lọt API (Broken Object Level Authorization).
 
 ---
 

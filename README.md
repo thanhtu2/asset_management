@@ -92,6 +92,11 @@ Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doa
 - Cung cấp "Camera an ninh" giám sát bảo mật và quy trách nhiệm (Accountability) độc lập, không ai có thể can thiệp xóa hay sửa đổi log.
 - Giao diện bảng theo dõi trực quan dành riêng cho Ban Giám đốc và Quản trị viên hệ thống.
 
+### 12. Bảo mật (Security) [ENHANCED]
+- **Chống Brute-force:** Tích hợp Rate Limiting giới hạn số lần đăng nhập sai (tối đa 5 lần / 15 phút đối với API Login).
+- **Chống XSS (Cross-Site Scripting):** Mã hóa toàn bộ dữ liệu đầu vào khi hiển thị và in tem nhãn QR ở Frontend.
+- **Chống SQL Injection:** Sử dụng Parameterized Queries cho toàn bộ hệ thống API.
+
 ## 🛠️ Công nghệ
 
 ### Frontend
@@ -153,7 +158,7 @@ bash
 cd backend
 
 # Cài đặt dependencies
-npm install
+npm install express-rate-limit
 
 # Tạo file .env
 # Cần cấu hình các biến môi trường sau:

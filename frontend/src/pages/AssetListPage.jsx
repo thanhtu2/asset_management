@@ -179,6 +179,18 @@ const AssetListPage = () => {
     }
   };
 
+  // Hàm mã hóa chống XSS khi chèn dữ liệu vào innerHTML
+  const escapeHTML = (str) => {
+    if (!str) return '';
+    return String(str).replace(/[&<>'"]/g, tag => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;'
+    }[tag] || tag));
+  };
+
   // Print single QR label - use modal with proper print CSS
   const printSingleQR = async (asset) => {
     try {
@@ -211,8 +223,8 @@ const AssetListPage = () => {
             ${qrImage}
           </div>
           <div class="qr-label__info" style="flex:1;overflow:hidden;">
-            <div class="qr-label__code" style="font-weight:bold;font-size:9px;color:#000;word-break:break-word;">${asset.asset_code}</div>
-            <div class="qr-label__name" style="font-size:7px;color:#333;margin-top:2px;word-break:break-word;">${asset.name}</div>
+            <div class="qr-label__code" style="font-weight:bold;font-size:9px;color:#000;word-break:break-word;">${escapeHTML(asset.asset_code)}</div>
+            <div class="qr-label__name" style="font-size:7px;color:#333;margin-top:2px;word-break:break-word;">${escapeHTML(asset.name)}</div>
           </div>
         </div>
       `;
@@ -266,8 +278,8 @@ const AssetListPage = () => {
             ${qrImage}
           </div>
           <div class="qr-label__info" style="flex:1;overflow:hidden;">
-            <div class="qr-label__code" style="font-weight:bold;font-size:9px;color:#000;word-break:break-word;">${qr.asset_code}</div>
-            <div class="qr-label__name" style="font-size:7px;color:#333;margin-top:2px;word-break:break-word;">${qr.asset_name}</div>
+            <div class="qr-label__code" style="font-weight:bold;font-size:9px;color:#000;word-break:break-word;">${escapeHTML(qr.asset_code)}</div>
+            <div class="qr-label__name" style="font-size:7px;color:#333;margin-top:2px;word-break:break-word;">${escapeHTML(qr.asset_name)}</div>
           </div>
         </div>
       `;
