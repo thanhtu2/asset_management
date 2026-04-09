@@ -31,12 +31,13 @@ const DepartmentPage = () => {
         departmentsAPI.getAllSimple(),
         usersAPI.getAll()
       ]);
-      setDepartments(deptRes.data.data);
-      setAllDepartments(deptSimpleRes.data);
+      // Trích xuất an toàn: Kiểm tra nếu là mảng thì lấy luôn, nếu là Object phân trang thì lấy .data, nếu undefined thì lấy mảng rỗng []
+      setDepartments(Array.isArray(deptRes.data) ? deptRes.data : deptRes.data?.data || []);
+      setAllDepartments(Array.isArray(deptSimpleRes.data) ? deptSimpleRes.data : deptSimpleRes.data?.data || []);
       setPagination(prev => ({
         ...prev,
-        total: deptRes.data.pagination.total,
-        totalPages: deptRes.data.pagination.totalPages
+        total: deptRes.data?.pagination?.total || 0,
+        totalPages: deptRes.data?.pagination?.totalPages || 0
       }));
       setUsers(userRes.data);
     } catch (error) {

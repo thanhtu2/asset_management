@@ -48,7 +48,8 @@ const InventoryPage = () => {
       ]);
       setSessions(sessionsRes.data);
       setAssets(assetsRes.data?.data || assetsRes.data || []);
-      setDepartments(deptsRes.data || deptsRes || []);
+      // Xử lý an toàn: Tự động bóc tách mảng dù API trả về Array hay Object phân trang
+      setDepartments(Array.isArray(deptsRes.data) ? deptsRes.data : deptsRes.data?.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
       setAssets([]);

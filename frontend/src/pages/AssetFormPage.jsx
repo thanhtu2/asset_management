@@ -183,14 +183,16 @@ const AssetFormPage = () => {
         <form onSubmit={handleSubmit}>
           <div className="form-row">
             <div className="form-group">
-              <label>Mã tài sản *</label>
+              <label>Mã tài sản {isEdit ? '*' : ''}</label>
               <input
                 type="text"
                 name="asset_code"
                 value={formData.asset_code}
                 onChange={handleChange}
-                required
-                placeholder="Mã tài sản"
+                required={!!isEdit}
+                disabled={!isEdit}
+                placeholder={!isEdit ? "Hệ thống sẽ tự động cấp mã" : "Mã tài sản"}
+                style={!isEdit ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}}
               />
             </div>
             <div className="form-group">

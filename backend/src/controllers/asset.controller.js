@@ -29,6 +29,63 @@ const calculateCurrentValue = (asset) => {
   return Math.max(salvageValue, calculatedValue, 0);
 };
 
+// Hàm hỗ trợ trích xuất Tính chất sản phẩm từ Tên tài sản
+const extractNatureCodeFromName = (name) => {
+  if (!name) return 'XX';
+
+  // Chuẩn hóa chuỗi: loại bỏ dấu, loại bỏ khoảng trắng thừa, chuyển thành chữ thường
+  const n = name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Bỏ dấu
+    .replace(/đ/g, 'd') // Xử lý chữ 'đ'
+    .replace(/\s+/g, ' ') // Thay thế nhiều khoảng trắng bằng một
+    .trim(); // Cắt khoảng trắng đầu cuối
+
+  // Các từ khóa giờ đây được viết không dấu
+  if (n.includes('may tinh') || n.includes('laptop') || n.includes('macbook') || n.includes('pc')) return 'MT';
+  if (n.includes('may in') || n.includes('printer')) return 'MI';
+  if (n.includes('man hinh') || n.includes('monitor')) return 'MH';
+  if (n.includes('may chieu') || n.includes('projector')) return 'MC';
+  if (n.includes('dien thoai') || n.includes('smartphone')) return 'DT';
+  if (n.includes('ban')) return 'BA'; // 'bàn'
+  if (n.includes('ghe')) return 'GH'; // 'ghế'
+  if (n.includes('tu')) return 'TU'; // 'tủ'
+  if (n.includes('xe ')) return 'XE'; // Dấu cách để tránh nhầm với từ khác
+
+  return 'XX'; // Mặc định nếu không khớp từ khóa nào
+};
+
+// Hàm hỗ trợ tự động sinh mã tài sản
+const generateAssetCode = async (categoryId, purchaseDate, natureCode = 'XX') => {
+  let catPrefix = 'XXX';
+  if (categoryId) {
+    const [catRows] = await pool.query('SELECT code FROM categories WHERE id = ?', [categoryId])
+    if (catRows.length > 0 && catRows[0].code) catPrefix = catRows[0].code.substring(0, 3).toUpperCase();
+  }
+
+  const year = purchaseDate ? new Date(purchaseDate).getFullYear() : new Date().getFullYear();
+
+  // Tiền tố để tìm số thứ tự (chỉ gồm Danh mục + Năm)
+  const queryPrefix = `${catPrefix}${year}`;
+  // Tiền tố đầy đủ để ghép vào mã cuối cùng
+  const finalPrefix = `${queryPrefix}${natureCode.toUpperCase()}`;
+
+  // Tìm mã tài sản lớn nhất có cùng tiền tố (không phân biệt tính chất) để lấy số thứ tự tiếp theo
+  const [rows] = await pool.query(
+    'SELECT asset_code FROM assets WHERE asset_code LIKE ? ORDER BY asset_code DESC LIMIT 1',
+    [`${queryPrefix}%`]
+  );
+
+  let seq = 1;
+  if (rows.length > 0 && rows[0].asset_code) {
+    const lastSeq = parseInt(rows[0].asset_code.slice(-4), 10);
+    if (!isNaN(lastSeq)) seq = lastSeq + 1;
+  }
+
+  return `${finalPrefix}${seq.toString().padStart(4, '0')}`;
+};
+
 // Generate QR code for an asset
 export const generateQR = async (req, res) => {
   try {
@@ -162,6 +219,11 @@ export const getByBarcode = async (req, res) => {
 
 export const create = async (req, res) => {
   try {
+    // Tự động sinh mã tài sản ghi đè lên mã gửi từ Client
+    // Tự động nhận diện tính chất sản phẩm từ Tên tài sản (VD: "Máy in HP" -> "MI")
+    const natureCode = extractNatureCodeFromName(req.body.name); 
+    req.body.asset_code = await generateAssetCode(req.body.category_id, req.body.purchase_date, natureCode);
+
     const asset = await Asset.create(req.body);
     
     // Thông báo có tài sản mới
