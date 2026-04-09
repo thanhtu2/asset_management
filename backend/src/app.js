@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
+import rateLimit from 'express-rate-limit';
 
 // Import routes
 import authRoutes from './routes/auth.routes.js';
@@ -93,7 +94,17 @@ app.use(async (req, res, next) => {
   next();
 });
 
+// Rate limiting for login to prevent Brute-force attacks
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 requests per windowMs
+  message: { message: 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau 15 phút.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Routes
+app.use('/api/auth/login', loginLimiter);
 app.use('/api/cron', cronRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/assets', assetRoutes);
