@@ -430,6 +430,7 @@ const PurchaseProposalPage = () => {
                 <div className="signature-area">
                   <span>Xác nhận nhu cầu</span>
                   <div className="signature-line">_______________________</div>
+                  <div>{activeProposal.department_leader_name}</div>
                 </div>
               </div>
               <div className="signoff-item">
@@ -437,6 +438,7 @@ const PurchaseProposalPage = () => {
                 <div className="signature-area">
                   <span>Xác nhận kinh phí</span>
                   <div className="signature-line">_______________________</div>
+                  <div>{activeProposal.finance_officer_name}</div>
                 </div>
               </div>
               <div className="signoff-item">
