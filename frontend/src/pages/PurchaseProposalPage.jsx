@@ -426,7 +426,7 @@ const PurchaseProposalPage = () => {
                 </div>
               </div>
               <div className="signoff-item">
-                <label>Trưởng bộ phận</label>
+                <label>Lãnh đạo phòng</label>
                 <div className="signature-area">
                   <span>Xác nhận nhu cầu</span>
                   <div className="signature-line">_______________________</div>
@@ -444,6 +444,7 @@ const PurchaseProposalPage = () => {
                 <div className="signature-area">
                   <span>Phê duyệt</span>
                   <div className="signature-line">_______________________</div>
+                  <div>{activeProposal.director_name}</div>
                 </div>
               </div>
             </div>
