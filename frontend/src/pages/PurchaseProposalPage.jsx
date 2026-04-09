@@ -213,8 +213,8 @@ const PurchaseProposalPage = () => {
 
   // Logic kiểm tra quyền hạn chỉnh sửa & phê duyệt
   const isEditable = !activeProposal?.id || ['draft', 'rejected'].includes(activeProposal?.status);
-  const canApproveDept = user?.role === 'admin' || user?.permissions?.includes('APPROVE_DEPT_PROPOSAL');
-  const canApproveDirector = user?.role === 'admin' || user?.permissions?.includes('APPROVE_DIRECTOR_PROPOSAL');
+  const canApproveDept = user?.role === 'admin' || user?.permissions?.includes('APPROVE_DEPARTMENT_PURCHASE');
+  const canApproveDirector = user?.role === 'admin' || user?.permissions?.includes('APPROVE_DIRECTOR_PURCHASE');
   const showApprovalSidebar = activeProposal?.id && (
     (activeProposal?.status === 'department_pending' && canApproveDept) ||
     (activeProposal?.status === 'director_pending' && canApproveDirector)
