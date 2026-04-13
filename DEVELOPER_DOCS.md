@@ -136,7 +136,7 @@ Khác với hệ thống Chuông thông báo (nhằm mục đích nhắc nhở c
 *   **Bảo mật:** Không cung cấp bất kỳ API Endpoint nào để Xóa (DELETE) hay Sửa (PUT) bản ghi trong bảng này, đảm bảo tuyệt đối tính toàn vẹn của dữ liệu kiểm toán.
 
 ### 4.9. Luồng Bảo mật (Security Implementations)
-*   **Rate Limiting (Chống Brute-force):** API `/api/auth/login` được bảo vệ bởi `express-rate-limit`. Giới hạn tối đa 5 request đăng nhập mỗi 15 phút cho cùng một địa chỉ IP. Tránh nguy cơ dò quét và tấn công mật khẩu tài khoản Admin.
+*   **Rate Limiting (Chống Brute-force & DDoS):** API `/api/auth/login` giới hạn tối đa 5 request đăng nhập/15 phút. Toàn bộ các API nội bộ bị giới hạn 300 request/15 phút. Các API Public (như báo hỏng bằng mã QR) bị giới hạn 10 request/giờ để ngăn chặn spam rác từ thiết bị lạ.
 *   **XSS Protection (Chống Cross-Site Scripting):** Tại các chức năng in ấn (In mã vạch hàng loạt ở `AssetListPage.jsx`), dữ liệu tài sản (`asset_code`, `name`) được làm sạch qua hàm `escapeHTML()` trước khi chèn vào `innerHTML`, ngăn chặn chèn mã độc Javascript vào DOM.
 *   **SQL Injection Protection:** Database Driver `mysql2/promise` tự động escape các tham số đầu vào bằng Parameterized Queries.
 *   **API Exposure:** Các endpoint nhạy cảm (thêm, sửa, xóa) được bọc bởi `authMiddleware` và RBAC để chống lộ lọt API (Broken Object Level Authorization).

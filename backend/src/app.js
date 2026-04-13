@@ -106,8 +106,28 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// General API rate limiting để chống DDoS/Spam request chung
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 phút
+  max: 300, // Giới hạn 300 requests / 15 phút / IP
+  message: { message: 'Hệ thống đang bận. Quá nhiều yêu cầu từ địa chỉ IP này, vui lòng thử lại sau 15 phút.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Stricter rate limiting cho các API Public (ví dụ: quét QR báo hỏng)
+const publicApiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 giờ
+  max: 10, // Tối đa 10 lần báo hỏng / 1 giờ / IP
+  message: { message: 'Quá nhiều yêu cầu báo hỏng từ thiết bị của bạn. Vui lòng thử lại sau 1 giờ.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Routes
+app.use('/api/', apiLimiter);
 app.use('/api/auth/login', loginLimiter);
+app.use('/api/assets/public', publicApiLimiter);
 app.use('/api/cron', cronRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/assets', assetRoutes);
