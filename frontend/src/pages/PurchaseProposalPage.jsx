@@ -11,6 +11,7 @@ const PurchaseProposalPage = () => {
   const [departments, setDepartments] = useState([]);
   const [activeProposal, setActiveProposal] = useState(null);
   const [history, setHistory] = useState([]);
+  const [attachedFile, setAttachedFile] = useState(null);
 
   useEffect(() => {
     fetchDepartments();
@@ -30,9 +31,11 @@ const PurchaseProposalPage = () => {
         created_at: new Date().toISOString()
       });
       setHistory([]);
+      setAttachedFile(null);
     } else {
       setActiveProposal(null);
       fetchProposalsList();
+      setAttachedFile(null);
     }
   }, [searchParams]);
 
@@ -61,8 +64,22 @@ const PurchaseProposalPage = () => {
     setLoading(true);
     try {
       const response = await purchaseProposalsAPI.getById(id);
-      setActiveProposal(response.data);
-      generateHistory(response.data);
+      let data = response.data;
+      
+      // Đảm bảo items luôn là mảng, parse nếu backend trả về chuỗi JSON
+      if (typeof data.items === 'string') {
+        try {
+          data.items = JSON.parse(data.items);
+        } catch (e) {
+          data.items = [];
+        }
+      } else if (!Array.isArray(data.items)) {
+        data.items = [];
+      }
+
+      setActiveProposal(data);
+      generateHistory(data);
+      setAttachedFile(null);
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -73,44 +90,53 @@ const PurchaseProposalPage = () => {
   const generateHistory = (proposal) => {
     const hist = [];
     
+    // 1. Luôn có bước tạo phiếu
     hist.push({
       step: 'Soạn phiếu',
       handler: proposal.requester_name || 'Người đề xuất',
       role: 'Người đề xuất',
-      date: new Date(proposal.created_at).toLocaleDateString('vi-VN'),
+      date: new Date(proposal.created_at).toLocaleString('vi-VN'),
       status: 'Đã gửi',
       comment: ''
     });
 
-    if (proposal.department_leader_id) {
-      const isRejectedAtDept = proposal.status === 'rejected' && !proposal.director_id;
+    // 2. Lãnh đạo phòng duyệt
+    const passedDept = ['director_pending', 'approved'].includes(proposal.status) || (proposal.status === 'rejected' && proposal.director_id);
+    const rejectedByDept = proposal.status === 'rejected' && !proposal.director_id;
+
+    if (passedDept || rejectedByDept) {
       hist.push({
         step: 'Lãnh đạo phòng duyệt',
         handler: proposal.department_leader_name || 'Trưởng phòng',
         role: 'Lãnh đạo phòng',
-        date: proposal.updated_at ? new Date(proposal.updated_at).toLocaleDateString('vi-VN') : '',
-        status: isRejectedAtDept ? 'Từ chối' : 'Đã phê duyệt',
+        date: proposal.updated_at ? new Date(proposal.updated_at).toLocaleString('vi-VN') : '',
+        status: passedDept ? 'Đã phê duyệt' : 'Từ chối',
         comment: proposal.department_comment || ''
       });
     }
 
-    if (proposal.director_id) {
+    // 3. Giám đốc duyệt
+    const passedDirector = proposal.status === 'approved';
+    const rejectedByDirector = proposal.status === 'rejected' && proposal.director_id;
+
+    if (passedDirector || rejectedByDirector) {
       hist.push({
         step: 'Giám đốc duyệt',
         handler: proposal.director_name || 'Giám đốc',
         role: 'Ban Giám đốc',
-        date: proposal.updated_at ? new Date(proposal.updated_at).toLocaleDateString('vi-VN') : '',
-        status: proposal.status === 'rejected' ? 'Từ chối' : 'Đã phê duyệt',
+        date: proposal.updated_at ? new Date(proposal.updated_at).toLocaleString('vi-VN') : '',
+        status: passedDirector ? 'Đã phê duyệt' : 'Từ chối',
         comment: proposal.director_comment || ''
       });
     }
 
+    // 4. Hoàn tất
     if (proposal.status === 'approved') {
       hist.push({
         step: 'Hoàn tất',
         handler: 'Hệ thống',
         role: 'Tự động',
-        date: proposal.updated_at ? new Date(proposal.updated_at).toLocaleDateString('vi-VN') : '',
+        date: proposal.updated_at ? new Date(proposal.updated_at).toLocaleString('vi-VN') : '',
         status: 'Hoàn thành',
         comment: 'Phiếu đề xuất mua sắm đã được phê duyệt thành công.'
       });
@@ -124,7 +150,8 @@ const PurchaseProposalPage = () => {
   };
 
   const addItem = () => {
-    const newItems = [...activeProposal.items, { name: '', spec: '', unit: 'Chiếc', quantity: 1, unit_price: 0 }];
+    const currentItems = Array.isArray(activeProposal.items) ? activeProposal.items : [];
+    const newItems = [...currentItems, { name: '', spec: '', unit: 'Chiếc', quantity: 1, unit_price: 0 }];
     setActiveProposal({
       ...activeProposal,
       items: newItems,
@@ -134,21 +161,25 @@ const PurchaseProposalPage = () => {
   };
 
   const updateItem = (index, field, value) => {
-    const newItems = [...activeProposal.items];
-    newItems[index][field] = value;
-    if (field === 'quantity' || field === 'unit_price') {
-      newItems[index][field] = parseFloat(value) || 0;
+    const currentItems = Array.isArray(activeProposal.items) ? activeProposal.items : [];
+    const newItems = [...currentItems];
+    if (newItems[index]) {
+      newItems[index][field] = value;
+      if (field === 'quantity' || field === 'unit_price') {
+        newItems[index][field] = parseFloat(value) || 0;
+      }
+      setActiveProposal({
+        ...activeProposal,
+        items: newItems,
+        total_amount: updateTotal(newItems),
+        total_vat: updateTotal(newItems) * 0.1
+      });
     }
-    setActiveProposal({
-      ...activeProposal,
-      items: newItems,
-      total_amount: updateTotal(newItems),
-      total_vat: updateTotal(newItems) * 0.1
-    });
   };
 
   const removeItem = (index) => {
-    const newItems = activeProposal.items.filter((_, i) => i !== index);
+    const currentItems = Array.isArray(activeProposal.items) ? activeProposal.items : [];
+    const newItems = currentItems.filter((_, i) => i !== index);
     setActiveProposal({
       ...activeProposal,
       items: newItems,
@@ -178,12 +209,27 @@ const PurchaseProposalPage = () => {
         payload.director_comment = comment;
       }
 
+      // Xử lý chuyển JSON sang FormData để gửi File đính kèm lên Backend
+      let submitData = payload;
+      if (attachedFile) {
+        const formData = new FormData();
+        Object.keys(payload).forEach(key => {
+          if (key === 'items') {
+            formData.append(key, JSON.stringify(payload[key])); // Backend cần parse JSON.parse() cho chuỗi này
+          } else if (payload[key] !== null && payload[key] !== undefined) {
+            formData.append(key, payload[key]);
+          }
+        });
+        formData.append('file', attachedFile);
+        submitData = formData;
+      }
+
       if (activeProposal.id) {
-         await purchaseProposalsAPI.update(activeProposal.id, payload);
+         await purchaseProposalsAPI.update(activeProposal.id, submitData);
          alert('Cập nhật thành công!');
          fetchProposal(activeProposal.id);
       } else {
-         await purchaseProposalsAPI.create(payload);
+         await purchaseProposalsAPI.create(submitData);
          alert('Tạo phiếu thành công!');
          setSearchParams({});
          fetchProposalsList();
@@ -370,7 +416,7 @@ const PurchaseProposalPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                {activeProposal.items?.map((item, index) => (
+                {Array.isArray(activeProposal.items) && activeProposal.items.map((item, index) => (
                   <tr key={index}>
                     <td>{index + 1}</td>
                     <td>
@@ -410,6 +456,46 @@ const PurchaseProposalPage = () => {
                 <label>Lý do đề xuất mua sắm</label>
             <textarea disabled={!isEditable} rows="4" value={activeProposal.description || ''} onChange={e => setActiveProposal({...activeProposal, description: e.target.value})} placeholder="Nhập lý do..." />
               </div>
+            </div>
+          </div>
+
+          {/* Tài liệu đính kèm */}
+          <div className="form-section">
+            <h3>Tài liệu đính kèm</h3>
+            <div className="form-group">
+              {isEditable ? (
+                <>
+                  <label>File báo giá / Hình ảnh tham khảo (nếu có)</label>
+                  <input 
+                    type="file" 
+                    onChange={(e) => setAttachedFile(e.target.files[0])}
+                    className="form-control"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                    style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', width: '100%', background: '#fff' }}
+                  />
+                  {attachedFile && (
+                    <div style={{ marginTop: '10px', fontSize: '14px', color: '#166534' }}>
+                      ✓ Đã chọn file mới: <strong>{attachedFile.name}</strong> ({(attachedFile.size / 1024).toFixed(2)} KB)
+                    </div>
+                  )}
+                </>
+              ) : (
+                <label>Tài liệu đính kèm hiện tại</label>
+              )}
+              
+              {activeProposal.attached_file_url && (
+                <div style={{ marginTop: '10px', fontSize: '14px' }}>
+                  <a href={activeProposal.attached_file_url} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-primary">
+                    📄 Xem / Tải tài liệu đính kèm
+                  </a>
+                </div>
+              )}
+
+              {!isEditable && !activeProposal.attached_file_url && (
+                <div style={{ marginTop: '10px', fontSize: '14px', color: '#64748b', fontStyle: 'italic' }}>
+                  Không có tài liệu đính kèm nào được cung cấp.
+                </div>
+              )}
             </div>
           </div>
 
