@@ -93,7 +93,7 @@ Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doa
 - Giao diện bảng theo dõi trực quan dành riêng cho Ban Giám đốc và Quản trị viên hệ thống.
 
 ### 12. Bảo mật (Security) [ENHANCED]
-- **Chống Brute-force:** Tích hợp Rate Limiting giới hạn số lần đăng nhập sai (tối đa 5 lần / 15 phút đối với API Login).
+- **Chống Brute-force & DDoS:** Tích hợp Rate Limiting giới hạn số lần đăng nhập sai (5 lần/15 phút), API chung (300 req/15 phút) và API Public báo hỏng (10 req/giờ).
 - **Chống XSS (Cross-Site Scripting):** Mã hóa toàn bộ dữ liệu đầu vào khi hiển thị và in tem nhãn QR ở Frontend.
 - **Chống SQL Injection:** Sử dụng Parameterized Queries cho toàn bộ hệ thống API.
 
