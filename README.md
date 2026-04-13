@@ -97,6 +97,13 @@ Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doa
 - **Chống XSS (Cross-Site Scripting):** Mã hóa toàn bộ dữ liệu đầu vào khi hiển thị và in tem nhãn QR ở Frontend.
 - **Chống SQL Injection:** Sử dụng Parameterized Queries cho toàn bộ hệ thống API.
 
+### 13. Đề xuất mua sắm (Purchase Proposals)
+- Tạo phiếu đề xuất mua sắm tài sản/trang thiết bị mới.
+- Hỗ trợ đính kèm tài liệu, báo giá (PDF, Excel, Word, Hình ảnh).
+- Quy trình phê duyệt nhiều cấp: Người đề xuất -> Lãnh đạo phòng duyệt -> Giám đốc duyệt.
+- Tự động tính toán tổng tiền, VAT.
+- Tích hợp luồng thông báo tự động (Notifications) khi có phiếu cần duyệt hoặc phiếu được phê duyệt/từ chối.
+
 ## 🛠️ Công nghệ
 
 ### Frontend
@@ -301,6 +308,17 @@ Các API cho các tài nguyên này có cấu trúc tương tự nhau.
 | `POST` | `/api/permissions` | Tạo quyền mới. |
 | `GET` | `/api/roles/:roleCode/permissions` | Lấy danh sách quyền của một vai trò. |
 | `POST` | `/api/roles/:roleCode/permissions` | Cập nhật danh sách quyền cho một vai trò. |
+
+### Purchase Proposals (Đề xuất mua sắm)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/purchases` | Lấy danh sách phiếu đề xuất mua sắm. |
+| `GET` | `/api/purchases/:id` | Lấy chi tiết một phiếu đề xuất. |
+| `POST` | `/api/purchases` | Tạo phiếu đề xuất mới (Hỗ trợ upload file bằng `multipart/form-data`). |
+| `PUT` | `/api/purchases/:id` | Cập nhật phiếu hoặc thực hiện duyệt/từ chối. |
+| `DELETE` | `/api/purchases/:id` | Xóa phiếu đề xuất (chỉ áp dụng khi phiếu ở trạng thái Nháp). |
+| `GET` | `/api/purchases/stats` | Lấy thống kê số lượng phiếu theo các trạng thái xử lý. |
 
 ### Dashboard
 
