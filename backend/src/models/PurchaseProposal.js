@@ -88,7 +88,7 @@ const PurchaseProposal = {
 
   async create(proposalData, currentUser) {
     const {
-      code, title, description, department_id, items, total_amount, status
+      code, title, description, department_id, items, total_amount, status, attached_file_url
     } = proposalData;
 
     const finalCode = code || `PR-${Date.now()}`;
@@ -97,9 +97,9 @@ const PurchaseProposal = {
     if (!requesterId) throw new Error('Lỗi: Không tìm thấy ID người tạo (requester_id)');
     
     const [result] = await pool.query(
-      `INSERT INTO purchase_proposals (code, title, description, requester_id, department_id, items, total_amount, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [finalCode, title, description, requesterId, department_id || null, JSON.stringify(items || []), total_amount || 0, status || 'draft']
+      `INSERT INTO purchase_proposals (code, title, description, requester_id, department_id, items, total_amount, status, attached_file_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [finalCode, title, description, requesterId, department_id || null, JSON.stringify(items || []), total_amount || 0, status || 'draft', attached_file_url || null]
     );
     
     const newProposal = await this.findById(result.insertId);

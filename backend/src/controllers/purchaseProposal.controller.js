@@ -38,10 +38,29 @@ export const create = async (req, res) => {
     const seq = String(count[0].cnt + 1).padStart(3, '0');
     const code = `PP-${today}-${seq}`;
     
+    let items = req.body.items;
+    if (typeof items === 'string') {
+      try {
+        items = JSON.parse(items);
+        if (typeof items === 'string') {
+          items = JSON.parse(items); // Đề phòng chuỗi bị lồng 2 lần từ FE
+        }
+      } catch (e) {
+        items = [];
+      }
+    }
+
+    let attached_file_url = null;
+    if (req.file) {
+      attached_file_url = `/uploads/${req.file.filename}`;
+    }
+
     const proposalData = {
       ...req.body,
+      items,
       code,
-      total_amount: parseFloat(req.body.total_amount) || 0
+      total_amount: parseFloat(req.body.total_amount) || 0,
+      attached_file_url
     };
     
     const proposal = await PurchaseProposal.create(proposalData, req.user);
@@ -82,7 +101,23 @@ export const update = async (req, res) => {
       return res.status(403).json({ message: 'Không có quyền xử lý phiếu này ở trạng thái hiện tại' });
     }
 
-    const updateData = req.body;
+    const updateData = { ...req.body };
+    
+    if (typeof updateData.items === 'string') {
+      try {
+        updateData.items = JSON.parse(updateData.items);
+        if (typeof updateData.items === 'string') {
+          updateData.items = JSON.parse(updateData.items);
+        }
+      } catch (e) {
+        updateData.items = [];
+      }
+    }
+
+    if (req.file) {
+      updateData.attached_file_url = `/uploads/${req.file.filename}`;
+    }
+
     if (updateData.status && updateData.status !== proposal.status) {
       const validTransitions = {
         'draft': ['department_pending'],

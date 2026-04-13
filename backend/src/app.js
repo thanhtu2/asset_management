@@ -75,6 +75,9 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Phục vụ file tĩnh từ thư mục uploads
+app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
+
 // Đảm bảo Database kết nối xong trước khi xử lý API trên Vercel (Cold-start fix)
 let dbInitialized = false;
 let dbInitPromise = null;

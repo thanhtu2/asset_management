@@ -70,6 +70,9 @@ const PurchaseProposalPage = () => {
       if (typeof data.items === 'string') {
         try {
           data.items = JSON.parse(data.items);
+          if (typeof data.items === 'string') {
+            data.items = JSON.parse(data.items); // Phá vỡ vòng lặp chuỗi JSON bị lồng 2 lần
+          }
         } catch (e) {
           data.items = [];
         }
@@ -210,7 +213,6 @@ const PurchaseProposalPage = () => {
       }
 
       // Xử lý chuyển JSON sang FormData để gửi File đính kèm lên Backend
-      let submitData = payload;
       if (attachedFile) {
         const formData = new FormData();
         Object.keys(payload).forEach(key => {
@@ -221,15 +223,38 @@ const PurchaseProposalPage = () => {
           }
         });
         formData.append('file', attachedFile);
-        submitData = formData;
+        
+        // Sử dụng fetch thuần để tránh bị axios ép header Content-Type: application/json làm mất file
+        const token = localStorage.getItem('token');
+        const baseUrl = import.meta.env.VITE_API_URL || '/api';
+        const url = activeProposal.id ? `${baseUrl}/purchases/${activeProposal.id}` : `${baseUrl}/purchases`;
+        
+        const response = await fetch(url, {
+          method: activeProposal.id ? 'PUT' : 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+        
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.message || 'Lỗi khi upload file đính kèm');
+        }
+        
+        alert(activeProposal.id ? 'Cập nhật thành công!' : 'Tạo phiếu thành công!');
+        if (!activeProposal.id) { setSearchParams({}); fetchProposalsList(); }
+        else fetchProposal(activeProposal.id);
+        return; // Thoát hàm sớm vì đã lưu xong
       }
 
+      // Luồng lưu bình thường (không có file đính kèm)
       if (activeProposal.id) {
-         await purchaseProposalsAPI.update(activeProposal.id, submitData);
+         await purchaseProposalsAPI.update(activeProposal.id, payload);
          alert('Cập nhật thành công!');
          fetchProposal(activeProposal.id);
       } else {
-         await purchaseProposalsAPI.create(submitData);
+         await purchaseProposalsAPI.create(payload);
          alert('Tạo phiếu thành công!');
          setSearchParams({});
          fetchProposalsList();
@@ -485,7 +510,14 @@ const PurchaseProposalPage = () => {
               
               {activeProposal.attached_file_url && (
                 <div style={{ marginTop: '10px', fontSize: '14px' }}>
-                  <a href={activeProposal.attached_file_url} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-primary">
+                  <a 
+                    href={activeProposal.attached_file_url.startsWith('http') 
+                      ? activeProposal.attached_file_url 
+                      : `${(import.meta.env.VITE_API_URL || '').replace(/\/api$/, '')}${activeProposal.attached_file_url}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="btn btn-sm btn-primary"
+                  >
                     📄 Xem / Tải tài liệu đính kèm
                   </a>
                 </div>
