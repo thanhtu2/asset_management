@@ -18,21 +18,8 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
-
-// Request Interceptor: Tự động thêm token vào header
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
 // Response Interceptor: Xử lý lỗi 401 (token hết hạn/không hợp lệ)
 apiClient.interceptors.response.use(
@@ -56,6 +43,7 @@ apiClient.interceptors.response.use(
 export const authAPI = {
   login: (username, password) => apiClient.post('/auth/login', { username, password }),
   register: (userData) => apiClient.post('/auth/register', userData),
+  logout: () => apiClient.post('/auth/logout'),
   getProfile: () => apiClient.get('/auth/profile'),
   updateProfile: (data) => apiClient.put('/auth/profile', data),
   changePassword: (passwords) => apiClient.post('/auth/change-password', passwords),

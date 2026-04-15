@@ -31,10 +31,24 @@ export const login = async (req, res) => {
     // Lấy danh sách quyền của Role từ database
     const [perms] = await pool.query('SELECT permission_code FROM role_permissions WHERE role_code = ?', [user.role]);
     
-    const { password: _, ...userData } = user;
-    userData.permissions = perms.map(p => p.permission_code);
+    const permissions = perms.map(p => p.permission_code);
     
-    res.json({ token, user: userData });
+    // res.json({ token, user: userData });
+    
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // Timeout 24 giờ như yêu cầu
+    });
+    res.json({
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        role: user.role,
+        permissions
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -59,7 +73,13 @@ export const register = async (req, res) => {
     
     const { password: _, ...userData } = user;
     
-    res.status(201).json({ token, user: userData });
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // Timeout 24 giờ
+    });
+    res.status(201).json({ user: userData });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -96,6 +96,7 @@ Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doa
 - **Chống Brute-force & DDoS:** Tích hợp Rate Limiting giới hạn số lần đăng nhập sai (5 lần/15 phút), API chung (300 req/15 phút) và API Public báo hỏng (10 req/giờ).
 - **Chống XSS (Cross-Site Scripting):** Mã hóa toàn bộ dữ liệu đầu vào khi hiển thị và in tem nhãn QR ở Frontend.
 - **Chống SQL Injection:** Sử dụng Parameterized Queries cho toàn bộ hệ thống API.
+- **Xác thực an toàn:** Sử dụng HTTP-only Cookie để lưu trữ JWT, giúp chống lại các cuộc tấn công XSS đánh cắp phiên đăng nhập.
 
 ### 13. Đề xuất mua sắm (Purchase Proposals)
 - Tạo phiếu đề xuất mua sắm tài sản/trang thiết bị mới.
@@ -208,13 +209,14 @@ Password: admin123
 
 ## 📡 API Documentation
 
-Các API endpoint được bảo vệ bằng JWT, yêu cầu `Authorization: Bearer <token>` trong header cho mỗi request (trừ các API public).
+Các API endpoint được bảo vệ bằng JWT. Sau khi đăng nhập, token được lưu trong một **HTTP-only cookie** và sẽ được trình duyệt tự động gửi kèm trong các request tiếp theo.
 
 ### Authentication
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/auth/login` | Đăng nhập. Body: `{ "username": "...", "password": "..." }` |
+| `POST` | `/api/auth/login` | Đăng nhập. Body: `{ "username": "...", "password": "..." }`. Trả về thông tin user và set một HTTP-only cookie chứa token. |
+| `POST` | `/api/auth/logout` | Đăng xuất, xóa cookie xác thực trên server. |
 | `POST` | `/api/auth/register` | Đăng ký người dùng mới (chỉ admin). |
 | `GET` | `/api/auth/profile` | Lấy thông tin người dùng đang đăng nhập. |
 | `POST` | `/api/auth/change-password` | Đổi mật khẩu. Body: `{ "currentPassword": "...", "newPassword": "..." }` |
@@ -368,13 +370,7 @@ json
 
 ## 🔐 Xác thực
 
-Tất cả API (trừ auth) yêu cầu token JWT trong header:
-
-```
-Authorization: Bearer <token>
-```
-
-Token được lưu trữ trong localStorage và tự động thêm vào mọi request.
+Hệ thống sử dụng cơ chế xác thực dựa trên **HTTP-only Cookie**. Sau khi đăng nhập thành công, server sẽ gửi về một cookie chứa JWT. Cookie này sẽ được trình duyệt tự động đính kèm vào tất cả các request API sau đó, giúp tăng cường bảo mật và chống lại các cuộc tấn công XSS.
 
 ## 📊 Cấu trúc Database
 

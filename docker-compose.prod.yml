@@ -1,72 +1,67 @@
-# Docker Compose for Production/Deploy
 version: '3.8'
 
 services:
-  # MySQL Database
-  mysql:
+  db:
     image: mysql:8.0
-    container_name: office-mbs-mysql
-    restart: always
+    container_name: asset_management_db
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
       MYSQL_DATABASE: ${DB_NAME:-asset_management}
-      MYSQL_USER: ${DB_USER:-assetuser}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-assetpass}
-    ports:
-      - "3306:3306"
+      MYSQL_USER: ${DB_USER:-asset_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-asset_password}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_secret_password}
     volumes:
-      - mysql_data:/var/lib/mysql
+      - db_data:/var/lib/mysql
+      # Tự động khởi tạo schema database từ file init.sql trong lần chạy đầu tiên
+      - ./backend/src/config/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - office-mbs-network
+      - asset-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
 
-  # Backend API
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile.prod
-    container_name: office-mbs-backend
-    restart: always
-    environment:
-      DB_HOST: mysql
-      DB_USER: ${DB_USER:-assetuser}
-      DB_PASSWORD: ${DB_PASSWORD:-assetpass}
-      DB_NAME: ${DB_NAME:-asset_management}
-      PORT: 3001
-      JWT_SECRET: ${JWT_SECRET:-change-this-secret-in-production}
-      CORS_ORIGIN: ${CORS_ORIGIN}
-      FRONTEND_URL: ${FRONTEND_URL}
-    ports:
-      - "3001:3001"
+      dockerfile: Dockerfile
+    container_name: asset_management_backend
+    restart: unless-stopped
     depends_on:
-      mysql:
+      db:
         condition: service_healthy
-    networks:
-      - office-mbs-network
-
-  # Frontend (Static files served by Nginx)
-  frontend:
-    image: nginx:alpine
-    container_name: office-mbs-frontend
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
+    environment:
+      - DB_HOST=db
+      - DB_USER=${DB_USER:-asset_user}
+      - DB_PASSWORD=${DB_PASSWORD:-asset_password}
+      - DB_NAME=${DB_NAME:-asset_management}
+      - PORT=3001
+      - JWT_SECRET=${JWT_SECRET:-a_very_secret_key_for_docker_compose_please_change}
+      - FRONTEND_URL=http://localhost:8080
+      - VERCEL=false # Đảm bảo server chạy ở chế độ listen
     volumes:
-      - ./frontend/dist:/usr/share/nginx/html:ro
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # Đồng bộ thư mục uploads để lưu file đính kèm
+      - ./backend/uploads:/app/uploads
+    networks:
+      - asset-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: asset_management_frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80" # Ánh xạ cổng 80 của container ra cổng 8080 trên máy của bạn
     depends_on:
       - backend
     networks:
-      - office-mbs-network
-
-volumes:
-  mysql_data:
+      - asset-network
 
 networks:
-  office-mbs-network:
+  asset-network:
     driver: bridge
+
+volumes:
+  db_data:
+    driver: local
