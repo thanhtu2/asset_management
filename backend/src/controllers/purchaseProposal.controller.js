@@ -143,7 +143,7 @@ export const remove = async (req, res) => {
     await PurchaseProposal.delete(req.params.id, req.user);
     res.json({ message: 'Xóa phiếu đề xuất thành công' });
   } catch (error) {
-    res.status(error.message.includes('Unauthorized') ? 403 : 500).status({ message: error.message });
+    res.status(error.message.includes('Unauthorized') ? 403 : 500).json({ message: error.message });
   }
 };
 

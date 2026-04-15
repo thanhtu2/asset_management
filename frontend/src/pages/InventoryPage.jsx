@@ -243,8 +243,8 @@ const InventoryPage = () => {
 
       // Step 2: Apply the decision logic by updating the main asset's status
       if (severity === 'minor') {
-        // Minor damage -> Set status to 'cần sửa chữa và hỏng', which will auto-create a maintenance ticket
-        await assetsAPI.updateStatus(record.asset_id, 'cần sửa chữa và hỏng', notes || 'Hư hỏng phát hiện khi kiểm kê');
+        // Minor damage -> Set status to 'cần sửa chữa', which will auto-create a maintenance ticket
+        await assetsAPI.updateStatus(record.asset_id, 'cần sửa chữa', notes || 'Hư hỏng phát hiện khi kiểm kê');
       } else if (severity === 'major') {
         // Major damage -> Set status to 'đã thanh lý' for liquidation
         await assetsAPI.updateStatus(record.asset_id, 'đã thanh lý', notes || 'Hư hỏng nặng, đề nghị thanh lý khi kiểm kê');
@@ -267,7 +267,7 @@ const InventoryPage = () => {
     if (!notes) return;
     
     try {
-      await assetsAPI.updateStatus(record.asset_id, 'cần sửa chữa và hỏng', notes);
+      await assetsAPI.updateStatus(record.asset_id, 'cần sửa chữa', notes);
       alert('Đã tạo yêu cầu sửa chữa cho tài sản ' + record.asset_code);
       handleViewDetails(selectedSession);
     } catch (error) {
@@ -281,8 +281,8 @@ const InventoryPage = () => {
     try {
       // Update inventory record status to damaged
       await inventoryAPI.updateRecord(selectedSession.id, record.id, { status: 'damaged', notes });
-      // Update asset status to cần sửa chữa và hỏng
-      await assetsAPI.updateStatus(record.asset_id, 'cần sửa chữa và hỏng', notes || 'Hư hỏng phát hiện khi kiểm kê');
+      // Update asset status to hỏng
+      await assetsAPI.updateStatus(record.asset_id, 'hỏng', notes || 'Hư hỏng phát hiện khi kiểm kê');
       alert('Đã báo hỏng tài sản ' + record.asset_code);
       handleViewDetails(selectedSession);
     } catch (error) {

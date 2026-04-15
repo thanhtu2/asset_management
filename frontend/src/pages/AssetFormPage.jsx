@@ -315,7 +315,8 @@ const AssetFormPage = () => {
               <select name="status" value={formData.status} onChange={handleChange}>
                 <option value="chờ cấp">Chờ cấp</option>
                 <option value="đang sử dụng">Đang sử dụng</option>
-                <option value="cần sửa chữa và hỏng">Cần sửa chữa và hỏng</option>
+                <option value="cần sửa chữa">Cần sửa chữa</option>
+                <option value="hỏng">Hỏng</option>
                 <option value="đã thanh lý">Đã thanh lý</option>
               </select>
             </div>

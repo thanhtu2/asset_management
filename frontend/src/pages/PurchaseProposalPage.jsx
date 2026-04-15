@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { purchaseProposalsAPI, departmentsAPI } from '../api';
+import { purchaseProposalsAPI, departmentsAPI, API_BASE_URL } from '../api';
 import { useSearchParams } from 'react-router-dom';
 
 const PurchaseProposalPage = () => {
@@ -146,6 +146,47 @@ const PurchaseProposalPage = () => {
     }
 
     setHistory(hist);
+  };
+
+  const handleViewFile = async (fileUrl) => {
+    if (!fileUrl) {
+      alert('Không có file để xem.');
+      return;
+    }
+
+    try {
+      // Lấy tên file từ đường dẫn đầy đủ (VD: /uploads/file.pdf -> file.pdf)
+      const filename = fileUrl.split('/').pop();
+      if (!filename) throw new Error('Đường dẫn file không hợp lệ.');
+
+      const token = localStorage.getItem('token');
+      const baseUrl = API_BASE_URL.replace(/\/$/, ''); // Xóa dấu gạch chéo ở cuối nếu có
+      const fullUrl = `${baseUrl}/download/${encodeURIComponent(filename)}`; // Mã hóa URL an toàn
+      const response = await fetch(fullUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.status === 401) {
+        throw new Error('Phiên đăng nhập hết hạn hoặc không có quyền xem file này. Vui lòng đăng nhập lại.');
+      }
+      if (!response.ok) {
+        let errorMsg = response.statusText;
+        try {
+          const errData = await response.json();
+          if (errData.message) errorMsg = errData.message;
+        } catch (e) {}
+        throw new Error(errorMsg);
+      }
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+    } catch (error) {
+      console.error('Lỗi khi xem file:', error);
+      alert(`Không thể xem file: ${error.message}`);
+    }
   };
 
   const updateTotal = (items) => {
@@ -510,16 +551,12 @@ const PurchaseProposalPage = () => {
               
               {activeProposal.attached_file_url && (
                 <div style={{ marginTop: '10px', fontSize: '14px' }}>
-                  <a 
-                    href={activeProposal.attached_file_url.startsWith('http') 
-                      ? activeProposal.attached_file_url 
-                      : `${(import.meta.env.VITE_API_URL || '').replace(/\/api$/, '')}${activeProposal.attached_file_url}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                  <button 
+                    onClick={() => handleViewFile(activeProposal.attached_file_url)}
                     className="btn btn-sm btn-primary"
                   >
                     📄 Xem / Tải tài liệu đính kèm
-                  </a>
+                  </button>
                 </div>
               )}
 
@@ -551,13 +588,13 @@ const PurchaseProposalPage = () => {
                   <div>{activeProposal.department_leader_name}</div>
                 </div>
               </div>
-              <div className="signoff-item">
+              {/* <div className="signoff-item">
                 <label>Phòng Tài chính</label>
                 <div className="signature-area">
                   <span>Xác nhận kinh phí</span>
                   <div className="signature-line">_______________________</div>
                 </div>
-              </div>
+              </div> */}
               <div className="signoff-item">
                 <label>Ban Giám đốc</label>
                 <div className="signature-area">
