@@ -1,59 +1,45 @@
-import { useEffect, useRef, useState } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { useEffect, useRef } from 'react';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 const QrScanner = ({ onScanSuccess, onScanError }) => {
-  const [scannerId] = useState(() => `qr-reader-${Date.now()}`);
-  const html5QrCodeRef = useRef(null);
-  const onScanSuccessRef = useRef(onScanSuccess);
-  const onScanErrorRef = useRef(onScanError);
+  // Dùng useRef để đánh dấu Camera đã được khởi tạo hay chưa
+  const scannerRef = useRef(null);
 
   useEffect(() => {
-    onScanSuccessRef.current = onScanSuccess;
-    onScanErrorRef.current = onScanError;
+    // Nếu đã khởi tạo rồi thì dừng lại (Chống lỗi 2 màn hình của React 18)
+    if (scannerRef.current) return;
+
+    const scanner = new Html5QrcodeScanner(
+      "qr-reader",
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+      },
+      false
+    );
+
+    scanner.render(
+      (decodedText) => {
+        if (onScanSuccess) onScanSuccess(decodedText);
+      },
+      (error) => {
+        if (onScanError) onScanError(error);
+      }
+    );
+
+    scannerRef.current = scanner;
+
+    // Cleanup: Xóa camera và xóa HTML DOM khi đóng khung quét
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(e => console.error("Lỗi tắt Camera:", e));
+        scannerRef.current = null;
+      }
+    };
   }, [onScanSuccess, onScanError]);
 
-  useEffect(() => {
-    const startScanner = async () => {
-      try {
-        html5QrCodeRef.current = new Html5Qrcode(scannerId);
-        
-        await html5QrCodeRef.current.start(
-          { facingMode: "environment" },
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-          },
-          (decodedText, decodedResult) => {
-            onScanSuccessRef.current(decodedText, decodedResult);
-          },
-          (errorMessage) => {
-            if (onScanErrorRef.current) {
-              onScanErrorRef.current(errorMessage);
-            }
-          }
-        );
-      } catch (err) {
-        console.error("Error starting scanner:", err);
-        if (onScanErrorRef.current) {
-          onScanErrorRef.current(err);
-        }
-      }
-    };
-
-    startScanner();
-
-    return () => {
-      if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
-        html5QrCodeRef.current.stop().catch(err => {
-          console.error("Error stopping scanner:", err);
-        });
-      }
-    };
-  }, [scannerId]);
-
-  return (
-    <div id={scannerId} style={{ width: '100%', maxWidth: '500px', margin: '0 auto' }}></div>
-  );
+  return <div id="qr-reader" style={{ width: "100%", maxWidth: "500px", margin: "0 auto" }}></div>;
 };
 
 export default QrScanner;

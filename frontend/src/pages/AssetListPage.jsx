@@ -72,9 +72,9 @@ const AssetListPage = () => {
         locationsAPI.getAllSimple(),
         departmentsAPI.getAllSimple()
       ]);
-      setCategories(catRes.data || []);
-      setLocations(locRes.data || []);
-      setDepartments(deptRes.data || []);
+      setCategories(catRes.data?.data || catRes.data || []);
+      setLocations(locRes.data?.data || locRes.data || []);
+      setDepartments(deptRes.data?.data || deptRes.data || []);
     } catch (error) {
       console.error('Error fetching filters:', error);
     }
@@ -368,6 +368,15 @@ const AssetListPage = () => {
             />
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
+            <select
+              value={filters.department_id}
+              onChange={(e) => setFilters({ ...filters, department_id: e.target.value })}
+            >
+              <option value="">Tất cả phòng ban</option> 
+              {departments.map((dep) => (
+                <option key={dep.id} value={dep.id}>{dep.name}</option>
+              ))}
+            </select> 
             <select
               value={filters.category_id}
               onChange={(e) => setFilters({ ...filters, category_id: e.target.value })}

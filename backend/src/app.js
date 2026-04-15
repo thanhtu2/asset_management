@@ -5,6 +5,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
+import jwt from 'jsonwebtoken';
+import fs from 'fs';
 
 // Import routes
 import authRoutes from './routes/auth.routes.js';
@@ -50,7 +52,7 @@ const corsOptions = {
     // If no origin (server-to-server) or origin is allowed
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
-    } else if (origin.startsWith('http://192.168.') || origin.includes('vercel.app')) {
+    } else if (origin.startsWith('http://192.168.') || origin.startsWith('https://192.168.') || origin.includes('vercel.app')) {
       // Cho phép các máy trong mạng LAN và các domain có đuôi vercel.app
       callback(null, true);
     } else {
@@ -76,7 +78,36 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Phục vụ file tĩnh từ thư mục uploads
-app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
+// app.use('/uploads', express.static(path.resolve(__dirname, '../uploads'))); // DEPRECATED: Insecure, replaced with a secure route
+
+// Secure file download route
+app.get('/api/download/:filename', (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Yêu cầu xác thực' });
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.JWT_SECRET || 'asset_management_secret_key_2024'); // Verify token
+
+    const { filename } = req.params;
+    // Security: Prevent directory traversal attacks
+    const safeFilename = path.basename(filename);
+    if (safeFilename !== filename) {
+      return res.status(400).json({ message: 'Tên file không hợp lệ' });
+    }
+    const filePath = path.resolve(__dirname, '../uploads', safeFilename);
+    res.sendFile(filePath, (err) => { 
+      if (err) {
+        console.error('Lỗi tải file:', err.message, 'Đường dẫn:', filePath);
+        if (!res.headersSent) res.status(404).json({ message: 'Không tìm thấy file trên máy chủ (Có thể đã bị xóa)' }); 
+      }
+    });
+  } catch (error) {
+    console.error('Lỗi xác thực tải file:', error.message);
+    return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
+  }
+});
 
 // Đảm bảo Database kết nối xong trước khi xử lý API trên Vercel (Cold-start fix)
 let dbInitialized = false;
@@ -100,16 +131,20 @@ app.use(async (req, res, next) => {
 // Rate limiting for login to prevent Brute-force attacks
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs
-  message: { message: 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau 15 phút.' },
+  max: 5, // Tối đa 5 lần thử
+  message: { message: 'Tài khoản này đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau 15 phút.' },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req, res) => {
+    // Đếm theo Tên đăng nhập (username) thay vì đếm theo IP. Nếu không có username thì mới dùng IP.
+    return req.body.username ? req.body.username.toLowerCase().trim() : req.ip;
+  }
 });
 
 // General API rate limiting để chống DDoS/Spam request chung
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 phút
-  max: 300, // Giới hạn 300 requests / 15 phút / IP
+  max: process.env.VERCEL ? 300 : 3000, // Giữ 300 trên Vercel, tăng lên 3000 khi code local
   message: { message: 'Hệ thống đang bận. Quá nhiều yêu cầu từ địa chỉ IP này, vui lòng thử lại sau 15 phút.' },
   standardHeaders: true,
   legacyHeaders: false,

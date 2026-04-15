@@ -103,6 +103,7 @@ Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doa
 - Quy trình phê duyệt nhiều cấp: Người đề xuất -> Lãnh đạo phòng duyệt -> Giám đốc duyệt.
 - Tự động tính toán tổng tiền, VAT.
 - Tích hợp luồng thông báo tự động (Notifications) khi có phiếu cần duyệt hoặc phiếu được phê duyệt/từ chối.
+- Truy cập file đính kèm an toàn, yêu cầu xác thực.
 
 ## 🛠️ Công nghệ
 
@@ -319,6 +320,12 @@ Các API cho các tài nguyên này có cấu trúc tương tự nhau.
 | `PUT` | `/api/purchases/:id` | Cập nhật phiếu hoặc thực hiện duyệt/từ chối. |
 | `DELETE` | `/api/purchases/:id` | Xóa phiếu đề xuất (chỉ áp dụng khi phiếu ở trạng thái Nháp). |
 | `GET` | `/api/purchases/stats` | Lấy thống kê số lượng phiếu theo các trạng thái xử lý. |
+
+### File Handling (Tải file an toàn)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/download/:filename` | Tải xuống file đính kèm một cách an toàn. Yêu cầu xác thực (JWT Token). |
 
 ### Dashboard
 

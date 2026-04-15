@@ -104,7 +104,7 @@ const PublicAssetPage = () => {
       // Cần thêm hàm `reportDamage` vào `assetsAPI` của bạn.
       // Ví dụ trong `src/api/index.js`:
       // reportDamage: (id, description) => axios.post(`/assets/public/${id}/report-damage`, { description }),
-      if (!user && selectedStatus === 'cần sửa chữa và hỏng') {
+      if (!user && selectedStatus === 'hỏng') {
         if (!assetsAPI.reportDamage) {
           throw new Error("assetsAPI.reportDamage chưa được định nghĩa. Vui lòng xem ví dụ trong PublicAssetPage.jsx.");
         }
@@ -238,7 +238,8 @@ const PublicAssetPage = () => {
   const getAvailableStatuses = () => {
     const allStatuses = [
       { value: 'đang sử dụng', label: 'Đang sử dụng' },
-      { value: 'cần sửa chữa', label: 'Cần sửa chữa' }
+      { value: 'cần sửa chữa', label: 'Cần sửa chữa' },
+      { value: 'hỏng', label: 'Hỏng' }
     ];
     
     // If user is logged in, show all statuses
@@ -246,8 +247,8 @@ const PublicAssetPage = () => {
       return allStatuses;
     }
     
-    // If user is not logged in, only show "Cần sửa chữa và hỏng" (report damage only)
-    return allStatuses.filter(s => s.value === 'cần sửa chữa và hỏng');
+    // If user is not logged in, only show "Hỏng" (report damage only)
+    return [{ value: 'hỏng', label: 'Báo hỏng thiết bị' }];
   };
 
   const formatDate = (date) => {
@@ -571,7 +572,7 @@ const PublicAssetPage = () => {
                 </label>
               ))}
             </div>
-            {selectedStatus === 'cần sửa chữa và hỏng' && (
+          {(selectedStatus === 'hỏng' || selectedStatus === 'cần sửa chữa') && (
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
                   Mô tả tình trạng:

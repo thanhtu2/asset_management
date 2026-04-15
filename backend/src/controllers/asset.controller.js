@@ -307,7 +307,7 @@ export const remove = async (req, res) => {
 export const updateStatus = async (req, res) => {
   try {
     const { status, description } = req.body;
-    const validStatuses = ['chờ cấp', 'đang sử dụng', 'cần sửa chữa', 'Hỏng', 'đã thanh lý'];
+    const validStatuses = ['chờ cấp', 'đang sử dụng', 'cần sửa chữa', 'hỏng', 'Hỏng', 'đã thanh lý', 'cần sửa chữa và hỏng'];
     
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({ message: 'Trạng thái không hợp lệ' });
@@ -322,20 +322,32 @@ export const updateStatus = async (req, res) => {
     let message = 'Cập nhật trạng thái thành công';
     let maintenanceCreated = false;
 
-    // If status is "needs_repair", create a maintenance record
-    if (status === 'cần sửa chữa và hỏng') {
-      const desc = description || 'Cần sửa chữa và hỏng (cập nhật bởi người dùng)';
-      await MaintenanceRecord.create({
-        asset_id: parseInt(req.params.id),
-        maintenance_date: new Date(),
-        maintenance_type: 'emergency',
-        description: desc,
-        cost: 0,
-        technician: null,
-        next_maintenance_date: null
-      });
-      message = 'Đã cập nhật trạng thái và tạo phiếu bảo trì';
-      maintenanceCreated = true;
+    const damageStatuses = ['cần sửa chữa', 'hỏng', 'Hỏng', 'cần sửa chữa và hỏng'];
+    
+    // Tự động tạo phiếu bảo trì nếu chuyển sang trạng thái hỏng (và trước đó chưa hỏng)
+    if (damageStatuses.includes(status)) {
+      if (!damageStatuses.includes(oldAsset.status)) {
+        const desc = description || `Tài sản chuyển sang trạng thái: ${status} (cập nhật bởi người dùng)`;
+        await MaintenanceRecord.create({
+          asset_id: parseInt(req.params.id),
+          maintenance_date: new Date(),
+          maintenance_type: 'emergency',
+          description: desc,
+          cost: 0,
+          technician: null,
+          next_maintenance_date: null
+        });
+        message = 'Đã cập nhật trạng thái và tạo phiếu bảo trì';
+        maintenanceCreated = true;
+      } else {
+        message = 'Đã cập nhật trạng thái (Tài sản đã nằm trong danh sách bảo trì)';
+      }
+    } else if (status === 'đã thanh lý') {
+      // Tự động hủy các phiếu bảo trì đang chờ nếu tài sản bị đem đi thanh lý
+      await pool.query(
+        "UPDATE maintenance_records SET status = 'completed', description = CONCAT(COALESCE(description, ''), ' (Tự động hủy do tài sản đã thanh lý)') WHERE asset_id = ? AND status != 'completed'",
+        [req.params.id]
+      );
     }
     
     // Ghi log
@@ -360,23 +372,28 @@ export const reportDamage = async (req, res) => {
     const { description } = req.body;
     const assetId = req.params.id;
 
-    // 1. Update asset status to "cần sửa chữa và hỏng"
-    const asset = await Asset.update(assetId, { status: 'cần sửa chữa và hỏng' });
+    const oldAsset = await Asset.findById(assetId);
+
+    // 1. Update asset status to "hỏng"
+    const asset = await Asset.update(assetId, { status: 'hỏng' });
     if (!asset) {
       return res.status(404).json({ message: 'Tài sản không tồn tại' });
     }
 
-    // 2. Create a maintenance record
-    const desc = description || 'Báo cáo hư hỏng từ trang công khai';
-    await MaintenanceRecord.create({
-      asset_id: parseInt(assetId),
-      maintenance_date: new Date(),
-      maintenance_type: 'emergency',
-      description: desc,
-      cost: 0,
-      technician: null,
-      next_maintenance_date: null
-    });
+    // 2. Chỉ tạo phiếu bảo trì nếu trước đó tài sản chưa ở trạng thái hỏng
+    const damageStatuses = ['cần sửa chữa', 'hỏng', 'Hỏng', 'cần sửa chữa và hỏng'];
+    if (!damageStatuses.includes(oldAsset.status)) {
+      const desc = description || 'Báo cáo hư hỏng từ trang công khai';
+      await MaintenanceRecord.create({
+        asset_id: parseInt(assetId),
+        maintenance_date: new Date(),
+        maintenance_type: 'emergency',
+        description: desc,
+        cost: 0,
+        technician: null,
+        next_maintenance_date: null
+      });
+    }
     
     // Ghi log (Khách từ Public quét mã QR báo hỏng, không có User ID)
     await AuditLog.log(null, 'UPDATE', 'ASSET', assetId, null, { status: 'cần sửa chữa và hỏng' }, `Khách báo hỏng tài sản từ mã QR: ${desc}`, req.ip);
@@ -418,8 +435,8 @@ export const downloadTemplate = (req, res) => {
     'Trạng thái (chờ cấp/đang sử dụng/cần sửa chữa/hỏng/đã thanh lý)', 'Mã vạch'
   ];
   const sample = [
-    'TS001', 'Máy tính Dell', 'Máy tính để bàn', 'COMPUTER', 'OFFICE1', 'IT',
-    'SUP001', 'Nguyễn Văn B', '2024-01-15',
+    'COM2024MT0001', 'Máy tính Dell', 'Máy tính để bàn', 'COMPUTER', 'OFFICE', 'VP',
+    'Công ty TNHH FPT', 'Nguyễn Văn B', '2024-01-15',
     '15000000', '500000', '12000000',
     'đang sử dụng', 'BC001'
   ];

@@ -139,6 +139,7 @@ Khác với hệ thống Chuông thông báo (nhằm mục đích nhắc nhở c
 *   **Rate Limiting (Chống Brute-force & DDoS):** API `/api/auth/login` giới hạn tối đa 5 request đăng nhập/15 phút. Toàn bộ các API nội bộ bị giới hạn 300 request/15 phút. Các API Public (như báo hỏng bằng mã QR) bị giới hạn 10 request/giờ để ngăn chặn spam rác từ thiết bị lạ.
 *   **XSS Protection (Chống Cross-Site Scripting):** Tại các chức năng in ấn (In mã vạch hàng loạt ở `AssetListPage.jsx`), dữ liệu tài sản (`asset_code`, `name`) được làm sạch qua hàm `escapeHTML()` trước khi chèn vào `innerHTML`, ngăn chặn chèn mã độc Javascript vào DOM.
 *   **SQL Injection Protection:** Database Driver `mysql2/promise` tự động escape các tham số đầu vào bằng Parameterized Queries.
+*   **Secure File Serving (Phục vụ File an toàn):** Việc truy cập các file đính kèm (VD: file báo giá trong phiếu mua sắm) được thực hiện thông qua một API endpoint chuyên dụng (`/api/download/:filename`) được bảo vệ bởi `authMiddleware`. Hệ thống không còn phục vụ file tĩnh trực tiếp từ thư mục `uploads`, ngăn chặn truy cập trái phép vào tài liệu nhạy cảm.
 *   **API Exposure:** Các endpoint nhạy cảm (thêm, sửa, xóa) được bọc bởi `authMiddleware` và RBAC để chống lộ lọt API (Broken Object Level Authorization).
 
 ---
@@ -199,3 +200,17 @@ Khác với hệ thống Chuông thông báo (nhằm mục đích nhắc nhở c
 *   **Không import được Excel:** Hãy tải lại template mẫu từ hệ thống `/api/assets/template` vì thứ tự cột trong code Backend map cứng (VD: `row[0] = asset_code`, `row[1] = name`).
 *   **Lỗi mất File đính kèm khi upload bằng Axios (`req.file` undefined):** Do cấu hình API Client mặc định ép Header `Content-Type: application/json`, Axios sẽ làm mất chuỗi `boundary` phân tách file của chuẩn multipart. *Cách khắc phục:* Khi gửi `FormData` có file đính kèm, sử dụng `fetch` API thuần thay thế cho `axios` để trình duyệt tự động nội suy đúng Header `multipart/form-data`.
 *   **Lỗi lồng chuỗi JSON hai lần (Double Stringification):** Xảy ra khi lưu mảng (VD: `items` của phiếu mua sắm) vào MySQL JSON, chuỗi có thể biến dạng thành dạng lồng ngầm `"[{\"name\":\"...\"}]"`. *Cách khắc phục:* Cần phá vỡ vòng lặp này bằng logic kiểm tra ở cả Frontend lẫn Backend: `if (typeof data === 'string') { data = JSON.parse(data); }`, gọi kiểm tra 2 lần liên tiếp nếu cần thiết để đảm bảo bóc tách sạch hoàn toàn string kép.
+
+---
+
+## 7. 📈 Tiến Độ Phát Triển (Project Progress)
+
+**Các module đã hoàn thiện & đi vào ổn định (Done):**
+*   ✅ **Xác thực & RBAC:** Đăng nhập JWT, Phân quyền động, Quản lý người dùng, Vai trò (Roles) và Quyền (Permissions).
+*   ✅ **Quản lý Tài sản (Core):** CRUD Tài sản, Tính toán Khấu hao động (on-the-fly), In ấn tem nhãn QR (Đơn lẻ & Hàng loạt).
+*   ✅ **Quét QR Code:** Hỗ trợ quét bằng Camera ngay trên Mobile (xử lý Fake SSL cho LAN nội bộ), chống lỗi nháy Camera kép, xử lý đa định dạng mã.
+*   ✅ **Bảo trì & Báo hỏng:** Liên kết chặt chẽ với Kiểm kê và Public page. Tự động sinh phiếu bảo trì (chống sinh trùng lặp), tự động đóng phiếu khi tài sản thanh lý.
+*   ✅ **Kiểm kê Tài sản:** Quét mã vạch kiểm đếm tự động, phát hiện tài sản sai vị trí/thừa/thiếu, hỗ trợ thao tác xử lý hư hỏng và đề xuất thanh lý ngay trong màn hình kiểm kê.
+*   ✅ **Đề xuất mua sắm:** Luồng phê duyệt chuẩn 4 bước (Nháp -> Lãnh đạo Phòng -> Ban Giám đốc -> Hoàn thành), có hỗ trợ đính kèm File báo giá/hình ảnh.
+*   ✅ **Báo cáo & Dashboard:** Thống kê dữ liệu Real-time, tính năng Xuất (Export) & Nhập (Import) dữ liệu bằng Excel.
+*   ✅ **Hệ thống phụ trợ:** Chuông thông báo (Notification) tự động cập nhật, Audit Logs ghi nhận lịch sử thay đổi cực kỳ chi tiết đến từng Field bị chỉnh sửa, Hệ thống Rate Limit chống Spam/DDoS.

@@ -21,10 +21,6 @@ const MaintenancePage = () => {
   const [deleteModal, setDeleteModal] = useState({ show: false, id: null });
   const [filter, setFilter] = useState({ asset_id: '', type: '' });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const fetchData = async () => {
     try {
       const [recordsRes, assetsRes] = await Promise.all([
