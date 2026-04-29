@@ -58,9 +58,7 @@ asset_management/
 
 ### 2.2. Cơ chế Giao tiếp (Communication)
 1. **Request:** Frontend gọi qua `apiClient` (đã config base URL và tự động nhét `Bearer Token` lấy từ `localStorage` thông qua request interceptor).
-2. **Response:** Backend check token qua middleware. Nếu hợp lệ, Controller truy vấn DB qua Model, trả về JSON.
-3. **Error Handling:** Trả về HTTP Status (400, 401, 403, 404, 500). Axios Response Interceptor ở Frontend nếu gặp mã `401 Unauthorized` sẽ tự động xóa token và redirect về `/login`.
-
+2. **Authentev
 ---
 
 ## 3. 🗄 Thiết Kế CSDL (Database Schema & Logic)
@@ -140,6 +138,7 @@ Khác với hệ thống Chuông thông báo (nhằm mục đích nhắc nhở c
 *   **XSS Protection (Chống Cross-Site Scripting):** Tại các chức năng in ấn (In mã vạch hàng loạt ở `AssetListPage.jsx`), dữ liệu tài sản (`asset_code`, `name`) được làm sạch qua hàm `escapeHTML()` trước khi chèn vào `innerHTML`, ngăn chặn chèn mã độc Javascript vào DOM.
 *   **SQL Injection Protection:** Database Driver `mysql2/promise` tự động escape các tham số đầu vào bằng Parameterized Queries.
 *   **Secure File Serving (Phục vụ File an toàn):** Việc truy cập các file đính kèm (VD: file báo giá trong phiếu mua sắm) được thực hiện thông qua một API endpoint chuyên dụng (`/api/download/:filename`) được bảo vệ bởi `authMiddleware`. Hệ thống không còn phục vụ file tĩnh trực tiếp từ thư mục `uploads`, ngăn chặn truy cập trái phép vào tài liệu nhạy cảm.
+*   **HTTP-only Cookie Authentication:** Token xác thực (JWT) được lưu trong HTTP-only cookie thay vì `localStorage`. Điều này ngăn chặn mã JavaScript phía client truy cập vào token, giảm thiểu đáng kể nguy cơ bị đánh cắp phiên làm việc thông qua các cuộc tấn công XSS.
 *   **API Exposure:** Các endpoint nhạy cảm (thêm, sửa, xóa) được bọc bởi `authMiddleware` và RBAC để chống lộ lọt API (Broken Object Level Authorization).
 
 ---
@@ -162,10 +161,9 @@ Khác với hệ thống Chuông thông báo (nhằm mục đích nhắc nhở c
 
 ### Môi trường Cục bộ (Local / Dev)
 1. **Clone repo**, cd vào cả 2 thư mục `frontend` và `backend` chạy `npm install`.
-2. Tạo file `.env` ở Backend, config `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`.
+2. Tạo file `.env` ở thư mục gốc của dự án, config `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`.
 3. Chạy `init.sql` vào MySQL cục bộ để tạo Schema.
-4. Chạy `npm run dev` ở backend (cổng 3001) và frontend (cổng 5173).
-
+4. Chạy `npm run dev`
 **💡 Mẹo test thực tế trên mạng LAN (VD: Test tính năng quét QR qua Camera điện thoại):**
 Để điện thoại có thể truy cập, bạn nên chạy bằng IP mạng LAN (`192.168.x.x`) thay vì `localhost`. Dự án đã được thiết kế linh hoạt cho việc này:
 *   **Backend (`app.js`)**: Cấu hình CORS đã tự động cho phép mọi kết nối đến từ dải IP bắt đầu bằng `http://192.168.*` và các domain đuôi `.vercel.app`.
@@ -197,10 +195,9 @@ Khác với hệ thống Chuông thông báo (nhằm mục đích nhắc nhở c
 *   **Lỗi 401 văng ra trang Login liên tục:** Do JWT hết hạn, hãy xóa localStorage application và login lại, hoặc kiểm tra biến `JWT_SECRET` trên server.
 *   **Lỗi Font Tiếng Việt trên DB:** Nếu import DB cũ bị lỗi, chạy script `fix_encoding.sql` ở backend để ép bảng về `utf8mb4`.
 *   **Quét QR không lên:** `html5-qrcode` yêu cầu thiết bị phải cấp quyền Camera và domain bắt buộc phải là `HTTPS` (hoặc `localhost` khi dev) thì trình duyệt mới cho phép truy cập Camera.
-*   **Không import được Excel:** Hãy tải lại template mẫu từ hệ thống `/api/assets/template` vì thứ tự cột trong code Backend map cứng (VD: `row[0] = asset_code`, `row[1] = name`).
+*   **Không import được Excel:** Hãy tải lại template mẫu từ hệ thống `/api/assets/template` vì thứ tự cột trong code Backend được map cứng (VD: `row[0] = asset_code`, `row[1] = name`).
 *   **Lỗi mất File đính kèm khi upload bằng Axios (`req.file` undefined):** Do cấu hình API Client mặc định ép Header `Content-Type: application/json`, Axios sẽ làm mất chuỗi `boundary` phân tách file của chuẩn multipart. *Cách khắc phục:* Khi gửi `FormData` có file đính kèm, sử dụng `fetch` API thuần thay thế cho `axios` để trình duyệt tự động nội suy đúng Header `multipart/form-data`.
-*   **Lỗi lồng chuỗi JSON hai lần (Double Stringification):** Xảy ra khi lưu mảng (VD: `items` của phiếu mua sắm) vào MySQL JSON, chuỗi có thể biến dạng thành dạng lồng ngầm `"[{\"name\":\"...\"}]"`. *Cách khắc phục:* Cần phá vỡ vòng lặp này bằng logic kiểm tra ở cả Frontend lẫn Backend: `if (typeof data === 'string') { data = JSON.parse(data); }`, gọi kiểm tra 2 lần liên tiếp nếu cần thiết để đảm bảo bóc tách sạch hoàn toàn string kép.
-
+*   **Lỗi lồng chuỗi JSON hai lần (Double Stringification):** Xảy ra khi lưu mảng (VD: `items` của phiếu mua sắm) vào MySQL JSON, chuỗi có thể biến dạng thành dạng lồng ngầm `"[{\"name\":
 ---
 
 ## 7. 📈 Tiến Độ Phát Triển (Project Progress)

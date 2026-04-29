@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
+import cookieParser from 'cookie-parser';
 
 // Import routes
 import authRoutes from './routes/auth.routes.js';
@@ -76,6 +77,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Phục vụ file tĩnh từ thư mục uploads
 // app.use('/uploads', express.static(path.resolve(__dirname, '../uploads'))); // DEPRECATED: Insecure, replaced with a secure route
@@ -83,11 +85,10 @@ app.use(express.urlencoded({ extended: true }));
 // Secure file download route
 app.get('/api/download/:filename', (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = req.cookies.token;
+    if (!token) {
       return res.status(401).json({ message: 'Yêu cầu xác thực' });
     }
-    const token = authHeader.split(' ')[1];
     jwt.verify(token, process.env.JWT_SECRET || 'asset_management_secret_key_2024'); // Verify token
 
     const { filename } = req.params;
@@ -179,6 +180,17 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/purchases', purchaseRoutes);
 app.use('/api/audit-logs', auditRoutes);
+
+// New Logout Route
+app.post('/api/auth/logout', (req, res) => {
+  res.cookie('token', '', {
+    httpOnly: true,
+    expires: new Date(0), // Expire the cookie immediately
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  });
+  res.status(200).json({ message: 'Đăng xuất thành công' });
+});
 
 // Health check
 app.get('/api/health', (req, res) => {

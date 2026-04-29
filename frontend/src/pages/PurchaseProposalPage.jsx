@@ -159,13 +159,10 @@ const PurchaseProposalPage = () => {
       const filename = fileUrl.split('/').pop();
       if (!filename) throw new Error('Đường dẫn file không hợp lệ.');
 
-      const token = localStorage.getItem('token');
       const baseUrl = API_BASE_URL.replace(/\/$/, ''); // Xóa dấu gạch chéo ở cuối nếu có
       const fullUrl = `${baseUrl}/download/${encodeURIComponent(filename)}`; // Mã hóa URL an toàn
       const response = await fetch(fullUrl, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include' // Quan trọng: Bắt buộc gửi cookie
       });
 
       if (response.status === 401) {
@@ -266,15 +263,12 @@ const PurchaseProposalPage = () => {
         formData.append('file', attachedFile);
         
         // Sử dụng fetch thuần để tránh bị axios ép header Content-Type: application/json làm mất file
-        const token = localStorage.getItem('token');
         const baseUrl = import.meta.env.VITE_API_URL || '/api';
         const url = activeProposal.id ? `${baseUrl}/purchases/${activeProposal.id}` : `${baseUrl}/purchases`;
         
         const response = await fetch(url, {
           method: activeProposal.id ? 'PUT' : 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
+          credentials: 'include', // Gửi HTTP-only cookie
           body: formData
         });
         

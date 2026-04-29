@@ -1,17 +1,22 @@
-# Development Dockerfile for Backend
-FROM node:20-alpine
+FROM node:18-alpine
 
 WORKDIR /app
 
-# Install dependencies
+# Sao chép file cấu hình package
 COPY package*.json ./
-RUN npm install
 
-# Copy source code
+# Cài đặt dependencies (bỏ qua devDependencies để giảm dung lượng image)
+RUN npm install --production
+
+# Sao chép mã nguồn
 COPY . .
 
-# Expose port
+# Đảm bảo thư mục uploads tồn tại để không bị lỗi khi upload file
+RUN mkdir -p uploads
+
 EXPOSE 3001
 
-# Start with nodemon for development
-CMD ["npm", "run", "dev"]
+ENV NODE_ENV=production
+
+# Chạy server
+CMD ["node", "src/app.js"]
