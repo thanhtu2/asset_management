@@ -30,8 +30,11 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       
-      // Chuyển hướng về trang login và lưu lại trang hiện tại để quay lại sau
-      if (window.location.pathname !== '/login') {
+      // Chỉ tự động chuyển hướng nếu KHÔNG PHẢI là trang công khai (quét mã QR)
+      const isPublicRoute = window.location.pathname.startsWith('/asset');
+      const isLoginRoute = window.location.pathname === '/login';
+
+      if (!isPublicRoute && !isLoginRoute) {
         window.location.href = `/login?redirect=${window.location.pathname}`;
       }
     }

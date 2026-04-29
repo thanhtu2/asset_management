@@ -293,8 +293,8 @@ const PublicAssetPage = () => {
     );
   }
 
-  // No asset ID in URL, show the initial scanner page
-  if (!id) {
+  // No asset ID or code in URL, and no asset data loaded, show the initial scanner page
+  if (!id && !code && !asset) {
     return (
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
@@ -417,6 +417,11 @@ const PublicAssetPage = () => {
         <div style={{ background: '#4CAF50', color: 'white', padding: '20px', textAlign: 'center' }}>
           <h2 style={{ margin: 0, fontSize: '22px' }}>{asset.name}</h2>
           <p style={{ margin: '10px 0 0 0', fontSize: '18px', opacity: 0.9 }}>{asset.asset_code}</p>
+          
+          <div style={{ marginTop: '15px', padding: '10px', background: 'rgba(255,255,255,0.15)', borderRadius: '8px' }}>
+            <div style={{ fontSize: '12px', textTransform: 'uppercase', opacity: 0.8 }}>Giá trị hiện tại</div>
+            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{formatCurrency(asset.current_value)}</div>
+          </div>
         </div>
 
         {/* Status */}
@@ -479,10 +484,6 @@ const PublicAssetPage = () => {
               <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
                 <td style={{ padding: '12px 0', color: '#666' }}>Giá mua</td>
                 <td style={{ padding: '12px 0', fontWeight: '500', color: '#2196F3' }}>{formatCurrency(asset.purchase_price)}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                <td style={{ padding: '12px 0', color: '#666' }}>Giá trị hiện tại</td>
-                <td style={{ padding: '12px 0', fontWeight: '500', color: '#4CAF50', fontSize: '18px' }}>{formatCurrency(asset.current_value)}</td>
               </tr>
               {asset.barcode && (
                 <tr style={{ borderBottom: '1px solid #f0f0f0' }}>

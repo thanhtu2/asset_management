@@ -26,7 +26,7 @@ const calculateCurrentValue = (asset) => {
   let calculatedValue = asset.purchase_price - totalDepreciation;
   
   const salvageValue = asset.salvage_value || 0;
-  return Math.max(salvageValue, calculatedValue, 0);
+  return Math.max(salvageValue, Math.round(calculatedValue), 0);
 };
 
 // Hàm hỗ trợ trích xuất Tính chất sản phẩm từ Tên tài sản
@@ -164,7 +164,7 @@ export const getAll = async (req, res) => {
 
 export const getAllSimple = async (req, res) => {
   try {
-    const assets = await Asset.findAllSimple(req.user);
+    const assets = await Asset.findAllSimple(req.user || null);
     res.json(assets);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -371,10 +371,12 @@ export const reportDamage = async (req, res) => {
   try {
     const { description } = req.body;
     const assetId = req.params.id;
+    const finalDescription = description || 'Báo cáo hư hỏng từ trang công khai';
 
     const oldAsset = await Asset.findById(assetId);
 
-    // 1. Update asset status to "hỏng"
+    // 1. Update asset
+    //  status to "hỏng"
     const asset = await Asset.update(assetId, { status: 'hỏng' });
     if (!asset) {
       return res.status(404).json({ message: 'Tài sản không tồn tại' });
@@ -383,12 +385,11 @@ export const reportDamage = async (req, res) => {
     // 2. Chỉ tạo phiếu bảo trì nếu trước đó tài sản chưa ở trạng thái hỏng
     const damageStatuses = ['cần sửa chữa', 'hỏng', 'Hỏng', 'cần sửa chữa và hỏng'];
     if (!damageStatuses.includes(oldAsset.status)) {
-      const desc = description || 'Báo cáo hư hỏng từ trang công khai';
       await MaintenanceRecord.create({
         asset_id: parseInt(assetId),
         maintenance_date: new Date(),
         maintenance_type: 'emergency',
-        description: desc,
+        description: finalDescription,
         cost: 0,
         technician: null,
         next_maintenance_date: null
@@ -396,13 +397,13 @@ export const reportDamage = async (req, res) => {
     }
     
     // Ghi log (Khách từ Public quét mã QR báo hỏng, không có User ID)
-    await AuditLog.log(null, 'UPDATE', 'ASSET', assetId, null, { status: 'cần sửa chữa và hỏng' }, `Khách báo hỏng tài sản từ mã QR: ${desc}`, req.ip);
+    await AuditLog.log(null, 'UPDATE', 'ASSET', assetId, null, { status: 'hỏng' }, `Khách báo hỏng tài sản từ mã QR: ${finalDescription}`, req.ip);
 
     // Thông báo có thiết bị báo hỏng từ Public
     await createNotification(
       null,
       '⚠️ Báo hỏng thiết bị (Public)',
-      `Tài sản ID: ${assetId} vừa được báo hỏng. Lý do: ${desc}`,
+      `Tài sản ID: ${assetId} vừa được báo hỏng. Lý do: ${finalDescription}`,
       'warning'
     );
 
@@ -437,7 +438,7 @@ export const downloadTemplate = (req, res) => {
   const sample = [
     'COM2024MT0001', 'Máy tính Dell', 'Máy tính để bàn', 'COMPUTER', 'OFFICE', 'VP',
     'Công ty TNHH FPT', 'Nguyễn Văn B', '2024-01-15',
-    '15000000', '500000', '12000000',
+    '15000000',    '500000', '12000000',
     'đang sử dụng', 'BC001'
   ];
 

@@ -1,33 +1,23 @@
-# --- Build Stage ---
-# Xây dựng ứng dụng React
-FROM node:18-alpine AS build
+# Bước 1: Build ứng dụng React/Vite
+FROM node:18-alpine as build-stage
 
 WORKDIR /app
 
-# Sao chép các file package
 COPY package*.json ./
-
-# Cài đặt dependencies
 RUN npm install
 
-# Sao chép phần còn lại của mã nguồn
 COPY . .
-
-# Tạo bản build cho production
 RUN npm run build
 
-# --- Production Stage ---
-# Phục vụ ứng dụng bằng Nginx
+# Bước 2: Sử dụng Nginx để phục vụ file tĩnh
 FROM nginx:stable-alpine
 
-# Sao chép bản build từ tầng trên vào thư mục web root của Nginx
-COPY --from=build /app/dist /usr/share/nginx/html
+# Sao chép file build từ stage 1
+COPY --from=build-stage /app/dist /usr/share/nginx/html
 
-# Sao chép file cấu hình Nginx tùy chỉnh
+# Lưu ý: Bạn nên cấu hình thêm file nginx.conf để hỗ trợ React Router (SPA)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Mở cổng 80
 EXPOSE 80
 
-# Khởi chạy Nginx
 CMD ["nginx", "-g", "daemon off;"]

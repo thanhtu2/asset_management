@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Cơ sở dữ liệu MySQL
+  db:
+    image: mysql:8.0
+    container_name: asset_management_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: asset_management
+      MYSQL_ROOT_PASSWORD: root_password_123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # Backend API (Node.js)
+  backend:
+    build: ./backend
+    container_name: asset_management_api
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=root_password_123
+      - DB_NAME=asset_management
+      - JWT_SECRET=your_jwt_secret_key_change_me
+      - FRONTEND_URL=http://localhost
+    depends_on:
+      - db
+    volumes:
+      - ./backend/uploads:/app/uploads
+
+  # Frontend UI (React + Nginx)
+  frontend:
+    build: ./frontend
+    container_name: asset_management_ui
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    environment:
+      # Biến này sẽ được Vite sử dụng khi build
+      - VITE_API_URL=/api
+
+volumes:
+  mysql_data:

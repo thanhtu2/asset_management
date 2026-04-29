@@ -27,6 +27,7 @@ const AssetFormPage = () => {
     supplier_id: '',
     purchase_date: '',
     purchase_price: 0,
+    salvage_value: 0,
     current_value: 0,
     status: 'chờ cấp',
     barcode: '',
@@ -44,31 +45,40 @@ const AssetFormPage = () => {
 
   // Tự động tính toán giá trị hiện tại
   useEffect(() => {
-    if (formData.purchase_price > 0 && formData.category_id && formData.purchase_date) {
+    // Mặc định giá trị hiện tại bằng giá mua nếu không có đủ thông tin tính khấu hao
+    let nextValue = formData.purchase_price || 0;
+
+    if (nextValue > 0 && formData.category_id && formData.purchase_date) {
       const category = categories.find(c => c.id.toString() === formData.category_id.toString());
+      
+      // Chỉ tính toán giảm trừ nếu tìm thấy danh mục và có tỷ lệ khấu hao > 0
       if (category && category.depreciation_rate > 0) {
         const purchaseDate = new Date(formData.purchase_date);
         const now = new Date();
         
-        // Tính số tháng đã trôi qua
+        // 1. Tính số tháng đã trôi qua
         let monthsPassed = (now.getFullYear() - purchaseDate.getFullYear()) * 12;
         monthsPassed -= purchaseDate.getMonth();
         monthsPassed += now.getMonth();
         monthsPassed = monthsPassed <= 0 ? 0 : monthsPassed;
 
+        // 2. Tính mức khấu hao hàng tháng
         const annualDepreciationRate = category.depreciation_rate / 100;
         const monthlyDepreciation = (formData.purchase_price * annualDepreciationRate) / 12;
-        
         const totalDepreciation = monthlyDepreciation * monthsPassed;
         
-        let calculatedValue = formData.purchase_price - totalDepreciation;
-        // Giá trị không được âm
-        calculatedValue = Math.max(0, calculatedValue);
-
-        setFormData(prev => ({ ...prev, current_value: Math.round(calculatedValue) }));
+        // 3. Tính giá trị còn lại (không thấp hơn giá trị thu hồi)
+        const remainingValue = formData.purchase_price - totalDepreciation;
+        const salvageValue = formData.salvage_value || 0;
+        nextValue = Math.max(salvageValue, remainingValue, 0);
       }
     }
-  }, [formData.purchase_price, formData.category_id, formData.purchase_date, categories]);
+
+    // Chỉ cập nhật state nếu giá trị tính toán khác với giá trị hiện tại để tránh re-render thừa
+    if (Math.round(nextValue) !== formData.current_value) {
+      setFormData(prev => ({ ...prev, current_value: Math.round(nextValue) }));
+    }
+  }, [formData.purchase_price, formData.category_id, formData.purchase_date, formData.salvage_value, categories]);
 
   const fetchFilters = async () => {
     try {
@@ -104,6 +114,7 @@ const AssetFormPage = () => {
         supplier_id: asset.supplier_id || '',
         purchase_date: asset.purchase_date || '',
         purchase_price: asset.purchase_price || 0,
+        salvage_value: asset.salvage_value || 0,
         current_value: asset.current_value || 0,
         status: asset.status || 'chờ cấp',
         barcode: asset.barcode || '',
