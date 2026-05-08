@@ -65,6 +65,8 @@ export const assetsAPI = {
   getQRCode: (id) => apiClient.get(`/assets/${id}/qrcode`, {
     params: { origin: window.location.origin }
   }),
+  reportDamage: (id, description) => apiClient.post(`/assets/public/${id}/report-damage`, { description }),
+  getUserHistory: (id) => apiClient.get(`/assets/${id}/user-history`),
   updateStatus: (id, status, description) => apiClient.patch(`/assets/${id}/status`, { status, description }),
   reportDamage: (id, description) => apiClient.post(`/assets/public/${id}/report-damage`, { description }),
   importAssets: (formData) => apiClient.post('/assets/import', formData, {
@@ -158,6 +160,25 @@ export const inventoryAPI = {
   getRecords: (sessionId) => apiClient.get(`/inventory/${sessionId}/records`),
   updateRecord: (sessionId, recordId, data) => apiClient.put(`/inventory/${sessionId}/records/${recordId}`, data),
   complete: (id) => apiClient.post(`/inventory/${id}/complete`),
+  exportInventoryReport: async (id) => {
+    const response = await apiClient.get(`/inventory/${id}/export`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    // Lấy tên file từ header Content-Disposition nếu có, nếu không thì dùng tên mặc định
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = `bao_cao_kiem_ke_${id}.xlsx`;
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1];
+      }
+    }
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  },
   scanAsset: (sessionId, data) => apiClient.post(`/inventory/${sessionId}/scan`, data),
 };
 

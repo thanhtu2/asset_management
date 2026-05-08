@@ -104,7 +104,7 @@ const PublicAssetPage = () => {
       // Cần thêm hàm `reportDamage` vào `assetsAPI` của bạn.
       // Ví dụ trong `src/api/index.js`:
       // reportDamage: (id, description) => axios.post(`/assets/public/${id}/report-damage`, { description }),
-      if (!user && selectedStatus === 'hỏng') {
+      if (!user && selectedStatus === 'damaged') {
         if (!assetsAPI.reportDamage) {
           throw new Error("assetsAPI.reportDamage chưa được định nghĩa. Vui lòng xem ví dụ trong PublicAssetPage.jsx.");
         }
@@ -227,8 +227,11 @@ const PublicAssetPage = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      'đang sử dụng': { class: 'badge-good', label: 'Đang sử dụng' },
-      'cần sửa chữa': { class: 'badge-needs_repair', label: 'Cần sửa chữa' }
+      'good': { class: 'badge-good', label: 'Đang sử dụng' },
+      'needs_repair': { class: 'badge-needs_repair', label: 'Cần sửa chữa' },
+      'damaged': { class: 'badge-damaged', label: 'Hỏng' },
+      'new': { class: 'badge-new', label: 'Chờ cấp' },
+      'disposed': { class: 'badge-disposed', label: 'Đã thanh lý' }
     };
     const badge = badges[status] || { class: 'badge-new', label: status };
     return <span className={`badge ${badge.class}`}>{badge.label}</span>;
@@ -237,9 +240,9 @@ const PublicAssetPage = () => {
   // Get available statuses based on login status
   const getAvailableStatuses = () => {
     const allStatuses = [
-      { value: 'đang sử dụng', label: 'Đang sử dụng' },
-      { value: 'cần sửa chữa', label: 'Cần sửa chữa' },
-      { value: 'hỏng', label: 'Hỏng' }
+      { value: 'good', label: 'Đang sử dụng' },
+      { value: 'needs_repair', label: 'Cần sửa chữa' },
+      { value: 'damaged', label: 'Hỏng' }
     ];
     
     // If user is logged in, show all statuses
@@ -248,7 +251,7 @@ const PublicAssetPage = () => {
     }
     
     // If user is not logged in, only show "Hỏng" (report damage only)
-    return [{ value: 'hỏng', label: 'Báo hỏng thiết bị' }];
+    return [{ value: 'damaged', label: 'Báo hỏng thiết bị' }];
   };
 
   const formatDate = (date) => {
@@ -573,7 +576,7 @@ const PublicAssetPage = () => {
                 </label>
               ))}
             </div>
-          {(selectedStatus === 'hỏng' || selectedStatus === 'cần sửa chữa') && (
+          {(selectedStatus === 'damaged' || selectedStatus === 'needs_repair') && (
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
                   Mô tả tình trạng:

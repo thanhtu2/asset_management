@@ -238,13 +238,19 @@ const InventoryPage = () => {
     setDamageModal({ show: false, record: null, severity: 'minor', notes: '' });
 
     try {
-      // Step 1: Update the inventory record itself to mark it as 'damaged'
-      await inventoryAPI.updateRecord(selectedSession.id, record.id, { status: 'damaged', notes });
+      // Step 1: Update the inventory record itself to mark it as 'damaged'us: 'damaged', notes });
 
+      let response;
       // Step 2: Apply the decision logic by updating the main asset's status
       if (severity === 'minor') {
         // Minor damage -> Set status to 'cần sửa chữa', which will auto-create a maintenance ticket
-        await assetsAPI.updateStatus(record.asset_id, 'cần sửa chữa', notes || 'Hư hỏng phát hiện khi kiểm kê');
+        response = await assetsAPI.updateStatus(record.asset_id, 'cần sửa chữa', notes || 'Hư hỏng phát hiện khi kiểm kê');
+      } ajor damage -> Set status to 'đã thanh lý' for liquidation
+        response = await assetsAPI.updateStatus(record.asset_id, 'đã thanh lý', notes || 'Hư hỏng nặng, đề nghị thanh lý khi kiểm kê');
+      }
+
+      if (response && response.data?.maintenanceCreated) {
+        alert('Đã báo cáo hư hỏng và tạo phiếu bảo trì!');
       } else if (severity === 'major') {
         // Major damage -> Set status to 'đã thanh lý' for liquidation
         await assetsAPI.updateStatus(record.asset_id, 'đã thanh lý', notes || 'Hư hỏng nặng, đề nghị thanh lý khi kiểm kê');
@@ -267,8 +273,10 @@ const InventoryPage = () => {
     if (!notes) return;
     
     try {
-      await assetsAPI.updateStatus(record.asset_id, 'cần sửa chữa', notes);
-      alert('Đã tạo yêu cầu sửa chữa cho tài sản ' + record.asset_code);
+      const response = await assetsAPI.updateStatus(record.asset_id, 'cần sửa chữa', notes);
+      if 
+        alert('Đã cập nhật trạng thái tài sản ' + record.asset_code);
+      }
       handleViewDetails(selectedSession);
     } catch (error) {
       console.error('Error creating maintenance:', error);
@@ -281,9 +289,10 @@ const InventoryPage = () => {
     try {
       // Update inventory record status to damaged
       await inventoryAPI.updateRecord(selectedSession.id, record.id, { status: 'damaged', notes });
-      // Update asset status to hỏng
-      await assetsAPI.updateStatus(record.asset_id, 'hỏng', notes || 'Hư hỏng phát hiện khi kiểm kê');
-      alert('Đã báo hỏng tài sản ' + record.asset_code);
+      // Update asset status to hỏng and check if maintenance record was created
+      const response = await assetsAPI.updateStatus(record.asset_id, 'hỏng', notes || 'Hư hỏng phát hiện khi kiểm kê');
+      if (response.data?.maintenanceCreated) {
+        alert('Đã báo hỏng tài sản ' + record.asset_code + ' và tạo phiếu bảo trì');
       handleViewDetails(selectedSession);
     } catch (error) {
       console.error('Error reporting damage:', error);
@@ -325,12 +334,26 @@ const InventoryPage = () => {
     return <span className={`badge ${badge.class}`}>{badge.label}</span>;
   };
 
+  // Helper hiển thị trạng thái tài sản theo yêu cầu mới
+  const getAssetStatusBadge = (status) => {
+    const statusMap = {
+      new: { label: 'Chờ cấp', className: 'new' },
+      good: { label: 'Đang sử dụng', className: 'good' },
+      needs_repair: { label: 'Cần sửa chữa', className: 'needs_repair' },
+      damaged: { label: 'Hỏng', className: 'needs_repair' },
+      disposed: { label: 'Đã thanh lý', className: 'disposed' }
+    };
+    // Ánh xạ mã trạng thái sang nhãn tiếng Việt, nếu không khớp thì hiển thị giá trị gốc
+    const display = statusMap[status] || { label: status || 'Chờ cấp', className: 'new' };
+    return <span className={`badge badge-${display.className}`}>{display.label}</span>;
+  };
+
   const getRecordStatusBadge = (status) => {
     const statusMap = {
       pending_check: { label: 'Chờ kiểm', className: 'pending' },
       found: { label: 'Tìm thấy', className: 'good' },
       missing: { label: 'Thiếu', className: 'disposed' },
-      damaged: { label: 'Hỏng', className: 'needs_repair' },
+      damaged: { label: 'Hỏng', className: 'needs_repair' }, // Map 'damaged' trong kiểm kê thành 'Hỏng'
       extra: { label: 'Thừa', className: 'new' },
       found_wrong_location: { label: 'Sai vị trí', className: 'good' }
     };
@@ -529,8 +552,16 @@ const InventoryPage = () => {
                     ✓ Hoàn thành phiên
                   </button>
                 )}
+                {user?.permissions?.includes('MANAGE_INVENTORY') && selectedSession.status === 'completed' && (
+                  <button 
+                    className="btn btn-outline"
+                    onClick={() => inventoryAPI.exportInventoryReport(selectedSession.id)}
+                  >
+                    ⬇ Xuất Excel
+                  </button>
+                )}
             </div>
-
+            
             <div className="modal-body">
               {/* Summary by Department */}
               {summaryByDept.length > 0 && (

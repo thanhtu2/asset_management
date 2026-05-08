@@ -29,11 +29,12 @@ const AssetFormPage = () => {
     purchase_price: 0,
     salvage_value: 0,
     current_value: 0,
-    status: 'chờ cấp',
+    status: 'new',
     barcode: '',
     image_url: '',
-    assigned_to: '',
-    assigned_to_name: ''
+    assigned_to: '', // ID người dùng được gán
+    assigned_to_name: '', // Tên người dùng được gán
+    assigned_date: '', // Ngày cấp tài sản
   });
 
   useEffect(() => {
@@ -119,8 +120,9 @@ const AssetFormPage = () => {
         status: asset.status || 'chờ cấp',
         barcode: asset.barcode || '',
         image_url: asset.image_url || '',
-        assigned_to: asset.assigned_to || '',
-        assigned_to_name: asset.assigned_to_name || ''
+        assigned_to: asset.assigned_to || '', // ID người dùng được gán
+        assigned_to_name: asset.assigned_to_name || '', // Tên người dùng được gán
+        assigned_date: asset.assigned_date ? asset.assigned_date.split('T')[0] : '', // Ngày cấp tài sản
       });
     } catch (error) {
       console.error('Error fetching asset:', error);
@@ -133,12 +135,14 @@ const AssetFormPage = () => {
   const handleChange = (e) => {
     const { name, value, type } = e.target;
     
+    // Xử lý đặc biệt cho trường assigned_to để cập nhật assigned_to_name
     if (name === 'assigned_to') {
       const selectedUser = users.find(u => u.id.toString() === value);
       setFormData({
         ...formData,
         assigned_to: value,
-        assigned_to_name: selectedUser ? (selectedUser.fullName || selectedUser.username) : ''
+        assigned_to_name: selectedUser ? (selectedUser.fullName || selectedUser.username) : '',
+        assigned_date: value ? (formData.assigned_date || new Date().toISOString().slice(0, 10)) : '', // Tự động điền ngày hiện tại nếu gán người dùng và chưa có ngày cấp
       });
       return;
     }
@@ -282,6 +286,15 @@ const AssetFormPage = () => {
                 ))}
               </select>
             </div>
+            <div className="form-group">
+              <label>Ngày cấp</label>
+              <input
+                type="date"
+                name="assigned_date"
+                value={formData.assigned_date}
+                onChange={handleChange}
+              />
+            </div>
           </div>
 
           <div className="form-row">
@@ -324,11 +337,11 @@ const AssetFormPage = () => {
             <div className="form-group">
               <label>Trạng thái</label>
               <select name="status" value={formData.status} onChange={handleChange}>
-                <option value="chờ cấp">Chờ cấp</option>
-                <option value="đang sử dụng">Đang sử dụng</option>
-                <option value="cần sửa chữa">Cần sửa chữa</option>
-                <option value="hỏng">Hỏng</option>
-                <option value="đã thanh lý">Đã thanh lý</option>
+                <option value="new">Chờ cấp</option>
+                <option value="good">Đang sử dụng</option>
+                <option value="needs_repair">Cần sửa chữa</option>
+                <option value="damaged">Hỏng</option>
+                <option value="disposed">Đã thanh lý</option>
               </select>
             </div>
           </div>

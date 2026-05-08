@@ -14,7 +14,7 @@ Tài liệu này mô tả chi tiết về cấu trúc hệ thống, quy ước m
 *   **Thư viện nổi bật:**
     *   `qrcode`: Render mã QR dưới dạng Base64 Data URL.
     *   `html5-qrcode`: Xử lý giao diện Camera và thuật toán quét mã QR ngay trên trình duyệt (hỗ trợ Mobile).
-    *   **Thiết kế UI/UX:** Tối ưu hóa trải nghiệm người dùng với các thành phần nhẹ, không lạm dụng thư viện ngoài (Tích hợp inline SVG cho tính năng Toggle Password Visibility ở các form, Animation chuông thông báo thuần CSS).
+    *   **Thiết kế UI/UX:** Tối ưu hóa trải nghiệm với các thành phần nhẹ: Tích hợp inline SVG cho Toggle Password, Animation chuông thông báo thuần CSS, và Stepper trực quan cho luồng phê duyệt.
 
 ### 1.2. Backend (Server-side)
 *   **Core:** Node.js, Express.js.
@@ -23,7 +23,7 @@ Tài liệu này mô tả chi tiết về cấu trúc hệ thống, quy ước m
 *   **Security:** `express-rate-limit` (Chống Brute-force attack).
 *   **Thư viện nổi bật:**
     *   `xlsx`: Xử lý import/export dữ liệu Excel (Tài sản, người dùng).
-    *   `multer`: Xử lý upload file (đọc buffer file Excel từ memory).
+    *   `multer`: Xử lý upload file (đọc buffer Excel từ memory và lưu trữ đĩa cho tài liệu đính kèm).
 
 ### 1.3. Infrastructure & Deployment
 *   **Containerization:** Docker & Docker Compose (`docker-compose.prod.yml` gồm MySQL, Nginx, Node app).
@@ -67,23 +67,28 @@ Sử dụng CSDL quan hệ **MySQL**, thiết kế bao gồm các cụm bảng c
 
 1.  **Cụm Danh mục & Cấu hình:** `categories`, `locations`, `departments`, `suppliers`. Các bảng này đóng vai trò lookup (khóa ngoại) cho bảng Tài sản.
 2.  **Cụm Tài sản & Bảo trì:**
-    *   `assets`: Bảng Master. Các trạng thái: `chờ cấp`, `đang sử dụng`, `cần sửa chữa và hỏng`, `đã thanh lý`.
+    *   `assets`: Bảng Master. Các trạng thái: `chờ cấp`, `đang sử dụng`, `cần sửa chữa`, `hỏng`, `đã thanh lý`.
     *   `maintenance_records`: Lưu lịch sử sửa chữa. Logic: Khi đổi trạng thái Asset sang `cần sửa chữa và hỏng`, hệ thống *tự động* trigger tạo 1 record bảo trì (Emergency). Trạng thái hoàn thành (`status = 'completed'`) sẽ vô hiệu hóa thao tác thừa trên UI.
 3.  **Cụm Kiểm kê (Inventory):**
     *   `inventory_sessions`: Phiên kiểm kê (Tên, ngày, phòng ban).
     *   `inventory_records`: Ghi nhận chi tiết từng tài sản trong phiên. Các trạng thái: `pending_check`, `found`, `found_wrong_location`, `missing`, `damaged`, `extra`.
 4.  **Cụm Phân Quyền Động (RBAC - Role Based Access Control):**
     *   `users`: Chứa user, map với role_code.
-    *   `roles`: (VD: ADMIN, MANAGER, USER).
+    *   `roles`: (VD: `admin`, `department-leader`, `user`).
     *   `permissions`: Mã quyền cụ thể (VD: CREATE_INVENTORY, DELETE_ASSET).
     *   `role_permissions`: Bảng trung gian n-n nối roles và permissions.
+5.  **Cụm Mua sắm (Purchasing):**
+    *   `purchase_proposals`: Quản lý phiếu đề xuất. Các trạng thái: `draft`, `department_pending`, `director_pending`, `approved`, `rejected`.
 
 ---
 
 ## 4. ⚙️ Các Luồng Nghiệp Vụ Cốt Lõi (Core Business Logic)
 
 ### 4.1. Hệ thống Phân quyền (RBAC)
-*   **Backend:** Lấy quyền của user bằng cách join bảng `users` -> `roles` -> `role_permissions` -> `permissions` lúc đăng nhập và nén vào payload của JWT, hoặc gọi middleware check quyền từng route.
+*   **Backend:** 
+    *   Sử dụng `authMiddleware` để xác thực JWT từ Http-only Cookie.
+    *   Sử dụng `checkPermission(code)` middleware để kiểm tra quyền hạn cụ thể thay vì kiểm tra Role cứng.
+    *   **Quy ước mã vai trò:** Lãnh đạo phòng phải sử dụng mã `department-leader` để đồng bộ với logic lọc dữ liệu theo phòng ban trong `Asset.js`.
 *   **Frontend:** `AuthContext` giải mã JWT để lấy danh sách `permissions`. Trên UI, các nút bấm (VD: Nút Xóa, Nút Tạo mới) được ẩn/hiện bằng logic điều kiện:
     ```javascript
     {user?.permissions?.includes('EDIT_INVENTORY') && <button>Sửa</button>}
@@ -107,8 +112,9 @@ Sử dụng CSDL quan hệ **MySQL**, thiết kế bao gồm các cụm bảng c
 
 ### 4.5. Luồng Bảo Trì (Maintenance)
 1.  **Tạo mới:** Phiếu bảo trì có thể được tạo thủ công hoặc tự động sinh ra khi người dùng (hoặc khách Public) báo hỏng tài sản.
-2.  **Hoàn thành sửa chữa:** Khi người dùng nhấn nút "Hoàn thành", hệ thống sẽ đồng thời:
+2.  **Hoàn thành sửa chữa:** Sử dụng API `complete-repair`. Khi gọi, hệ thống sẽ đồng thời:
     *   Đổi `status` của phiếu bảo trì thành `completed`.
+    *   Ghi nhận `completion_date` là thời điểm hiện tại.
     *   Đổi `status` của tài sản liên quan trở lại thành `đang sử dụng`.
     *   Giao diện thay thế nút bấm bằng nhãn **✓ Đã bảo trì** (màu xanh) để trực quan hóa và khóa thao tác trùng lặp.
 
@@ -139,7 +145,7 @@ Khác với hệ thống Chuông thông báo (nhằm mục đích nhắc nhở c
 *   **SQL Injection Protection:** Database Driver `mysql2/promise` tự động escape các tham số đầu vào bằng Parameterized Queries.
 *   **Secure File Serving (Phục vụ File an toàn):** Việc truy cập các file đính kèm (VD: file báo giá trong phiếu mua sắm) được thực hiện thông qua một API endpoint chuyên dụng (`/api/download/:filename`) được bảo vệ bởi `authMiddleware`. Hệ thống không còn phục vụ file tĩnh trực tiếp từ thư mục `uploads`, ngăn chặn truy cập trái phép vào tài liệu nhạy cảm.
 *   **HTTP-only Cookie Authentication:** Token xác thực (JWT) được lưu trong HTTP-only cookie thay vì `localStorage`. Điều này ngăn chặn mã JavaScript phía client truy cập vào token, giảm thiểu đáng kể nguy cơ bị đánh cắp phiên làm việc thông qua các cuộc tấn công XSS.
-*   **API Exposure:** Các endpoint nhạy cảm (thêm, sửa, xóa) được bọc bởi `authMiddleware` và RBAC để chống lộ lọt API (Broken Object Level Authorization).
+*   **Permission-based Access:** Chuyển đổi từ `adminMiddleware` sang `checkPermission('CODE')` cho phép phân quyền linh hoạt hơn, không phụ thuộc vào tên Role.
 
 ---
 
