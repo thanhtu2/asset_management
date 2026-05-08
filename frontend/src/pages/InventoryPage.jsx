@@ -238,14 +238,16 @@ const InventoryPage = () => {
     setDamageModal({ show: false, record: null, severity: 'minor', notes: '' });
 
     try {
-      // Step 1: Update the inventory record itself to mark it as 'damaged'us: 'damaged', notes });
+      // Step 1: Update the inventory record itself to mark it as 'damaged' with notes
+      await inventoryAPI.updateRecord(selectedSession.id, record.id, { status: 'damaged', notes });
 
       let response;
       // Step 2: Apply the decision logic by updating the main asset's status
       if (severity === 'minor') {
         // Minor damage -> Set status to 'cần sửa chữa', which will auto-create a maintenance ticket
         response = await assetsAPI.updateStatus(record.asset_id, 'cần sửa chữa', notes || 'Hư hỏng phát hiện khi kiểm kê');
-      } ajor damage -> Set status to 'đã thanh lý' for liquidation
+      } else if (severity === 'major') {
+        // Major damage -> Set status to 'đã thanh lý' for liquidation
         response = await assetsAPI.updateStatus(record.asset_id, 'đã thanh lý', notes || 'Hư hỏng nặng, đề nghị thanh lý khi kiểm kê');
       }
 
@@ -274,7 +276,9 @@ const InventoryPage = () => {
     
     try {
       const response = await assetsAPI.updateStatus(record.asset_id, 'cần sửa chữa', notes);
-      if 
+      if (response.data?.maintenanceCreated) {
+        alert('Đã tạo yêu cầu sửa chữa cho tài sản ' + record.asset_code);
+      } else {
         alert('Đã cập nhật trạng thái tài sản ' + record.asset_code);
       }
       handleViewDetails(selectedSession);
@@ -293,6 +297,9 @@ const InventoryPage = () => {
       const response = await assetsAPI.updateStatus(record.asset_id, 'hỏng', notes || 'Hư hỏng phát hiện khi kiểm kê');
       if (response.data?.maintenanceCreated) {
         alert('Đã báo hỏng tài sản ' + record.asset_code + ' và tạo phiếu bảo trì');
+      } else {
+        alert('Đã báo hỏng tài sản ' + record.asset_code);
+      }
       handleViewDetails(selectedSession);
     } catch (error) {
       console.error('Error reporting damage:', error);
