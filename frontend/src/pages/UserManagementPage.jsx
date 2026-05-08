@@ -29,8 +29,8 @@ const UserManagementPage = () => {
     try {
       const [usersRes, deptRes, rolesRes] = await Promise.all([
         usersAPI.getAll(),
-        departmentsAPI.getAll(),
-        rolesAPI.getAll()
+        departmentsAPI.getAllSimple(), // Sử dụng getAllSimple cho dropdown
+        rolesAPI.getAll() // getAll của rolesAPI đã trả về tất cả roles
       ]);
       setUsers(usersRes.data);
       setDepartments(Array.isArray(deptRes.data) ? deptRes.data : deptRes.data?.data || []);

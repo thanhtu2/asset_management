@@ -79,6 +79,16 @@ const createDatabase = async () => {
       }
     }
     
+    // Fix missing actual_location_id column
+    try {
+      await connection.query('ALTER TABLE inventory_records ADD COLUMN actual_location_id INT NULL AFTER image_url');
+      console.log('Added actual_location_id column to inventory_records');
+    } catch (e) {
+      const errMsg = e.message || e.sqlMessage || '';
+      if (!errMsg.includes('Duplicate column')) {
+        // Ignore if column already exists
+      }
+    }
     // Fix inventory_records status enum to support all application statuses
     try {
       await connection.query("ALTER TABLE inventory_records MODIFY COLUMN status VARCHAR(30) DEFAULT 'pending_check' NOT NULL");
@@ -87,11 +97,19 @@ const createDatabase = async () => {
       // Ignore if it fails
     }
 
+    // Fix purchase_proposals.requester_id conflict with ON DELETE SET NULL
+    try {
+      await connection.query('ALTER TABLE purchase_proposals MODIFY COLUMN requester_id INT NULL');
+      console.log('Fixed purchase_proposals.requester_id to be NULLable');
+    } catch (e) {
+      // Ignore
+    }
+
     console.log('Database tables initialized!');
     
     // Fix ENUM status column if needed
     try {
-      await connection.query(`ALTER TABLE assets MODIFY COLUMN status ENUM('new', 'good', 'needs_repair', 'disposed') DEFAULT 'new'`);
+      await connection.query(`ALTER TABLE assets MODIFY COLUMN status ENUM('new', 'good', 'needs_repair', 'damaged', 'disposed') DEFAULT 'new'`);
       console.log('Fixed assets.status ENUM');
     } catch (e) {
       // Ignore if already correct

@@ -82,7 +82,7 @@ export const completeRepair = async (req, res) => {
     }
 
     // Update asset status to "đang sử dụng"
-    const asset = await Asset.update(asset_id, { status: 'đang sử dụng' });
+    const asset = await Asset.update(asset_id, { status: 'good' });
     if (!asset) {
       return res.status(404).json({ message: 'Tài sản không tồn tại' });
     }

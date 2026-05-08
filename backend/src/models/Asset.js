@@ -22,12 +22,13 @@ const Asset = {
       if (role === 'user') {
         query += ' AND a.assigned_to = ?';
         params.push(id);
-      } else if (role === 'department-manager') {
+      } else if (role === 'department-leader') {
         if (department_id) {
           query += ' AND a.department_id = ?';
           params.push(department_id);
         } else {
-          query += ' AND 1 = 0'; // Lãnh đạo phòng nhưng chưa được gán phòng ban
+          // Nếu lãnh đạo phòng chưa gán phòng, có thể trả về trống hoặc log cảnh báo
+          query += ' AND 1 = 0'; 
         }
       }
     }
@@ -115,7 +116,7 @@ const Asset = {
         countQuery += ' AND a.assigned_to = ?';
         params.push(id);
         countParams.push(id);
-      } else if (role === 'department-manager') {
+      } else if (role === 'department-leader') {
         if (department_id) {
           query += ' AND a.department_id = ?';
           countQuery += ' AND a.department_id = ?';
@@ -218,17 +219,17 @@ const Asset = {
   async create(assetData) {
     const {
       asset_code, name, description, category_id, location_id, department_id,
-      supplier_id, purchase_date, purchase_price, current_value, status, barcode, image_url,
-      assigned_to_name
+      supplier_id, purchase_date, purchase_price, current_value, salvage_value, status, barcode, image_url,
+      assigned_to, assigned_to_name, assigned_date
     } = assetData;
 
     const [result] = await pool.query(
       `INSERT INTO assets (asset_code, name, description, category_id, location_id, department_id,
-        supplier_id, purchase_date, purchase_price, current_value, status, barcode, image_url, assigned_to_name)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        supplier_id, purchase_date, purchase_price, current_value, salvage_value, status, barcode, image_url, assigned_to, assigned_to_name, assigned_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [asset_code, name, description, category_id, location_id, department_id,
-        supplier_id, purchase_date, purchase_price, current_value || purchase_price, status || 'new', 
-        barcode, image_url, assigned_to_name || null]
+        supplier_id, purchase_date, purchase_price, current_value || purchase_price, salvage_value || 0, status || 'new', 
+        barcode, image_url, assigned_to || null, assigned_to_name || null, assigned_date || null]
     );
     return this.findById(result.insertId);
   },
@@ -246,10 +247,13 @@ const Asset = {
       purchase_date, 
       purchase_price, 
       current_value, 
+      salvage_value,
       status,
       barcode,
       image_url,
-      assigned_to_name
+      assigned_to,
+      assigned_to_name,
+      assigned_date
     } = assetData;
 
     // Get existing asset to preserve values
@@ -259,8 +263,8 @@ const Asset = {
     // Use provided values or fall back to existing
     await pool.query(
       `UPDATE assets SET asset_code=?, name=?, description=?, category_id=?, location_id=?,
-        department_id=?, supplier_id=?, purchase_date=?, purchase_price=?, current_value=?,
-        status=?, barcode=?, image_url=?, assigned_to_name=? WHERE id=?`,
+        department_id=?, supplier_id=?, purchase_date=?, purchase_price=?, current_value=?, salvage_value=?,
+        status=?, barcode=?, image_url=?, assigned_to=?, assigned_to_name=?, assigned_date=? WHERE id=?`,
       [
         asset_code || existing.asset_code, 
         name || existing.name, 
@@ -272,10 +276,13 @@ const Asset = {
         purchase_date || existing.purchase_date, 
         purchase_price || existing.purchase_price, 
         current_value || existing.current_value, 
+        salvage_value !== undefined ? salvage_value : existing.salvage_value,
         status || existing.status, 
         barcode || existing.barcode, 
         image_url || existing.image_url, 
+        assigned_to !== undefined ? assigned_to : existing.assigned_to,
         assigned_to_name || existing.assigned_to_name, 
+        assigned_date !== undefined ? assigned_date : existing.assigned_date,
         id
       ]
     );
@@ -288,7 +295,7 @@ const Asset = {
     return result.affectedRows > 0;
   },
 
-  // Get asset statistics
+  // lấy thống kê tài sản
   async getStats() {
     const [rows] = await pool.query(`
       SELECT 
@@ -297,6 +304,7 @@ const Asset = {
         SUM(CASE WHEN status = 'new' THEN 1 ELSE 0 END) as new_count,
         SUM(CASE WHEN status = 'good' THEN 1 ELSE 0 END) as good_count,
         SUM(CASE WHEN status = 'needs_repair' THEN 1 ELSE 0 END) as needs_repair_count,
+        SUM(CASE WHEN status = 'damaged' THEN 1 ELSE 0 END) as damaged_count,
         SUM(CASE WHEN status = 'disposed' THEN 1 ELSE 0 END) as disposed_count
       FROM assets
     `);

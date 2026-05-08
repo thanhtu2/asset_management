@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator }from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import cookieParser from 'cookie-parser';
@@ -138,7 +138,9 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req, res) => {
     // Đếm theo Tên đăng nhập (username) thay vì đếm theo IP. Nếu không có username thì mới dùng IP.
-    return req.body.username ? req.body.username.toLowerCase().trim() : req.ip;
+    return req.body.username 
+    ? req.body.username.toLowerCase().trim()
+    : ipKeyGenerator (req.ip);
   }
 });
 
@@ -149,6 +151,7 @@ const apiLimiter = rateLimit({
   message: { message: 'Hệ thống đang bận. Quá nhiều yêu cầu từ địa chỉ IP này, vui lòng thử lại sau 15 phút.' },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => ipKeyGenerator(req.ip),
 });
 
 // Stricter rate limiting cho các API Public (ví dụ: quét QR báo hỏng)
@@ -158,6 +161,7 @@ const publicApiLimiter = rateLimit({
   message: { message: 'Quá nhiều yêu cầu báo hỏng từ thiết bị của bạn. Vui lòng thử lại sau 1 giờ.' },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => ipKeyGenerator(req.ip),
 });
 
 // Routes
@@ -246,12 +250,19 @@ const seedAdminUser = async () => {
 // Start server
 // Kiểm tra: Nếu không chạy trên Vercel thì mới dùng app.listen (Local)
 if (!process.env.VERCEL) {
-  app.listen(PORT, async () => {
+  const server = app.listen(PORT, async () => {
     console.log(`Server is running on port ${PORT}`);
     await initDatabase();
     await testConnection();
     await seedAdminUser();
     initCronJobs(); // Khởi chạy cron jobs (Lưu ý: Không dùng trên Vercel Serverless)
+  });
+
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`❌ Lỗi: Cổng ${PORT} đã bị chiếm dụng. Vui lòng tắt ứng dụng đang dùng cổng này hoặc đổi PORT trong file .env.`);
+      process.exit(1);
+    }
   });
 }
 

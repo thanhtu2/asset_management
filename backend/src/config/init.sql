@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS departments (
   parent_id INT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (manager_id) REFERENCES departments(id) ON DELETE SET NULL,
+  FOREIGN KEY (manager_id) REFERENCES users(id) ON DELETE SET NULL,
   FOREIGN KEY (parent_id) REFERENCES departments(id) ON DELETE SET NULL
 );
 
@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS assets (
   purchase_date DATE,
   purchase_price DECIMAL(15,2) DEFAULT 0,
   current_value DECIMAL(15,2) DEFAULT 0,
-  status ENUM('new', 'good', 'needs_repair', 'disposed') DEFAULT 'new',
+  status ENUM('new', 'good', 'needs_repair', 'damaged', 'disposed') DEFAULT 'new',
   assigned_to INT NULL,
   assigned_to_name VARCHAR(100) NULL,
   assigned_date DATE,
@@ -106,6 +106,22 @@ CREATE TABLE IF NOT EXISTS assets (
   FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL,
   FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL,
   FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Bảng lưu lịch sử luân chuyển/bàn giao tài sản
+CREATE TABLE IF NOT EXISTS asset_user_history (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  asset_id INT NOT NULL,
+  user_id INT NULL,
+  department_id INT NULL,
+  assigned_by INT NULL, -- Người thực hiện bàn giao
+  start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+  end_date DATETIME NULL,
+  notes TEXT,
+  FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL,
+  FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Add assigned_to_name column if it doesn't exist (for existing databases)
@@ -237,7 +253,7 @@ CREATE TABLE IF NOT EXISTS purchase_proposals (
   code VARCHAR(50) UNIQUE NOT NULL,
   title VARCHAR(255) NOT NULL,
   description TEXT,
-  requester_id INT NOT NULL,
+  requester_id INT NULL,
   department_id INT,
   status ENUM('draft', 'department_pending', 'director_pending', 'approved', 'rejected') DEFAULT 'draft',
   department_leader_id INT NULL,
@@ -248,10 +264,10 @@ CREATE TABLE IF NOT EXISTS purchase_proposals (
   items JSON,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (requester_id) REFERENCES users(id),
+  FOREIGN KEY (requester_id) REFERENCES users(id) ON DELETE SET NULL,
   FOREIGN KEY (department_id) REFERENCES departments(id),
-  FOREIGN KEY (department_leader_id) REFERENCES users(id),
-  FOREIGN KEY (director_id) REFERENCES users(id)
+  FOREIGN KEY (department_leader_id) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (director_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Audit Logs table
@@ -282,6 +298,7 @@ INSERT IGNORE INTO roles (code, name, description) VALUES
 INSERT IGNORE INTO permissions (code, name, module) VALUES
 ('VIEW_DASHBOARD', 'Xem Dashboard', 'Hệ thống'),
 ('VIEW_REPORTS', 'Xem Báo cáo', 'Hệ thống'),
+('VIEW_AUDIT_LOGS', 'Xem Nhật ký hệ thống', 'Hệ thống'),
 ('MANAGE_USERS', 'Quản lý người dùng', 'Hệ thống'),
 ('MANAGE_ROLES', 'Quản lý phân quyền', 'Hệ thống'),
 ('VIEW_ASSETS', 'Xem danh sách tài sản', 'Tài sản'),
@@ -303,3 +320,33 @@ INSERT IGNORE INTO permissions (code, name, module) VALUES
 -- Cấp toàn bộ quyền (Full permissions) cho Admin
 INSERT IGNORE INTO role_permissions (role_code, permission_code)
 SELECT 'admin', code FROM permissions;
+
+-- Cấp quyền cơ bản cho Quản lý tài sản (Manager)
+INSERT IGNORE INTO role_permissions (role_code, permission_code)
+SELECT 'manager', code FROM permissions 
+WHERE module IN ('Tài sản', 'Danh mục', 'Bảo trì', 'Kiểm kê')
+OR code IN ('VIEW_DASHBOARD', 'VIEW_REPORTS');
+
+-- Cấp quyền cho Lãnh đạo phòng (Department Leader)
+INSERT IGNORE INTO role_permissions (role_code, permission_code)
+VALUES 
+('department-leader', 'VIEW_DASHBOARD'),
+('department-leader', 'VIEW_ASSETS'),
+('department-leader', 'VIEW_PURCHASE_PROPOSALS'),
+('department-leader', 'CREATE_PURCHASE_PROPOSAL'),
+('department-leader', 'APPROVE_DEPARTMENT_PURCHASE');
+
+-- Cấp quyền cho Giám đốc (Director)
+INSERT IGNORE INTO role_permissions (role_code, permission_code)
+VALUES 
+('director', 'VIEW_DASHBOARD'),
+('director', 'VIEW_REPORTS'),
+('director', 'VIEW_ASSETS'),
+('director', 'VIEW_PURCHASE_PROPOSALS'),
+('director', 'APPROVE_DIRECTOR_PURCHASE');
+
+-- Cấp quyền cho Người dùng (User)
+INSERT IGNORE INTO role_permissions (role_code, permission_code)
+VALUES 
+('user', 'VIEW_DASHBOARD'),
+('user', 'VIEW_ASSETS');

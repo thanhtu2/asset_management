@@ -104,7 +104,7 @@ const InventorySession = {
   // Get inventory records for a session
   async getRecords(sessionId) {
     const [rows] = await pool.query(`
-      SELECT ir.*, a.asset_code, a.name as asset_name
+      SELECT ir.*, a.asset_code, a.name as asset_name, a.status as asset_status
       FROM inventory_records ir
       LEFT JOIN assets a ON ir.asset_id = a.id
       WHERE ir.session_id = ?
@@ -212,7 +212,7 @@ const InventorySession = {
   // Get inventory records with department info
   async getRecordsWithDepartment(sessionId) {
     const [rows] = await pool.query(`
-      SELECT ir.*, a.asset_code, a.name as asset_name, a.department_id,
+      SELECT ir.*, a.asset_code, a.name as asset_name, a.status as asset_status, a.department_id,
              d.name as department_name
       FROM inventory_records ir
       LEFT JOIN assets a ON ir.asset_id = a.id

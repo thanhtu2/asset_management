@@ -17,33 +17,32 @@ export const getStats = async (req, res) => {
     const [newAssets] = await pool.query(`
     SELECT COUNT(*) as count 
     FROM assets 
-    WHERE status = 'chờ cấp'
+    WHERE status = 'new'
   `);
-    // Good assets (status = 'good')
     const [goodAssets] = await pool.query(`
       SELECT COUNT(*) as count 
       FROM assets 
-      WHERE status = 'đang sử dụng'
+      WHERE status = 'good'
     `);
     
-    // Needs repair assets
     const [needsRepairAssets] = await pool.query(`
       SELECT COUNT(*) as count 
       FROM assets 
-      WHERE status = 'cần sửa chữa'
+      WHERE status = 'needs_repair'
     `);
 
     const [damagedAssets] = await pool.query(`
       SELECT COUNT(*) as count 
       FROM assets 
-      WHERE status = 'hỏng'
+      WHERE status = 'damaged'
     `);
     
-    // Disposed assets
+    const damagedAssetsCount = damagedAssets[0].count;
+    
     const [disposedAssets] = await pool.query(`
       SELECT COUNT(*) as count 
       FROM assets 
-      WHERE status = 'đã thanh lý'
+      WHERE status = 'disposed'
     `);
     
     // Assets by category
@@ -119,7 +118,7 @@ export const getStats = async (req, res) => {
       assetsByStatus,
       assetsByCategory,
       assetsByDepartment,
-      damagedAssets: damagedAssets[0].count,
+      damagedAssets: damagedAssetsCount,
       byLocation,
       totalValue: {
         total_purchase: totalValue[0]?.total_purchase ?? 0,

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { assetsAPI, categoriesAPI, locationsAPI, departmentsAPI } from '../api';
+import { assetsAPI, categoriesAPI, locationsAPI, departmentsAPI, maintenanceAPI } from '../api';
 import AssetImportModal from '../components/AssetImportModal';
 import AssetEditModal from '../components/AssetEditModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -29,6 +29,10 @@ const AssetListPage = () => {
   const [departments, setDepartments] = useState([]);
   const [deleteModal, setDeleteModal] = useState({ show: false, id: null });
   const [viewModal, setViewModal] = useState({ show: false, asset: null });
+  const [activeTab, setActiveTab] = useState('info'); // 'info', 'users', 'maintenance'
+  const [userHistory, setUserHistory] = useState([]);
+  const [maintHistory, setMaintHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [editModal, setEditModal] = useState({ show: false, assetId: null });
   const [qrModal, setQrModal] = useState({ show: false, asset: null, qrData: null, loading: false });
   const [showImportModal, setShowImportModal] = useState(false);
@@ -92,10 +96,12 @@ const AssetListPage = () => {
       
       const currentPage = resetPage ? 1 : pagination.page;
       
+      // Thêm timestamp để chống cache trình duyệt/proxy
       const response = await assetsAPI.getAll({
         ...activeFilters,
         page: currentPage,
-        limit: pagination.limit
+        limit: pagination.limit,
+        _t: new Date().getTime()
       });
       setAssets(response.data.data);
       setPagination(prev => ({
@@ -108,6 +114,27 @@ const AssetListPage = () => {
       console.error('Error fetching assets:', error);
     } finally {
       setLoading(false);
+    }
+  };
+  // Khi người dùng nhấn xem chi tiết tài sản, sẽ mở modal và tải đồng thời cả thông tin chung, lịch sử người dùng và lịch sử bảo trì để hiển thị trong các tab tương ứng
+  const handleViewAsset = async (asset) => {
+    setViewModal({ show: true, asset });
+    setActiveTab('info');
+    setHistoryLoading(true);
+    setUserHistory([]);
+    setMaintHistory([]);
+    
+    try {
+      const [maintRes, userHistRes] = await Promise.all([
+        maintenanceAPI.getAll({ asset_id: asset.id }),
+        assetsAPI.getUserHistory ? assetsAPI.getUserHistory(asset.id) : Promise.resolve({ data: [] })
+      ]);
+      setMaintHistory(maintRes.data?.data || maintRes.data || []);
+      setUserHistory(userHistRes.data?.data || userHistRes.data || []);
+    } catch (error) {
+      console.error('Error fetching asset history:', error);
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -132,16 +159,27 @@ const AssetListPage = () => {
       alert('Không thể xóa tài sản này');
     }
   };
-
+  const getStatusLabel = (status) => {
+    const labels = {
+      new: 'Chờ cấp',
+      good: 'Đang sử dụng',
+      needs_repair: 'Cần sửa chữa',
+      damaged: 'Hỏng',
+      disposed: 'Đã thanh lý'
+    };
+    return labels[status] || status;
+  };
+  
+  // Hàm helper để hiển thị badge trạng thái với màu sắc khác nhau
   const getStatusBadge = (status) => {
     const badges = {
-      'chờ cấp': { class: 'badge-new', label: 'Chờ cấp' },
-      'đang sử dụng': { class: 'badge-good', label: 'Đang sử dụng' },
-      'cần sửa chữa': { class: 'badge-needs_repair', label: 'Cần sửa chữa' },
-      'hỏng': { class: 'badge-damaged', label: 'Hỏng' },
-      'đã thanh lý': { class: 'badge-disposed', label: 'Đã thanh lý' }
+      new: { class: 'badge-new', label: 'Chờ cấp' },
+      good: { class: 'badge-good', label: 'Đang sử dụng' },
+      needs_repair: { class: 'badge-needs_repair', label: 'Cần sửa chữa' },
+      damaged: { class: 'badge-damaged', label: 'Hỏng' },
+      disposed: { class: 'badge-disposed', label: 'Đã thanh lý' }
     };
-    const badge = badges[status] || { class: 'badge-new', label: status };
+    const badge = badges[status] || { class: 'badge-new', label: status || 'Chờ cấp' };
     return <span className={`badge ${badge.class}`}>{badge.label}</span>;
   };
 
@@ -400,11 +438,11 @@ const AssetListPage = () => {
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
             >
               <option value="">Tất cả trạng thái</option>
-              <option value="chờ cấp">Chờ cấp</option>
-              <option value="đang sử dụng">Đang sử dụng</option>
-              <option value="cần sửa chữa">Cần sửa chữa</option>
-              <option value="hỏng">Hỏng</option>
-              <option value="đã thanh lý">Đã thanh lý</option>
+              <option value="new">Chờ cấp</option>
+              <option value="good">Đang sử dụng</option>
+              <option value="needs_repair">Cần sửa chữa</option>
+              <option value="damaged">Hỏng</option>
+              <option value="disposed">Đã thanh lý</option>
             </select>
             <button onClick={() => fetchAssets(true)} className="btn btn-primary">
               Tìm kiếm
@@ -436,6 +474,7 @@ const AssetListPage = () => {
                 <th>Vị trí</th>
                 <th>phòng ban</th>
                 <th>Người sử dụng</th>
+                <th>Ngày cấp</th>
                 <th>Giá trị</th>
                 <th>Trạng thái</th>
                 <th>Thao tác</th>
@@ -463,12 +502,13 @@ const AssetListPage = () => {
                   <td>{asset.category_name || '-'}</td>
                   <td>{asset.location_name || '-'}</td>
                   <td>{asset.department_name || '-'}</td>
-                  <td>{asset.user_full_name || asset.assigned_to_name || '-'}</td>
+                  <td>{asset.assigned_to ? (asset.user_full_name || 'Đang tải...') : (asset.assigned_to_name || '-')}</td>
+                  <td>{asset.assigned_date ? new Date(asset.assigned_date).toLocaleDateString('vi-VN') : '-'}</td>
                   <td>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(asset.current_value || 0)}</td>
                   <td>{getStatusBadge(asset.status)}</td>
                   <td className="actions">
                     <button 
-                      onClick={() => setViewModal({ show: true, asset })} 
+                      onClick={() => handleViewAsset(asset)} 
                       className="btn btn-sm btn-outline"
                     >
                       Xem
@@ -590,68 +630,154 @@ const AssetListPage = () => {
               <button onClick={() => setViewModal({ show: false, asset: null })} className="btn btn-sm btn-outline">&times;</button>
             </div>
             <div className="modal-body">
-              <div className="detail-grid">
-                <div className="detail-item">
-                  <label>Mã tài sản:</label>
-                  <span>{viewModal.asset.asset_code}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Tên tài sản:</label>
-                  <span>{viewModal.asset.name}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Danh mục:</label>
-                  <span>{viewModal.asset.category_name || '-'}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Vị trí:</label>
-                  <span>{viewModal.asset.location_name || '-'}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Phòng ban:</label>
-                  <span>{viewModal.asset.department_name || '-'}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Nhà cung cấp:</label>
-                  <span>{viewModal.asset.supplier_name || '-'}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Người sử dụng:</label>
-                  <span>{viewModal.asset.user_full_name || viewModal.asset.assigned_to_name || '-'}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Ngày mua:</label>
-                  <span>{viewModal.asset.purchase_date ? new Date(viewModal.asset.purchase_date).toLocaleDateString('vi-VN') : '-'}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Giá mua:</label>
-                  <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(viewModal.asset.purchase_price || 0)}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Giá trị hiện tại:</label>
-                  <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(viewModal.asset.current_value || 0)}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Thời gian khấu hao:</label>
-                  <span>{assetMonthsPassed(viewModal.asset)} tháng</span>
-                </div>
-                <div className="detail-item">
-                  <label>Mức khấu hao/tháng:</label>  
-                  <span>{formatMonthlyDep(viewModal.asset)} ₫</span>
-                </div>
-                <div className="detail-item">
-                  <label>Trạng thái:</label>
-                  <span>{getStatusBadge(viewModal.asset.status)}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Mã vạch:</label>
-                  <span>{viewModal.asset.barcode || '-'}</span>
-                </div>
-                <div className="detail-item full-width">
-                  <label>Mô tả:</label>
-                  <span>{viewModal.asset.description || '-'}</span>
-                </div>
+              <div className="tabs" style={{ display: 'flex', gap: '20px', borderBottom: '1px solid #eee', marginBottom: '20px' }}>
+                <button 
+                  className={`tab-btn ${activeTab === 'info' ? 'active' : ''}`} 
+                  onClick={() => setActiveTab('info')}
+                  style={{ padding: '10px 0', border: 'none', background: 'none', borderBottom: activeTab === 'info' ? '2px solid #2563eb' : 'none', color: activeTab === 'info' ? '#2563eb' : '#666', fontWeight: activeTab === 'info' ? 'bold' : 'normal', cursor: 'pointer' }}
+                >
+                  Thông tin chung
+                </button>
+                <button 
+                  className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`} 
+                  onClick={() => setActiveTab('users')}
+                  style={{ padding: '10px 0', border: 'none', background: 'none', borderBottom: activeTab === 'users' ? '2px solid #2563eb' : 'none', color: activeTab === 'users' ? '#2563eb' : '#666', fontWeight: activeTab === 'users' ? 'bold' : 'normal', cursor: 'pointer' }}
+                >
+                  Lịch sử người dùng
+                </button>
+                <button 
+                  className={`tab-btn ${activeTab === 'maintenance' ? 'active' : ''}`} 
+                  onClick={() => setActiveTab('maintenance')}
+                  style={{ padding: '10px 0', border: 'none', background: 'none', borderBottom: activeTab === 'maintenance' ? '2px solid #2563eb' : 'none', color: activeTab === 'maintenance' ? '#2563eb' : '#666', fontWeight: activeTab === 'maintenance' ? 'bold' : 'normal', cursor: 'pointer' }}
+                >
+                  Lịch sử bảo trì
+                </button>
               </div>
+
+              {activeTab === 'info' && (
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <label>Mã tài sản:</label>
+                    <span>{viewModal.asset.asset_code}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Tên tài sản:</label>
+                    <span>{viewModal.asset.name}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Danh mục:</label>
+                    <span>{viewModal.asset.category_name || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Vị trí:</label>
+                    <span>{viewModal.asset.location_name || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Phòng ban:</label>
+                    <span>{viewModal.asset.department_name || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Nhà cung cấp:</label>
+                    <span>{viewModal.asset.supplier_name || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Người sử dụng hiện tại:</label>
+                    <span>{viewModal.asset.user_full_name || viewModal.asset.assigned_to_name || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Ngày cấp:</label>
+                    <span>{viewModal.asset.assigned_date ? new Date(viewModal.asset.assigned_date).toLocaleDateString('vi-VN') : '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Ngày mua:</label>
+                    <span>{viewModal.asset.purchase_date ? new Date(viewModal.asset.purchase_date).toLocaleDateString('vi-VN') : '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Giá mua:</label>
+                    <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(viewModal.asset.purchase_price || 0)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Giá trị hiện tại:</label>
+                    <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(viewModal.asset.current_value || 0)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Thời gian khấu hao:</label>
+                    <span>{assetMonthsPassed(viewModal.asset)} tháng</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Mức khấu hao/tháng:</label>  
+                    <span>{formatMonthlyDep(viewModal.asset)} ₫</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Trạng thái:</label>
+                    <span>{getStatusBadge(viewModal.asset.status)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <label>Mã vạch:</label>
+                    <span>{viewModal.asset.barcode || '-'}</span>
+                  </div>
+                  <div className="detail-item full-width">
+                    <label>Mô tả:</label>
+                    <span>{viewModal.asset.description || '-'}</span>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'users' && (
+                <div className="table-container">
+                  {historyLoading ? <p>Đang tải...</p> : (
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Người dùng</th>
+                          <th>Phòng ban</th>
+                          <th>Ngày bắt đầu</th>
+                          <th>Ngày kết thúc</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {userHistory.length > 0 ? userHistory.map((h, i) => (
+                          <tr key={i}>
+                            <td>{h.fullName}</td>
+                            <td>{h.department_name}</td>
+                            <td>{h.start_date ? new Date(h.start_date).toLocaleDateString('vi-VN') : '-'}</td>
+                            <td>{h.end_date ? new Date(h.end_date).toLocaleDateString('vi-VN') : 'Hiện tại'}</td>
+                          </tr>
+                        )) : <tr><td colSpan="4" style={{ textAlign: 'center' }}>Chưa có lịch sử sử dụng</td></tr>}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'maintenance' && (
+                <div className="table-container">
+                  {historyLoading ? <p>Đang tải...</p> : (
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Ngày</th>
+                          <th>Loại</th>
+                          <th>Mô tả</th>
+                          <th>Chi phí</th>
+                          <th>Kỹ thuật viên</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {maintHistory.length > 0 ? maintHistory.map((m, i) => (
+                          <tr key={i}>
+                            <td>{new Date(m.maintenance_date).toLocaleDateString('vi-VN')}</td>
+                            <td>{m.maintenance_type === 'preventive' ? 'Định kỳ' : m.maintenance_type === 'corrective' ? 'Sửa chữa' : 'Khẩn cấp'}</td>
+                            <td>{m.description}</td>
+                            <td>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(m.cost || 0)}</td>
+                            <td>{m.technician || '-'}</td>
+                          </tr>
+                        )) : <tr><td colSpan="5" style={{ textAlign: 'center' }}>Chưa có lịch sử bảo trì</td></tr>}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
             </div>
             <div className="modal-footer">
               {user?.permissions?.includes('EDIT_ASSET') && (

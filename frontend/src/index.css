@@ -93,9 +93,48 @@
     @apply w-5 h-5 shrink-0;
   }
 
+  /* Sidebar toggle button - floating */
+.sidebar-float-toggle {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    /* left: 256px; */
+    z-index: 999;
+    width: 20px;
+    height: 48px;
+    background: white;
+    border: 1px solid var(--color-border);
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s;
+    color: var(--color-text-secondary);
+    font-size: 11px;
+  }
+
+  .sidebar-float-toggle:hover {
+    background: #f8fafc;
+    color: var(--color-text-primary);
+  }
+
+  /* .sidebar-float-toggle.collapsed {
+    left: 0;
+  } */
+
+  /* Ẩn nút trên mobile */
+  @media (max-width: 768px) {
+    .sidebar-float-toggle {
+      display: none !important;
+    }
+  }
+
+
   .main-content {
     @apply flex-1 p-6 min-h-screen;
-    margin-left: 256px;
+    /* margin-left: 256px; */
     background-color: var(--color-page-bg);
   }
 
@@ -264,6 +303,9 @@
   }
   .badge-good {
     @apply bg-emerald-100 text-emerald-700;
+  }
+  .badge-damaged {
+    @apply bg-red-100 text-red-600;
   }
   .badge-needs_repair {
     @apply bg-amber-100 text-amber-700;

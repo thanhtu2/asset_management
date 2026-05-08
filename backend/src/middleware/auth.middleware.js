@@ -32,3 +32,18 @@ export const adminMiddleware = (req, res, next) => {
     return res.status(403).json({ message: 'Từ chối truy cập. Chức năng này chỉ dành cho Quản trị viên.' });
   }
 };
+
+/**
+ * Middleware kiểm tra quyền hạn cụ thể của người dùng
+ * @param {string} permissionCode - Mã quyền cần kiểm tra (VD: 'CREATE_ASSET')
+ */
+export const checkPermission = (permissionCode) => {
+  return (req, res, next) => {
+    // Quản trị viên (admin) luôn có mọi quyền
+    if (req.user && (req.user.role === 'admin' || (req.user.permissions && req.user.permissions.includes(permissionCode)))) {
+      next();
+    } else {
+      return res.status(403).json({ message: `Từ chối truy cập. Bạn không có quyền: ${permissionCode}` });
+    }
+  };
+};
