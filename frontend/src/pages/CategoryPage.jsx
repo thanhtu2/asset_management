@@ -134,7 +134,7 @@ const CategoryPage = () => {
     <div>
       <div className="page-header">
         <h1>Quản lý danh mục</h1>
-        {user?.permissions?.includes('MANAGE_CATEGORIES') && (
+        {(user?.role === 'admin' || user?.permissions?.includes('CREATE_CATEGORY')) && (
           <button onClick={() => handleOpenModal()} className="btn btn-primary">+ Thêm danh mục</button>
         )}
       </div>
@@ -161,10 +161,10 @@ const CategoryPage = () => {
                   <td>{category.depreciation_rate}%</td>
                   <td>{category.description || '-'}</td>
                   <td className="actions">
-                {user?.permissions?.includes('MANAGE_CATEGORIES') && (
+                {(user?.role === 'admin' || user?.permissions?.includes('EDIT_CATEGORY')) && (
                       <button onClick={() => handleOpenModal(category)} className="btn btn-sm btn-outline">Sửa</button>
                     )}
-                {user?.permissions?.includes('MANAGE_CATEGORIES') && (
+                {(user?.role === 'admin' || user?.permissions?.includes('DELETE_CATEGORY')) && (
                       <button onClick={() => setDeleteModal({ show: true, id: category.id })} className="btn btn-sm btn-danger">Xóa</button>
                     )}
                   </td>

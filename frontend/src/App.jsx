@@ -18,6 +18,7 @@ import ProfilePage from './pages/ProfilePage';
 import PublicAssetPage from './pages/PublicAssetPage';
 import PurchaseProposalPage from './pages/PurchaseProposalPage';
 import AuditLogPage from './pages/AuditLogPage';
+import VehicleRegistrationPage from './pages/VehicleRegistrationPage';
 import { departmentsAPI } from './api';
 
 function App() {
@@ -133,6 +134,14 @@ function App() {
             <ProtectedRoute requiredPermission="MANAGE_PURCHASE_PROPOSALS">
               <MainLayout>
                 <PurchaseProposalPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/vehicle-registrations" element={
+            <ProtectedRoute requiredPermission="VIEW_VEHICLE_REGISTRATIONS">
+              <MainLayout>
+                <VehicleRegistrationPage />
               </MainLayout>
             </ProtectedRoute>
           } />

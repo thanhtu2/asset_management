@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: asset_management_db_dev
+    restart: always
+    environment:
+      MYSQL_DATABASE: asset_management
+      MYSQL_ROOT_PASSWORD: 123456
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+      timeout: 5s
+      retries: 5
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_dev_data:/var/lib/mysql
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: asset_management_api_dev
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=123456
+      - DB_NAME=asset_management
+      - JWT_SECRET=${JWT_SECRET}
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app:z
+      - /app/node_modules
+      - ./backend/uploads:/app/uploads
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: asset_management_ui_dev
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app:z
+      - /app/node_modules # Giữ node_modules của container
+    environment:
+      - VITE_API_URL=http://localhost:3001/api
+      - CHOKIDAR_USEPOLLING=true
+      - VITE_WATCH_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    stdin_open: true
+    tty: true
+
+volumes:
+  mysql_dev_data:

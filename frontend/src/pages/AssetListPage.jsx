@@ -362,7 +362,7 @@ const AssetListPage = () => {
         <h1>Quản lý tài sản</h1>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={() => assetsAPI.exportAssets()} className="btn btn-outline">⬇ Xuất Excel</button>
-          {user?.permissions?.includes('CREATE_ASSET') && (
+          {(user?.role === 'admin' || user?.permissions?.includes('CREATE_ASSET')) && (
             <>
               <button onClick={() => setShowImportModal(true)} className="btn btn-outline">⬆ Import Excel</button>
               <Link to="/assets/new" className="btn btn-primary">+ Thêm tài sản</Link>
@@ -520,13 +520,13 @@ const AssetListPage = () => {
                     >
                       QR
                     </button>
-                    {user?.permissions?.includes('EDIT_ASSET') && (
+                    {(user?.role === 'admin' || user?.permissions?.includes('EDIT_ASSET')) && (
                       <button
                         onClick={() => setEditModal({ show: true, assetId: asset.id })}
                         className="btn btn-sm btn-outline"
                       >Sửa</button>
                     )}
-                    {user?.permissions?.includes('DELETE_ASSET') && (
+                    {(user?.role === 'admin' || user?.permissions?.includes('DELETE_ASSET')) && (
                       <button
                         onClick={() => setDeleteModal({ show: true, id: asset.id })}
                         className="btn btn-sm btn-danger"

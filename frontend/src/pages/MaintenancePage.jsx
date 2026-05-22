@@ -134,7 +134,7 @@ const MaintenancePage = () => {
     <div>
       <div className="page-header">
         <h1>Quản lý bảo trì</h1>
-        {user?.permissions?.includes('MANAGE_MAINTENANCE') && (
+        {(user?.role === 'admin' || user?.permissions?.includes('CREATE_MAINTENANCE')) && (
           <button onClick={() => handleOpenModal()} className="btn btn-primary">+ Thêm bảo trì</button>
         )}
       </div>
@@ -191,14 +191,14 @@ const MaintenancePage = () => {
                         ✓ Đã bảo trì
                       </span>
                     ) : (
-                  user?.permissions?.includes('MANAGE_MAINTENANCE') && (
+                  (user?.role === 'admin' || user?.permissions?.includes('EDIT_MAINTENANCE')) && (
                         <button onClick={() => handleCompleteRepair(record)} className="btn btn-sm btn-success" title="Hoàn thành sửa chữa">✓ Hoàn thành</button>
                       )
                     )}
-                {user?.permissions?.includes('MANAGE_MAINTENANCE') && (
+                {(user?.role === 'admin' || user?.permissions?.includes('EDIT_MAINTENANCE')) && (
                       <button onClick={() => handleOpenModal(record)} className="btn btn-sm btn-outline">Sửa</button>
                     )}
-                {user?.permissions?.includes('MANAGE_MAINTENANCE') && (
+                {(user?.role === 'admin' || user?.permissions?.includes('DELETE_MAINTENANCE')) && (
                       <button onClick={() => setDeleteModal({ show: true, id: record.id })} className="btn btn-sm btn-danger">Xóa</button>
                     )}
                   </td>

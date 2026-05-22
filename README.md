@@ -1,16 +1,28 @@
-# Asset Management System
+# Tài liệu Hướng dẫn Hệ thống Quản lý Tài sản
 
-Hệ thống Quản lý Tài sản Doanh nghiệp
+## 🚗 1. Phân hệ Quản lý Đăng ký xe (Cập nhật mới)
 
-## 📋 Tổng quan
+### 📋 Thay đổi Logic & Cấu trúc
+- **Loại bỏ bảng dư thừa**: Đã xóa bảng `vehicle_trips`. Toàn bộ thông tin lịch trình hiện được quản lý tập trung tại bảng `vehicle_registrations`.
+- **Hợp nhất dữ liệu**: Trường `departure_location` (Điểm khởi hành) đã được thêm vào bảng đăng ký xe để theo dõi lộ trình đầy đủ ngay từ bước yêu cầu.
+- **Tối ưu hiển thị**: Lịch trình xe giờ đây được hiển thị trực tiếp từ dữ liệu đăng ký, không cần qua bước điều phối trung gian phức tạp.
 
-**Asset Management System** là hệ thống quản lý tài sản doanh nghiệp toàn diện, được xây dựng bằng ReactJS (Frontend) và NodeJS/Express (Backend) với cơ sở dữ liệu MySQL.
+### 🔐 Hệ thống Phân quyền (RBAC)
+Quyền hạn cho module Xe đã được tách nhỏ để quản lý linh hoạt hơn:
+- `VIEW_VEHICLE_REGISTRATIONS`: Cho phép truy cập và xem giao diện **Danh sách** đăng ký xe.
+- `VIEW_VEHICLE_WEEKLY`: Cho phép truy cập và xem giao diện **Lịch tuần** xe.
+- `CREATE_VEHICLE_REGISTRATION`: Quyền tạo mới và gửi yêu cầu đăng ký.
+- `COORDINATE_VEHICLE`: Quyền điều phối (xem dữ liệu toàn công ty, gán xe/tài xế). Nếu không có quyền này, người dùng chỉ thấy dữ liệu của phòng ban mình.
 
-Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doanh nghiệp một cách hiệu quả.
+### 🔄 Quy trình Nghiệp vụ
+1. **Người nhập liệu/Nhân viên**: Tạo đăng ký xe, nhập Điểm đi, Điểm đến, Thời gian và chọn xe (nếu có quyền hoặc xe có sẵn).
+2. **Người quản lý/Điều phối**: Theo dõi qua Danh sách hoặc Lịch tuần để gán xe phù hợp (`vehicle_id`) và cập nhật trạng thái.
+3. **Hiển thị**: Dữ liệu từ bảng đăng ký được đổ trực tiếp lên Lịch tuần dựa trên ngày khởi hành (`registration_date`).
+---
 
-## 🚀 Tính năng chính
+## 🚀 Tính năng chính Hệ thống
 
-### 1. Quản lý tài sản (Assets)
+### 1. Quản lý tài sản (Assets) & Đăng ký xe
 - Thêm, sửa, xóa tài sản
 - Phân loại tài sản theo danh mục
 - Theo dõi vị trí tài sản
@@ -21,6 +33,11 @@ Hệ thống cho phép theo dõi, quản lý và bảo trì tài sản của doa
 - Tìm kiếm và lọc tài sản nâng cao
 - Import/Export dữ liệu quản lý bằng Excel
 - Trang tra cứu tài sản Public (Quét QR không cần đăng nhập để báo hỏng)
+
+### 2. Quản lý Người dùng & Phân quyền
+- Truy cập **Quản trị -> Người dùng** để gán vai trò.
+- Truy cập **Quản trị -> Phân quyền** để cấu hình chi tiết các mã quyền (Code) cho từng vai trò (Role).
+- Tích hợp kiểm tra quyền đa tầng (Permissions array) trên thanh điều hướng.
 
 ### 2. Quản lý danh mục (Categories)
 - Thêm, sửa, xóa danh mục tài sản
@@ -672,3 +689,4 @@ Mọi đóng góp và cải thiện đều được hoan nghênh!
 
 **Phiên bản:** 1.0.0  
 **Cập nhật cuối:** 2024
+*Lưu ý: Sau khi cập nhật quyền trong Database, người dùng cần Đăng xuất và Đăng nhập lại để cập nhật Token mới.*

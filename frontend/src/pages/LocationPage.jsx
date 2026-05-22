@@ -131,7 +131,7 @@ const LocationPage = () => {
     <div>
       <div className="page-header">
         <h1>Quản lý vị trí</h1>
-        {user?.permissions?.includes('MANAGE_LOCATIONS') && (
+        {(user?.role === 'admin' || user?.permissions?.includes('CREATE_LOCATION')) && (
           <button onClick={() => handleOpenModal()} className="btn btn-primary">+ Thêm vị trí</button>
         )}
       </div>
@@ -156,10 +156,10 @@ const LocationPage = () => {
                   <td>{location.address || '-'}</td>
                   <td>{location.parent_name || '-'}</td>
                   <td className="actions">
-                {user?.permissions?.includes('MANAGE_LOCATIONS') && (
+                {(user?.role === 'admin' || user?.permissions?.includes('EDIT_LOCATION')) && (
                       <button onClick={() => handleOpenModal(location)} className="btn btn-sm btn-outline">Sửa</button>
                     )}
-                {user?.permissions?.includes('MANAGE_LOCATIONS') && (
+                {(user?.role === 'admin' || user?.permissions?.includes('DELETE_LOCATION')) && (
                       <button onClick={() => setDeleteModal({ show: true, id: location.id })} className="btn btn-sm btn-danger">Xóa</button>
                     )}
                   </td>

@@ -227,9 +227,25 @@ const Asset = {
       `INSERT INTO assets (asset_code, name, description, category_id, location_id, department_id,
         supplier_id, purchase_date, purchase_price, current_value, salvage_value, status, barcode, image_url, assigned_to, assigned_to_name, assigned_date)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [asset_code, name, description, category_id, location_id, department_id,
-        supplier_id, purchase_date, purchase_price, current_value || purchase_price, salvage_value || 0, status || 'new', 
-        barcode, image_url, assigned_to || null, assigned_to_name || null, assigned_date || null]
+      [
+        asset_code, 
+        name, 
+        description, 
+        category_id || null, 
+        location_id || null, 
+        department_id || null,
+        supplier_id || null, 
+        purchase_date || null, 
+        purchase_price || 0, 
+        current_value || purchase_price || 0, 
+        salvage_value || 0, 
+        status || 'new', 
+        barcode, 
+        image_url, 
+        assigned_to || null, 
+        assigned_to_name || null, 
+        assigned_date || null
+      ]
     );
     return this.findById(result.insertId);
   },

@@ -50,15 +50,14 @@
   }
 
   .sidebar {
-    @apply fixed h-screen overflow-y-auto flex flex-col text-white;
+    @apply fixed top-0 left-0 h-screen overflow-y-auto flex flex-col text-white;
     width: 256px;
-    height:100%;
     background: linear-gradient(180deg, #0f172a 0%, #1a2744 60%, #1e3a5f 100%);
     border-right: 1px solid rgba(255,255,255,0.06);
   }
 
   .sidebar-header {
-    @apply px-5 py-5;
+    @apply px-5 py-4;
     border-bottom: 1px solid rgba(255,255,255,0.08);
   }
 
@@ -75,7 +74,7 @@
   }
 
   .sidebar-menu a {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm no-underline transition-all duration-200;
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm no-underline transition-all duration-200;
     color: rgba(255,255,255,0.55);
   }
 
@@ -134,7 +133,7 @@
 
   .main-content {
     @apply flex-1 p-6 min-h-screen;
-    /* margin-left: 256px; */
+    margin-left: 256px;
     background-color: var(--color-page-bg);
   }
 

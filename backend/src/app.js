@@ -25,6 +25,9 @@ import dashboardRoutes from './routes/dashboard.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import cronRoutes from './routes/cron.routes.js';
 import purchaseRoutes from './routes/purchase.routes.js';
+import vehicleTripRoutes from './routes/vehicleTrip.routes.js';
+import vehicleRoutes from './routes/vehicle.routes.js'; // Đảm bảo import từ routes/
+import vehicleRegistrationRoutes from './routes/vehicleRegistration.routes.js';
 import auditRoutes from './routes/audit.routes.js';
 
 import { initDatabase, testConnection, getPool } from './config/database.js';
@@ -184,6 +187,9 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/purchases', purchaseRoutes);
 app.use('/api/audit-logs', auditRoutes);
+app.use('/api/vehicle-registrations', vehicleRegistrationRoutes);
+app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/vehicle-trips', vehicleTripRoutes);
 
 // New Logout Route
 app.post('/api/auth/logout', (req, res) => {

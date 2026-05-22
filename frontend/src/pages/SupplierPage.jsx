@@ -117,7 +117,7 @@ const SupplierPage = () => {
     <div>
       <div className="page-header">
         <h1>Quản lý nhà cung cấp</h1>
-        {user?.permissions?.includes('MANAGE_SUPPLIERS') && (
+        {(user?.role === 'admin' || user?.permissions?.includes('CREATE_SUPPLIER')) && (
           <button onClick={() => handleOpenModal()} className="btn btn-primary">+ Thêm nhà cung cấp</button>
         )}
       </div>
@@ -146,10 +146,10 @@ const SupplierPage = () => {
                   <td>{supplier.email || '-'}</td>
                   <td>{supplier.address || '-'}</td>
                   <td className="actions">
-                {user?.permissions?.includes('MANAGE_SUPPLIERS') && (
+                {(user?.role === 'admin' || user?.permissions?.includes('EDIT_SUPPLIER')) && (
                       <button onClick={() => handleOpenModal(supplier)} className="btn btn-sm btn-outline">Sửa</button>
                     )}
-                {user?.permissions?.includes('MANAGE_SUPPLIERS') && (
+                {(user?.role === 'admin' || user?.permissions?.includes('DELETE_SUPPLIER')) && (
                       <button onClick={() => setDeleteModal({ show: true, id: supplier.id })} className="btn btn-sm btn-danger">Xóa</button>
                     )}
                   </td>
