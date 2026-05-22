@@ -22,23 +22,24 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: 'Account is locked' });
     }
     
+    // Lấy danh sách quyền của Role từ database
+    const [perms] = await pool.query('SELECT permission_code FROM role_permissions WHERE role_code = ?', [user.role]);
+    const permissions = perms.map(p => p.permission_code);
+
     const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role, department_id: user.department_id },
+      { id: user.id, username: user.username, role: user.role, department_id: user.department_id, permissions },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
-    
-    // Lấy danh sách quyền của Role từ database
-    const [perms] = await pool.query('SELECT permission_code FROM role_permissions WHERE role_code = ?', [user.role]);
-    
-    const permissions = perms.map(p => p.permission_code);
     
     // res.json({ token, user: userData });
     
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      // secure: process.env.NODE_ENV === 'production',
+      // sameSite: 'strict',
+      secure: true, // Đặt secure: true để cookie chỉ được gửi qua HTTPS
+      sameSite: 'none', // Đặt sameSite: 'none' để cookie được gửi trong các yêu cầu cross-site
       maxAge: 24 * 60 * 60 * 1000 // Timeout 24 giờ như yêu cầu
     });
     res.json({
@@ -65,8 +66,12 @@ export const register = async (req, res) => {
     
     const user = await User.create({ username, password, fullName, role, department_id });
     
+    // Lấy danh sách quyền cho role mới
+    const [perms] = await pool.query('SELECT permission_code FROM role_permissions WHERE role_code = ?', [user.role]);
+    const permissions = perms.map(p => p.permission_code);
+
     const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role },
+      { id: user.id, username: user.username, role: user.role, department_id: user.department_id, permissions },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -75,8 +80,10 @@ export const register = async (req, res) => {
     
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      // secure: process.env.NODE_ENV === 'production',
+      // sameSite: 'strict',
+      secure: true, // Đặt secure: true để cookie chỉ được gửi qua HTTPS
+      sameSite: 'none', // Đặt sameSite: 'none' để cookie được gửi trong các yêu cầu cross-site
       maxAge: 24 * 60 * 60 * 1000 // Timeout 24 giờ
     });
     res.status(201).json({ user: userData });

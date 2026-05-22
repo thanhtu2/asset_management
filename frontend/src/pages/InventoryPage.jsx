@@ -388,7 +388,7 @@ const InventoryPage = () => {
     <div>
       <div className="page-header">
         <h1>Quản lý kiểm kê tài sản</h1>
-        {user?.permissions?.includes('MANAGE_INVENTORY') && (
+        {(user?.role === 'admin' || user?.permissions?.includes('CREATE_INVENTORY')) && (
           <button onClick={handleOpenModal} className="btn btn-primary">+ Tạo phiên kiểm kê</button>
         )}
       </div>
@@ -414,7 +414,7 @@ const InventoryPage = () => {
                   <td>{getStatusBadge(session.status)}</td>
                   <td className="actions">
                     <button onClick={() => handleViewDetails(session)} className="btn btn-sm btn-outline">Chi tiết</button>
-                {user?.permissions?.includes('MANAGE_INVENTORY') && session.status === 'draft' && (
+                {(user?.role === 'admin' || user?.permissions?.includes('EDIT_INVENTORY')) && session.status === 'draft' && (
                       <>
                         <button 
                           onClick={() => setAddAssetsModal({ show: true, sessionId: session.id })} 
@@ -424,7 +424,7 @@ const InventoryPage = () => {
                         </button>
                       </>
                     )}
-                {user?.permissions?.includes('MANAGE_INVENTORY') && session.status === 'in_progress' && (
+                {(user?.role === 'admin' || user?.permissions?.includes('EDIT_INVENTORY')) && session.status === 'in_progress' && (
                       <button 
                         onClick={() => handleComplete(session.id)} 
                         className="btn btn-sm btn-success"
@@ -432,7 +432,7 @@ const InventoryPage = () => {
                         Hoàn thành
                       </button>
                     )}
-                {user?.permissions?.includes('MANAGE_INVENTORY') && session.status !== 'completed' && session.status !== 'cancelled' && (
+                {(user?.role === 'admin' || user?.permissions?.includes('DELETE_INVENTORY')) && session.status !== 'completed' && session.status !== 'cancelled' && (
                        <button 
                          onClick={() => setDeleteModal({ show: true, id: session.id })} 
                          className="btn btn-sm btn-danger"
@@ -540,7 +540,7 @@ const InventoryPage = () => {
             </div>
             
             <div style={{ padding: '15px', borderBottom: '1px solid #e0e0e0', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {user?.permissions?.includes('MANAGE_INVENTORY') && selectedSession.status === 'in_progress' && (
+            {user?.permissions?.includes('CREATE_INVENTORY') && selectedSession.status === 'in_progress' && (
                   <button 
                     className="btn btn-primary"
                     onClick={() => {
@@ -551,7 +551,7 @@ const InventoryPage = () => {
                     📷 Bắt đầu quét
                   </button>
                 )}
-            {user?.permissions?.includes('MANAGE_INVENTORY') && selectedSession.status === 'in_progress' && (
+            {user?.permissions?.includes('CREATE_INVENTORY') && selectedSession.status === 'in_progress' && (
                   <button 
                     className="btn btn-success"
                     onClick={() => handleComplete(selectedSession.id)}
@@ -559,7 +559,7 @@ const InventoryPage = () => {
                     ✓ Hoàn thành phiên
                   </button>
                 )}
-                {user?.permissions?.includes('MANAGE_INVENTORY') && selectedSession.status === 'completed' && (
+                {user?.permissions?.includes('CREATE_INVENTORY') && selectedSession.status === 'completed' && (
                   <button 
                     className="btn btn-outline"
                     onClick={() => inventoryAPI.exportInventoryReport(selectedSession.id)}
@@ -574,7 +574,7 @@ const InventoryPage = () => {
               {summaryByDept.length > 0 && (
                 <div style={{ marginBottom: '20px' }}>
                   <h3 style={{ fontSize: '16px', marginBottom: '10px' }}>Tổng hợp theo phòng</h3>
-                  <table style={{ width: '100%', fontSize: '13px' }}>
+                    <table style={{ width: '100%', fontSize: '13px' }}>
                     <thead>
                       <tr style={{ background: '#f5f5f5' }}>
                         <th style={{ padding: '8px', textAlign: 'left' }}>Phòng</th>
@@ -609,13 +609,13 @@ const InventoryPage = () => {
                   <h3 style={{ fontSize: '16px', marginBottom: '10px', color: '#856404' }}>
                     ⚠️ Tài sản hư hỏng ({records.filter(r => r.status === 'damaged').length})
                   </h3>
-                  <table style={{ width: '100%', fontSize: '13px' }}>
+                    <table style={{ width: '100%', fontSize: '13px' }}>
                     <thead>
                       <tr style={{ background: '#ffeeba' }}>
                         <th style={{ padding: '8px', textAlign: 'left' }}>Mã TS</th>
                         <th style={{ padding: '8px', textAlign: 'left' }}>Tên tài sản</th>
                         <th style={{ padding: '8px', textAlign: 'left' }}>Ghi chú</th>
-                    {user?.permissions?.includes('MANAGE_INVENTORY') && (
+                    {user?.permissions?.includes('CREATE_INVENTORY') && (
                           <th style={{ padding: '8px', textAlign: 'center' }}>Thao tác</th>
                         )}
                       </tr>
@@ -626,7 +626,7 @@ const InventoryPage = () => {
                           <td style={{ padding: '8px' }}>{record.asset_code}</td>
                           <td style={{ padding: '8px' }}>{record.asset_name}</td>
                           <td style={{ padding: '8px', fontSize: '12px' }}>{record.notes || '-'}</td>
-                      {user?.permissions?.includes('MANAGE_INVENTORY') && (
+                      {user?.permissions?.includes('CREATE_INVENTORY') && (
                             <td style={{ padding: '8px', textAlign: 'center' }}>
                               <button 
                                 onClick={() => handleCreateMaintenance(record)}
@@ -650,7 +650,7 @@ const InventoryPage = () => {
                       ))}
                     </tbody>
                   </table>
-              {user?.permissions?.includes('MANAGE_INVENTORY') && records.filter(r => r.status === 'damaged').length > 1 && (
+              {user?.permissions?.includes('CREATE_INVENTORY') && records.filter(r => r.status === 'damaged').length > 1 && (
                     <div style={{ marginTop: '10px', textAlign: 'center' }}>
                       <button 
                         onClick={() => setLiquidationModal({ show: true, records: records.filter(r => r.status === 'damaged') })}
@@ -669,7 +669,7 @@ const InventoryPage = () => {
                   <h3 style={{ fontSize: '16px', marginBottom: '10px', color: '#721c24' }}>
                     ❌ Tài sản thiếu ({records.filter(r => r.status === 'missing').length})
                   </h3>
-                  <table style={{ width: '100%', fontSize: '13px' }}>
+                    <table style={{ width: '100%', fontSize: '13px' }}>
                     <thead>
                       <tr style={{ background: '#f5c6cb' }}>
                         <th style={{ padding: '8px', textAlign: 'left' }}>Mã TS</th>
@@ -696,13 +696,13 @@ const InventoryPage = () => {
                   <h3 style={{ fontSize: '16px', marginBottom: '10px', color: '#155724' }}>
                     ✅ Tài sản tìm thấy ({records.filter(r => r.status === 'found' || r.status === 'found_wrong_location').length})
                   </h3>
-                  <table style={{ width: '100%', fontSize: '13px' }}>
+                    <table style={{ width: '100%', fontSize: '13px' }}>
                     <thead>
                       <tr style={{ background: '#c3e6cb' }}>
                         <th style={{ padding: '8px', textAlign: 'left' }}>Mã TS</th>
                         <th style={{ padding: '8px', textAlign: 'left' }}>Tên tài sản</th>
                         <th style={{ padding: '8px', textAlign: 'center' }}>Trạng thái</th>
-                    {user?.permissions?.includes('MANAGE_INVENTORY') && (
+                    {user?.permissions?.includes('CREATE_INVENTORY') && (
                           <th style={{ padding: '8px', textAlign: 'center' }}>Thao tác</th>
                         )}
                       </tr>
@@ -717,7 +717,7 @@ const InventoryPage = () => {
                               {record.status === 'found' ? 'Tìm thấy' : 'Sai vị trí'}
                             </span>
                           </td>
-                      {user?.permissions?.includes('MANAGE_INVENTORY') && (
+                      {user?.permissions?.includes('CREATE_INVENTORY') && (
                             <td style={{ padding: '8px', textAlign: 'center' }}>
                               <button 
                                 onClick={() => {
@@ -761,7 +761,7 @@ const InventoryPage = () => {
                             <th style={{ padding: '8px', textAlign: 'left' }}>Mã TS</th>
                             <th style={{ padding: '8px', textAlign: 'left' }}>Tên tài sản</th>
                             <th style={{ padding: '8px', textAlign: 'center' }}>Trạng thái</th>
-                        {user?.permissions?.includes('MANAGE_INVENTORY') && (
+                        {user?.permissions?.includes('CREATE_INVENTORY') && (
                               <th style={{ padding: '8px', textAlign: 'center' }}>Thao tác</th>
                             )}
                           </tr>
@@ -774,7 +774,7 @@ const InventoryPage = () => {
                               <td style={{ padding: '8px', textAlign: 'center' }}>
                                 {getRecordStatusBadge(record.status)}
                               </td>
-                          {user?.permissions?.includes('MANAGE_INVENTORY') && (
+                          {user?.permissions?.includes('CREATE_INVENTORY') && (
                                 <td style={{ padding: '8px', textAlign: 'center' }}>
                                   {selectedSession.status !== 'completed' && (record.status === 'pending_check' || !record.status) && (
                                   <>

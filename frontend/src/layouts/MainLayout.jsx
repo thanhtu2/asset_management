@@ -15,6 +15,7 @@ const menuItems = [
   { path: '/maintenance',  label: 'Bảo trì',           icon: '🔧' },
   { path: '/inventory',    label: 'Kiểm kê',           icon: '📋' },
   { path: '/purchases',    label: 'Đề xuất mua sắm',   icon: '🛒', permission: 'MANAGE_PURCHASE_PROPOSALS' },
+  { path: '/vehicle-registrations', label: 'Lịch đăng ký xe', icon: '🚗', permissions: ['VIEW_VEHICLE_REGISTRATIONS', 'VIEW_VEHICLE_WEEKLY'] },
 ];
 
 const adminMenuItems = [
@@ -30,8 +31,17 @@ const MainLayout = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
+  const hasPermission = (item) => {
+    if (user?.role === 'admin') return true;
+    if (item.permissions) return item.permissions.some(p => user?.permissions?.includes(p));
+    if (item.permission) return user?.permissions?.includes(item.permission);
+    return true; // Không yêu cầu quyền (ví dụ: Dashboard)
+  };
+
+  const visibleMenuItems = menuItems.filter(hasPermission);
+
   const visibleAdminItems = adminMenuItems.filter(
-    item => user?.permissions?.includes(item.permission)
+    hasPermission
   );
 
   const handleLogout = () => {
@@ -120,7 +130,7 @@ const MainLayout = ({ children }) => {
         </div>
 
         <ul className="sidebar-menu">
-          {menuItems.map((item) => (
+          {visibleMenuItems.map((item) => (
             <li key={item.path}>
               <Link
                 to={item.path}

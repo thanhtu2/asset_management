@@ -221,4 +221,26 @@ export const purchaseProposalsAPI = {
   delete: (id) => apiClient.delete(`/purchases/${id}`),
 };
 
+// Vehicles API
+export const vehiclesAPI = {
+  getAll: () => apiClient.get('/vehicles'),
+};
+
+export const vehicleRegistrationsAPI = {
+  getAll: (params) => apiClient.get('/vehicle-registrations', { params }),
+  getById: (id) => apiClient.get(`/vehicle-registrations/${id}`),
+  create: (data) => apiClient.post('/vehicle-registrations', data),
+  update: (id, data) => apiClient.put(`/vehicle-registrations/${id}`, data),
+  delete: (id) => apiClient.delete(`/vehicle-registrations/${id}`),
+  getVehicles: () => apiClient.get('/vehicles'),
+};
+
+export const vehicleTripsAPI = {
+  getAll: (params) => apiClient.get('/vehicle-trips', { params }),
+  getById: (id) => apiClient.get(`/vehicle-trips/${id}`),
+  create: (data) => apiClient.post('/vehicle-trips', data),
+  update: (id, data) => apiClient.put(`/vehicle-trips/${id}`, data),
+  delete: (id) => apiClient.delete(`/vehicle-trips/${id}`),
+};
+
 export default apiClient;

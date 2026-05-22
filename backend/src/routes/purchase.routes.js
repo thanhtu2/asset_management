@@ -3,16 +3,18 @@ import pool from '../config/database.js';
 import { 
   getAll, getById, create, update, remove, getStats 
 } from '../controllers/purchaseProposal.controller.js';
-import { authMiddleware } from '../middleware/auth.middleware.js';
+import { authMiddleware, checkPermission } from '../middleware/auth.middleware.js';
 import { generalUpload } from '../middleware/upload.middleware.js';
 
 const router = express.Router();
 
-router.get('/', authMiddleware, getAll);
-router.get('/:id', authMiddleware, getById);
-router.get('/stats', authMiddleware, getStats);
-router.post('/', authMiddleware, generalUpload.single('file'), create);
-router.put('/:id', authMiddleware, generalUpload.single('file'), update);
-router.delete('/:id', authMiddleware, remove);
+router.use(authMiddleware);
+
+router.get('/', checkPermission('VIEW_PURCHASE_PROPOSALS'), getAll);
+router.get('/stats', checkPermission('VIEW_PURCHASE_PROPOSALS'), getStats);
+router.get('/:id', checkPermission('VIEW_PURCHASE_PROPOSALS'), getById);
+router.post('/', checkPermission('CREATE_PURCHASE_PROPOSAL'), generalUpload.single('file'), create);
+router.put('/:id', update); // Update bao gồm cả sửa (Requester) và Duyệt (Leader/Director), logic phân quyền chi tiết nằm trong Model
+router.delete('/:id', checkPermission('CREATE_PURCHASE_PROPOSAL'), remove);
 
 export default router;
