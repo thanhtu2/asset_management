@@ -29,7 +29,7 @@ const DepartmentPage = () => {
       const [deptRes, deptSimpleRes, userRes] = await Promise.all([
         departmentsAPI.getAll({ page: pagination.page, limit: pagination.limit }),
         departmentsAPI.getAllSimple(),
-        usersAPI.getAll()
+        usersAPI.getAllSimple()
       ]);
       // Trích xuất an toàn: Kiểm tra nếu là mảng thì lấy luôn, nếu là Object phân trang thì lấy .data, nếu undefined thì lấy mảng rỗng []
       setDepartments(Array.isArray(deptRes.data) ? deptRes.data : deptRes.data?.data || []);

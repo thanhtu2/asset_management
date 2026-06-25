@@ -88,7 +88,7 @@ const AssetFormPage = () => {
         locationsAPI.getAllSimple(),
         departmentsAPI.getAllSimple(),
         suppliersAPI.getAll(),
-        usersAPI.getAll()
+        usersAPI.getAllSimple()
       ]);
       // Handle both paginated and non-paginated responses
       setCategories(catRes.data?.data || catRes.data || []);

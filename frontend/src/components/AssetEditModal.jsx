@@ -38,7 +38,7 @@ const AssetEditModal = ({ assetId, onClose, onSuccess }) => {
           locationsAPI.getAllSimple(),
           departmentsAPI.getAllSimple(),
           suppliersAPI.getAll(),
-          usersAPI.getAll(),
+          usersAPI.getAllSimple(),
           assetsAPI.getById(assetId)
         ]);
 

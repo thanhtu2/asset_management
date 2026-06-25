@@ -10,6 +10,14 @@ export const getAll = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+export const getAllSimple = async (req, res) => {
+  try {
+    const users = await User.findAllSimple();
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 export const getById = async (req, res) => {
   try {

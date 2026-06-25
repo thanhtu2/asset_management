@@ -155,7 +155,7 @@ const VehicleRegistrationPage = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await usersAPI.getAll();
+      const res = await usersAPI.getAllSimple();
       setUsersList(res.data);
     } catch (err) { console.error(err); }
   };
