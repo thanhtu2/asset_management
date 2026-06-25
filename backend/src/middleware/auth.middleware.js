@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import pool from '../config/database.js'; //
 
 export const authMiddleware = (req, res, next) => {
   try {

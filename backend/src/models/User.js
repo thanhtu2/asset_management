@@ -12,6 +12,15 @@ const User = {
     `);
     return rows;
   },
+  async findAllSimple() {
+    const [rows] = await pool.query(`
+      SELECT id, username, fullName 
+      FROM users 
+      WHERE isActive = true 
+      ORDER BY fullName ASC
+    `);
+    return rows;
+  },
 
   // Get user by ID
   async findById(id) {
