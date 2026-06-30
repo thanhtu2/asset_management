@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
-import { assetsAPI } from '../api';
+import { assetsAPI, maintenanceAPI } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 
 const PublicAssetPage = () => {
@@ -18,6 +18,11 @@ const PublicAssetPage = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [showScanner, setShowScanner] = useState(false);
   const scannerRef = useRef(null);
+  const [activeTab, setActiveTab] = useState('info'); // 'info', 'users', 'maintenance'
+  const [userHistory, setUserHistory] = useState([]);
+  const [maintHistory, setMaintHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
   const html5QrcodeScannerRef = useRef(null);
 
   useEffect(() => {
@@ -28,6 +33,9 @@ const PublicAssetPage = () => {
       setLoading(false);
       setAsset(null);
       setError(null);
+      setUserHistory([]);
+      setMaintHistory([]);
+
     }
   }, [id, code]);
 
@@ -43,6 +51,8 @@ const PublicAssetPage = () => {
   const fetchAsset = async () => {
     setLoading(true);
     setError(null);
+    setHistoryLoading(true);
+
     try {
       let response;
       if (id) {
@@ -57,6 +67,24 @@ const PublicAssetPage = () => {
       console.log('Asset found:', response.data);
       setAsset(response.data);
       setSelectedStatus(response.data.status);
+
+      // Fetch history data.
+      // Maintenance history is public, user history requires login.
+      if (response.data?.id) {
+        const assetId = response.data.id;
+        const historyPromises = [
+          maintenanceAPI.getAll({ asset_id: assetId })
+        ];
+
+        if (user && assetsAPI.getUserHistory) {
+          historyPromises.push(assetsAPI.getUserHistory(assetId));
+        }
+
+        const [maintRes, userHistRes] = await Promise.all(historyPromises);
+
+        setMaintHistory(maintRes.data?.data || maintRes.data || []);
+        setUserHistory(userHistRes?.data?.data || userHistRes?.data || []);
+      }
     } catch (err) {
       // Hiển thị thông báo lỗi chi tiết hơn để debug
       const errorMessage = err.response?.data?.message || err.message;
@@ -84,6 +112,7 @@ const PublicAssetPage = () => {
       }
     } finally {
       setLoading(false);
+      setHistoryLoading(false);
     }
   };
 
@@ -263,6 +292,16 @@ const PublicAssetPage = () => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);
   };
 
+  const getTypeLabel = (type) => {
+    const types = {
+      preventive: 'Định kỳ',
+      corrective: 'Sửa chữa',
+      emergency: 'Khẩn cấp'
+    };
+    return types[type] || type;
+  };
+
+
   // Show scanner interface
   if (showScanner) {
     return (
@@ -393,9 +432,9 @@ const PublicAssetPage = () => {
   }
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
+    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '15px' }}>
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <h1 style={{ fontSize: '24px', marginBottom: '10px' }}>THÔNG TIN TÀI SẢN</h1>
+        <h1 style={{ fontSize: '22px', marginBottom: '10px' }}>THÔNG TIN TÀI SẢN</h1>
         <p style={{ color: '#666' }}>Quét mã để xem thông tin tài sản</p>
         
         {/* Back to scanner button */}
@@ -418,7 +457,7 @@ const PublicAssetPage = () => {
       <div style={{ background: 'white', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
         {/* Header */}
         <div style={{ background: '#4CAF50', color: 'white', padding: '20px', textAlign: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: '22px' }}>{asset.name}</h2>
+          <h2 style={{ margin: 0, fontSize: '20px' }}>{asset.name}</h2>
           <p style={{ margin: '10px 0 0 0', fontSize: '18px', opacity: 0.9 }}>{asset.asset_code}</p>
           
           <div style={{ marginTop: '15px', padding: '10px', background: 'rgba(255,255,255,0.15)', borderRadius: '8px' }}>
@@ -430,6 +469,28 @@ const PublicAssetPage = () => {
         {/* Status */}
         <div style={{ padding: '15px 20px', borderBottom: '1px solid #eee', textAlign: 'center' }}>
           {getStatusBadge(asset.status)}
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', borderBottom: '1px solid #eee', padding: '0 20px' }}>
+          <button 
+            onClick={() => setActiveTab('info')}
+            style={{ padding: '12px 16px', border: 'none', background: 'none', cursor: 'pointer', borderBottom: activeTab === 'info' ? '3px solid #4CAF50' : '3px solid transparent', color: activeTab === 'info' ? '#4CAF50' : '#666', fontWeight: activeTab === 'info' ? '600' : '400' }}
+          >
+            Thông tin
+          </button>
+          <button 
+            onClick={() => setActiveTab('users')}
+            style={{ padding: '12px 16px', border: 'none', background: 'none', cursor: 'pointer', borderBottom: activeTab === 'users' ? '3px solid #4CAF50' : '3px solid transparent', color: activeTab === 'users' ? '#4CAF50' : '#666', fontWeight: activeTab === 'users' ? '600' : '400' }}
+          >
+            Lịch sử dùng
+          </button>
+          <button 
+            onClick={() => setActiveTab('maintenance')}
+            style={{ padding: '12px 16px', border: 'none', background: 'none', cursor: 'pointer', borderBottom: activeTab === 'maintenance' ? '3px solid #4CAF50' : '3px solid transparent', color: activeTab === 'maintenance' ? '#4CAF50' : '#666', fontWeight: activeTab === 'maintenance' ? '600' : '400' }}
+          >
+            Lịch sử bảo trì
+          </button>
         </div>
 
         {/* Report Status Button */}
@@ -457,53 +518,113 @@ const PublicAssetPage = () => {
         </div>
 
         {/* Details */}
-        <div style={{ padding: '20px' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <tbody>
-              <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                <td style={{ padding: '12px 0', color: '#666', width: '40%' }}>Danh mục</td>
-                <td style={{ padding: '12px 0', fontWeight: '500' }}>{asset.category_name || '-'}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                <td style={{ padding: '12px 0', color: '#666' }}>Vị trí</td>
-                <td style={{ padding: '12px 0', fontWeight: '500' }}>{asset.location_name || '-'}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                <td style={{ padding: '12px 0', color: '#666' }}>phòng ban</td>
-                <td style={{ padding: '12px 0', fontWeight: '500' }}>{asset.department_name || '-'}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                <td style={{ padding: '12px 0', color: '#666' }}>Nhà cung cấp</td>
-                <td style={{ padding: '12px 0', fontWeight: '500' }}>{asset.supplier_name || '-'}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                <td style={{ padding: '12px 0', color: '#666' }}>Người sử dụng</td>
-                <td style={{ padding: '12px 0', fontWeight: '500' }}>{asset.user_full_name || asset.assigned_to_name || '-'}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                <td style={{ padding: '12px 0', color: '#666' }}>Ngày mua</td>
-                <td style={{ padding: '12px 0', fontWeight: '500' }}>{formatDate(asset.purchase_date)}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                <td style={{ padding: '12px 0', color: '#666' }}>Giá mua</td>
-                <td style={{ padding: '12px 0', fontWeight: '500', color: '#2196F3' }}>{formatCurrency(asset.purchase_price)}</td>
-              </tr>
-              {asset.barcode && (
+        {activeTab === 'info' && (
+          <div style={{ padding: '20px', overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
                 <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                  <td style={{ padding: '12px 0', color: '#666' }}>Mã vạch</td>
-                  <td style={{ padding: '12px 0', fontWeight: '500' }}>{asset.barcode}</td>
+                  <td style={{ padding: '12px 0', color: '#666', width: '25%' }}>Danh mục</td>
+                  <td style={{ padding: '12px 0', fontWeight: '500' }}>{asset.category_name || '-'}</td>
                 </tr>
-              )}
-            </tbody>
-          </table>
+                <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
+                  <td style={{ padding: '12px 0', color: '#666' }}>Vị trí</td>
+                  <td style={{ padding: '12px 0', fontWeight: '500' }}>{asset.location_name || '-'}</td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
+                  <td style={{ padding: '12px 0', color: '#666' }}>phòng ban</td>
+                  <td style={{ padding: '12px 0', fontWeight: '500' }}>{asset.department_name || '-'}</td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
+                  <td style={{ padding: '12px 0', color: '#666' }}>Nhà cung cấp</td>
+                  <td style={{ padding: '12px 0', fontWeight: '500' }}>{asset.supplier_name || '-'}</td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
+                  <td style={{ padding: '12px 0', color: '#666' }}>Người sử dụng</td>
+                  <td style={{ padding: '12px 0', fontWeight: '500' }}>{asset.user_full_name || asset.assigned_to_name || '-'}</td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
+                  <td style={{ padding: '12px 0', color: '#666' }}>Ngày mua</td>
+                  <td style={{ padding: '12px 0', fontWeight: '500' }}>{formatDate(asset.purchase_date)}</td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
+                  <td style={{ padding: '12px 0', color: '#666' }}>Giá mua</td>
+                  <td style={{ padding: '12px 0', fontWeight: '500', color: '#2196F3' }}>{formatCurrency(asset.purchase_price)}</td>
+                </tr>
+                {asset.barcode && (
+                  <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
+                    <td style={{ padding: '12px 0', color: '#666' }}>Mã vạch</td>
+                    <td style={{ padding: '12px 0', fontWeight: '500' }}>{asset.barcode}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
 
-          {asset.description && (
-            <div style={{ marginTop: '20px' }}>
-              <p style={{ color: '#666', marginBottom: '5px' }}>Mô tả:</p>
-              <p style={{ background: '#f9f9f9', padding: '10px', borderRadius: '4px', margin: 0 }}>{asset.description}</p>
-            </div>
-          )}
-        </div>
+            {asset.description && (
+              <div style={{ marginTop: '20px' }}>
+                <p style={{ color: '#666', marginBottom: '5px' }}>Mô tả:</p>
+                <p style={{ background: '#f9f9f9', padding: '10px', borderRadius: '4px', margin: 0 }}>{asset.description}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'users' && (
+          <div style={{ padding: '20px', overflowX: 'auto' }}>
+            {!user ? (
+              <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>Vui lòng đăng nhập để xem lịch sử người dùng.</div>
+            ) : historyLoading ? <p>Đang tải...</p> : (
+                <table style={{ width: '100%', minWidth: '500px', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #eee' }}>
+                      <th style={{ padding: '10px', textAlign: 'left', color: '#666' }}>Người dùng</th>
+                      <th style={{ padding: '10px', textAlign: 'left', color: '#666' }}>Phòng ban</th>
+                      <th style={{ padding: '10px', textAlign: 'left', color: '#666' }}>Ngày bắt đầu</th>
+                      <th style={{ padding: '10px', textAlign: 'left', color: '#666' }}>Ngày kết thúc</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {userHistory.length > 0 ? userHistory.map((h, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                        <td style={{ padding: '10px', fontWeight: '500' }}>{h.fullName || h.user_name}</td>
+                        <td style={{ padding: '10px' }}>{h.department_name}</td>
+                        <td style={{ padding: '10px' }}>{formatDate(h.start_date)}</td>
+                        <td style={{ padding: '10px' }}>{h.end_date ? formatDate(h.end_date) : 'Hiện tại'}</td>
+                      </tr>
+                    )) : <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#999' }}>Chưa có lịch sử sử dụng</td></tr>}
+                  </tbody>
+                </table>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'maintenance' && (
+          <div style={{ padding: '20px', overflowX: 'auto' }}>
+            {historyLoading ? (
+              <p>Đang tải...</p>
+            ) : (
+                <table style={{ width: '100%', minWidth: '500px', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #eee' }}>
+                      <th style={{ padding: '10px', textAlign: 'left', color: '#666' }}>Ngày</th>
+                      <th style={{ padding: '10px', textAlign: 'left', color: '#666' }}>Loại</th>
+                      <th style={{ padding: '10px', textAlign: 'left', color: '#666' }}>Mô tả</th>
+                      <th style={{ padding: '10px', textAlign: 'right', color: '#666' }}>Chi phí</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {maintHistory.length > 0 ? maintHistory.map((m, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                        <td style={{ padding: '10px' }}>{formatDate(m.maintenance_date)}</td>
+                        <td style={{ padding: '10px' }}>{getTypeLabel(m.maintenance_type)}</td>
+                        <td style={{ padding: '10px', maxWidth: '200px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.description}</td>
+                        <td style={{ padding: '10px', textAlign: 'right', fontWeight: '500' }}>{formatCurrency(m.cost)}</td>
+                      </tr>
+                    )) : <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#999' }}>Chưa có lịch sử bảo trì</td></tr>}
+                  </tbody>
+                </table>
+            )}
+          </div>
+        )}
       </div>
 
       <div style={{ textAlign: 'center', marginTop: '20px', color: '#999', fontSize: '12px' }}>
