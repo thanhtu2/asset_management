@@ -669,6 +669,9 @@ export const importAssets = async (req, res) => {
     const results = { success: 0, failed: 0, errors: [] };
     const dataRows = rows.slice(1); // skip header row
 
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
     for (let i = 0; i < dataRows.length; i++) {
       const row = dataRows[i];
       const rowNum = i + 2; // 1-indexed, skip header
@@ -762,7 +765,7 @@ export const importAssets = async (req, res) => {
       const status = normalizeStatus(status_raw) || 'new';
 
       try {
-          const [result] = await pool.query(
+          const [result] = await connection.query(
             `INSERT INTO assets (asset_code, name, description, category_id, location_id, department_id,
               supplier_id, purchase_date, assigned_date, purchase_price, salvage_value, current_value, status, barcode, assigned_to, assigned_to_name)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -772,8 +775,8 @@ export const importAssets = async (req, res) => {
 
         // Ghi log lịch sử người dùng cho tài sản được import nếu có gán người dùng
         if (assigned_to) {
-          const [uRows] = await pool.query('SELECT department_id FROM users WHERE id = ?', [assigned_to]);
-          await pool.query(
+          const [uRows] = await connection.query('SELECT department_id FROM users WHERE id = ?', [assigned_to]);
+          await connection.query(
             'INSERT INTO asset_user_history (asset_id, user_id, department_id, start_date, assigned_by) VALUES (?, ?, ?, ?, ?)',
             [result.insertId, assigned_to, uRows.length > 0 ? uRows[0].department_id : null, assigned_date || new Date(), req.user?.id]
           );
@@ -781,6 +784,8 @@ export const importAssets = async (req, res) => {
 
         results.success++;
       } catch (err) {
+        await connection.rollback();
+        connection.release();
         results.failed++;
         const msg = err.code === 'ER_DUP_ENTRY'
           ? `Mã tài sản "${asset_code}" đã tồn tại`
@@ -788,6 +793,9 @@ export const importAssets = async (req, res) => {
         results.errors.push({ row: rowNum, asset_code, message: msg });
       }
     }
+
+    await connection.commit();
+    connection.release();
 
     // Tạo thông báo tổng hợp hệ thống sau khi import xong
     if (results.success > 0) {

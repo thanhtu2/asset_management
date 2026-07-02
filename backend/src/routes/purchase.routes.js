@@ -14,7 +14,7 @@ router.get('/', checkPermission('VIEW_PURCHASE_PROPOSALS'), getAll);
 router.get('/stats', checkPermission('VIEW_PURCHASE_PROPOSALS'), getStats);
 router.get('/:id', checkPermission('VIEW_PURCHASE_PROPOSALS'), getById);
 router.post('/', checkPermission('CREATE_PURCHASE_PROPOSAL'), generalUpload.single('file'), create);
-router.put('/:id', update); // Update bao gồm cả sửa (Requester) và Duyệt (Leader/Director), logic phân quyền chi tiết nằm trong Model
+router.put('/:id', generalUpload.single('file'), update); // Update bao gồm cả sửa (Requester) và Duyệt (Leader/Director), logic phân quyền chi tiết nằm trong Model
 router.delete('/:id', checkPermission('CREATE_PURCHASE_PROPOSAL'), remove);
 
 export default router;

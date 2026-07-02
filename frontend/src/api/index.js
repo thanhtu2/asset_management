@@ -67,8 +67,8 @@ export const assetsAPI = {
   }),
   reportDamage: (id, description) => apiClient.post(`/assets/public/${id}/report-damage`, { description }),
   getUserHistory: (id) => apiClient.get(`/assets/${id}/user-history`),
-  updateStatus: (id, status, description) => apiClient.patch(`/assets/${id}/status`, { status, description }),
-  reportDamage: (id, description) => apiClient.post(`/assets/public/${id}/report-damage`, { description }),
+  getPublicHistory: (id) => apiClient.get(`/assets/public/${id}/history`),
+  updateStatus: (id, status, description) => apiClient.patch(`/assets/${id}/status`, { status, description }),  
   importAssets: (formData) => apiClient.post('/assets/import', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),

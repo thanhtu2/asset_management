@@ -68,13 +68,26 @@ const PublicAssetPage = () => {
       setAsset(response.data);
       setSelectedStatus(response.data.status);
 
-      // Lấy lịch sử người dùng và bảo trì qua API public mới
       if (response.data?.id) {
         const assetId = response.data.id;
-        if (assetsAPI.getPublicHistory) {
+        // Nếu người dùng chưa đăng nhập, sử dụng API public
+        if (!user) {
           const historyRes = await assetsAPI.getPublicHistory(assetId);
           setUserHistory(historyRes.data.userHistory || []);
           setMaintHistory(historyRes.data.maintenanceHistory || []);
+        } else {
+          // Nếu người dùng đã đăng nhập, sử dụng các API private để lấy đầy đủ thông tin
+          const [maintRes, userHistRes] = await Promise.all([
+            maintenanceAPI.getAll({ asset_id: assetId }),
+            assetsAPI.getUserHistory ? assetsAPI.getUserHistory(assetId) : Promise.resolve({ data: [] })
+          ]);
+          // Xử lý an toàn: API có thể trả về mảng trực tiếp hoặc đối tượng phân trang
+          const maintenanceData = Array.isArray(maintRes.data) ? maintRes.data : maintRes.data?.data || [];
+          setMaintHistory(maintenanceData);
+
+          // API này trả về mảng trực tiếp trong `data`
+          const userHistoryData = userHistRes.data || [];
+          setUserHistory(userHistoryData);
         }
       }
     } catch (err) {
@@ -360,9 +373,25 @@ const PublicAssetPage = () => {
 
           {/* Show login info if not logged in */}
           {!user && !authLoading && (
-            <p style={{ color: '#666', fontSize: '13px', marginTop: '10px' }}>
-              ⚠️ Bạn chưa đăng nhập. Chỉ có thể báo hỏng thiết bị.
-            </p>
+            <>
+              <p style={{ color: '#666', fontSize: '13px', marginTop: '10px', marginBottom: '15px' }}>
+                ⚠️ Bạn chưa đăng nhập. Chỉ có thể báo hỏng thiết bị.
+              </p>
+              <button
+                onClick={() => navigate(`/login?redirect=${window.location.pathname}`)}
+                style={{
+                  background: '#2196F3',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                }}
+              >
+                Đăng nhập để có đủ chức năng
+              </button>
+            </>
           )}
 
           {/* Show logged in info */}
@@ -504,9 +533,31 @@ const PublicAssetPage = () => {
           </button>
           
           {/* Show login status hint */}
-          <p style={{ marginTop: '10px', fontSize: '12px', color: '#666' }}>
-            {!user ? '⚠️ Bạn chưa đăng nhập - Chỉ có thể báo hỏng' : '✓ Bạn đang đăng nhập - Có thể cập nhật trạng thái'}
-          </p>
+          {!user ? (
+            <div style={{ marginTop: '10px' }}>
+              <p style={{ fontSize: '12px', color: '#666', margin: '0 0 10px 0' }}>
+                ⚠️ Bạn chưa đăng nhập - Chỉ có thể báo hỏng.
+              </p>
+              <button
+                onClick={() => navigate(`/login?redirect=${window.location.pathname}`)}
+                style={{
+                  background: 'none',
+                  border: '1px solid #2196F3',
+                  color: '#2196F3',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                }}
+              >
+                Đăng nhập
+              </button>
+            </div>
+          ) : (
+            <p style={{ marginTop: '10px', fontSize: '12px', color: '#666' }}>
+              ✓ Bạn đang đăng nhập - Có thể cập nhật trạng thái
+            </p>
+          )}
         </div>
 
         {/* Details */}
