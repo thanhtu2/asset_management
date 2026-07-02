@@ -268,6 +268,31 @@ export const getByBarcode = async (req, res) => {
   }
 };
 
+// API CÔNG KHAI: Lấy lịch sử người dùng và lịch sử bảo trì cho trang public
+export const getPublicHistory = async (req, res) => {
+  try {
+    const assetId = req.params.id;
+
+    const [userHistory] = await pool.query(`
+      SELECT h.start_date, h.end_date, u.fullName as user_name, d.name as department_name
+      FROM asset_user_history h
+      LEFT JOIN users u ON h.user_id = u.id
+      LEFT JOIN departments d ON h.department_id = d.id
+      WHERE h.asset_id = ?
+      ORDER BY h.start_date DESC
+    `, [assetId]);
+
+    const [maintenanceHistory] = await pool.query(
+      'SELECT * FROM maintenance_records WHERE asset_id = ? ORDER BY maintenance_date DESC', 
+      [assetId]
+    );
+
+    res.json({ userHistory, maintenanceHistory });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const create = async (req, res) => {
   try {
     // Tự động sinh mã tài sản ghi đè lên mã gửi từ Client
@@ -507,12 +532,11 @@ export const reportDamage = async (req, res) => {
     const assetId = req.params.id;
     const finalDescription = description || 'Báo cáo hư hỏng từ trang công khai';
 
-    const oldAsset = await Asset.findById(assetId);
+    const oldAsset = await Asset.findById(assetId); // Lấy trạng thái cũ
 
     // 1. Update asset
-    // status to "damaged"
-    const asset = await Asset.update(assetId, { status: 'damaged' });
-    if (!asset) {
+    const updatedAsset = await Asset.update(assetId, { status: 'damaged' });
+    if (!updatedAsset) {
       return res.status(404).json({ message: 'Tài sản không tồn tại' });
     }
 
@@ -543,7 +567,7 @@ export const reportDamage = async (req, res) => {
 
     res.json({
       message: 'Đã báo cáo hư hỏng và tạo phiếu bảo trì',
-      asset,
+      asset: updatedAsset,
       maintenanceCreated: true
     });
   } catch (error) {
