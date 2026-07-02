@@ -68,22 +68,14 @@ const PublicAssetPage = () => {
       setAsset(response.data);
       setSelectedStatus(response.data.status);
 
-      // Fetch history data.
-      // Maintenance history is public, user history requires login.
+      // Lấy lịch sử người dùng và bảo trì qua API public mới
       if (response.data?.id) {
         const assetId = response.data.id;
-        const historyPromises = [
-          maintenanceAPI.getAll({ asset_id: assetId })
-        ];
-
-        if (user && assetsAPI.getUserHistory) {
-          historyPromises.push(assetsAPI.getUserHistory(assetId));
+        if (assetsAPI.getPublicHistory) {
+          const historyRes = await assetsAPI.getPublicHistory(assetId);
+          setUserHistory(historyRes.data.userHistory || []);
+          setMaintHistory(historyRes.data.maintenanceHistory || []);
         }
-
-        const [maintRes, userHistRes] = await Promise.all(historyPromises);
-
-        setMaintHistory(maintRes.data?.data || maintRes.data || []);
-        setUserHistory(userHistRes?.data?.data || userHistRes?.data || []);
       }
     } catch (err) {
       // Hiển thị thông báo lỗi chi tiết hơn để debug

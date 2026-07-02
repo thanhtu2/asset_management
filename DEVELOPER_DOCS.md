@@ -203,6 +203,10 @@ Khác với hệ thống Chuông thông báo (nhằm mục đích nhắc nhở c
 *   **Quét QR không lên:** `html5-qrcode` yêu cầu thiết bị phải cấp quyền Camera và domain bắt buộc phải là `HTTPS` (hoặc `localhost` khi dev) thì trình duyệt mới cho phép truy cập Camera.
 *   **Không import được Excel:** Hãy tải lại template mẫu từ hệ thống `/api/assets/template` vì thứ tự cột trong code Backend được map cứng (VD: `row[0] = asset_code`, `row[1] = name`).
 *   **Lỗi mất File đính kèm khi upload bằng Axios (`req.file` undefined):** Do cấu hình API Client mặc định ép Header `Content-Type: application/json`, Axios sẽ làm mất chuỗi `boundary` phân tách file của chuẩn multipart. *Cách khắc phục:* Khi gửi `FormData` có file đính kèm, sử dụng `fetch` API thuần thay thế cho `axios` để trình duyệt tự động nội suy đúng Header `multipart/form-data`.
+*   **Lỗi xác thực khi quét QR (Public):**
+    *   **Triệu chứng:** Người dùng chưa đăng nhập khi quét mã QR để xem thông tin tài sản thì gặp lỗi "Lỗi xác thực" hoặc lỗi 401.
+    *   **Nguyên nhân:** Lỗi xảy ra khi trang public (`PublicAssetPage.jsx`) cố gắng gọi các API yêu cầu đăng nhập (ví dụ: `/api/assets/:id/user-history`) để lấy lịch sử sử dụng và lịch sử bảo trì. Do các API này được bảo vệ bởi `authMiddleware`, server đã từ chối request.
+    *   **Giải pháp:** Tái cấu trúc bằng cách tạo một API endpoint công khai mới (`GET /api/assets/public/:id/history`) không yêu cầu xác thực. API này sẽ trả về cả hai loại lịch sử. Frontend được cập nhật để chỉ gọi API công khai này, loại bỏ các lời gọi đến API private gây lỗi.
 *   **Lỗi lồng chuỗi JSON hai lần (Double Stringification):** Xảy ra khi lưu mảng (VD: `items` của phiếu mua sắm) vào MySQL JSON, chuỗi có thể biến dạng thành dạng lồng ngầm `"[{\"name\":
 ---
 
