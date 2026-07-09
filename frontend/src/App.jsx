@@ -19,6 +19,7 @@ import PublicAssetPage from './pages/PublicAssetPage';
 import PurchaseProposalPage from './pages/PurchaseProposalPage';
 import AuditLogPage from './pages/AuditLogPage';
 import VehicleRegistrationPage from './pages/VehicleRegistrationPage';
+import UserGuidePage from './layouts/UserGuidePage';
 import { departmentsAPI } from './api';
 
 function App() {
@@ -105,7 +106,12 @@ function App() {
               </MainLayout>
             </ProtectedRoute>
           } />
-          
+          <Route path="/user-guide" element={
+            <ProtectedRoute>
+              {/* Trang hướng dẫn không cần MainLayout vì nó đã có sidebar riêng */}
+              <UserGuidePage />
+            </ProtectedRoute>
+          } />
           <Route path="/users" element={
             <ProtectedRoute requiredPermission="MANAGE_USERS">
               <MainLayout>
