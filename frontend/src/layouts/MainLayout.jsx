@@ -139,84 +139,44 @@ const MainLayout = ({ children }) => {
         className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}
         style={{
           width: collapsed ? 0 : SIDEBAR_WIDTH,
+          position: 'fixed', // Ghim cố định sidebar
+          top: 0,
+          left: 0,
           minWidth: collapsed ? 0 : SIDEBAR_WIDTH,
           overflow: 'hidden',
           transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1), min-width 0.3s cubic-bezier(0.4,0,0.2,1)',
         }}
       >
-        {/* Logo */}
-        <div className="sidebar-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 34, height: 34,
-              borderRadius: 8,
-              background: 'linear-gradient(135deg,#2563eb,#7c3aed)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 16, flexShrink: 0,
-              boxShadow: '0 4px 10px rgba(37,99,235,0.4)',
-            }}>
-              🏛️
-            </div>
-            <div style={{ whiteSpace: 'nowrap' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'white', lineHeight: 1.2 }}>Asset</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 400 }}>Management</div>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          {/* Logo */}
+          <div className="sidebar-header" style={{ flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 34, height: 34,
+                borderRadius: 8,
+                background: 'linear-gradient(135deg,#2563eb,#7c3aed)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 16, flexShrink: 0,
+                boxShadow: '0 4px 10px rgba(37,99,235,0.4)',
+              }}>
+                🏛️
+              </div>
+              <div style={{ whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'white', lineHeight: 1.2 }}>Asset</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 400 }}>Management</div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Section: Chính */}
-        <div style={{ padding: '16px 16px 6px', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-          Chính
-        </div>
-
-        <ul className="sidebar-menu">
-          {visibleMenuItems.map((item) => {
-            if (item.children) {
-              return (
-                <li key={item.id} className={`sidebar-dropdown ${openDropdowns[item.id] ? 'open' : ''}`}>
-                  <a
-                    href="#"
-                    className="dropdown-toggle"
-                    onClick={(e) => { e.preventDefault(); toggleDropdown(item.id); }}
-                    style={{ whiteSpace: 'nowrap' }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span style={{ fontSize: 16 }}>{item.icon}</span>
-                      <span>{item.label}</span>
-                    </div>
-                    <IconChevronRight className="dropdown-arrow" />
-                  </a>
-                  <ul className="dropdown-menu">
-                    {item.children.map(child => (
-                      <li key={child.path}>
-                        <Link to={child.path} className={location.pathname === child.path ? 'active' : ''} onClick={() => setIsMobileMenuOpen(false)}>
-                          {child.label}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              );
-            }
-            return (
-              <li key={item.path}>
-                <Link to={item.path} className={location.pathname === item.path ? 'active' : ''} onClick={() => setIsMobileMenuOpen(false)} style={{ whiteSpace: 'nowrap' }}>
-                  <span style={{ fontSize: 16 }}>{item.icon}</span>
-                  <span>{item.label}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-
-        {/* Section: Quản trị */}
-        {visibleAdminItems.length > 0 && (
-          <>
+          {/* Scrollable Menu Area */}
+          <div className="sidebar-scroll-area" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+            {/* Section: Chính */}
             <div style={{ padding: '16px 16px 6px', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-              Quản trị
+              Chính
             </div>
-            <ul className="sidebar-menu" style={{ flex: 'none' }}>
-              {visibleAdminItems.map((item) => {
+
+            <ul className="sidebar-menu">
+              {visibleMenuItems.map((item) => {
                 if (item.children) {
                   return (
                     <li key={item.id} className={`sidebar-dropdown ${openDropdowns[item.id] ? 'open' : ''}`}>
@@ -254,54 +214,115 @@ const MainLayout = ({ children }) => {
                 );
               })}
             </ul>
-          </>
-        )}
 
-        {/* User Info */}
-        <div className="user-info">
-          <div className="avatar">
-            {user?.fullName?.charAt(0).toUpperCase()}
-          </div>
-          <div className="details">
-            <div className="name" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Link
-                to="/profile"
-                style={{ color: 'inherit', textDecoration: 'none', whiteSpace: 'nowrap' }}
-                title="Hồ sơ cá nhân"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {user?.fullName} ⚙️
-              </Link>
+            {/* Section: Quản trị */}
+            {visibleAdminItems.length > 0 && (
+              <>
+                <div style={{ padding: '16px 16px 6px', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+                  Quản trị
+                </div>
+                <ul className="sidebar-menu">
+                  {visibleAdminItems.map((item) => {
+                    if (item.children) {
+                      return (
+                        <li key={item.id} className={`sidebar-dropdown ${openDropdowns[item.id] ? 'open' : ''}`}>
+                          <a
+                            href="#"
+                            className="dropdown-toggle"
+                            onClick={(e) => { e.preventDefault(); toggleDropdown(item.id); }}
+                            style={{ whiteSpace: 'nowrap' }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <span style={{ fontSize: 16 }}>{item.icon}</span>
+                              <span>{item.label}</span>
+                            </div>
+                            <IconChevronRight className="dropdown-arrow" />
+                          </a>
+                          <ul className="dropdown-menu">
+                            {item.children.map(child => (
+                              <li key={child.path}>
+                                <Link to={child.path} className={location.pathname === child.path ? 'active' : ''} onClick={() => setIsMobileMenuOpen(false)}>
+                                  {child.label}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        </li>
+                      );
+                    }
+                    return (
+                      <li key={item.path}>
+                        <Link to={item.path} className={location.pathname === item.path ? 'active' : ''} onClick={() => setIsMobileMenuOpen(false)} style={{ whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: 16 }}>{item.icon}</span>
+                          <span>{item.label}</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
+            
+            {/* Section: Trợ giúp */}
+            <div style={{ padding: '16px 16px 6px', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+              Trợ giúp
             </div>
-            <div className="role">{user?.role_name || user?.role}</div>
+            <ul className="sidebar-menu">
+                <li>
+                    <Link to="/user-guide" className={location.pathname === '/user-guide' ? 'active' : ''} onClick={() => setIsMobileMenuOpen(false)} style={{ whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 16 }}>📖</span>
+                      <span>Hướng dẫn sử dụng</span>
+                    </Link>
+                </li>
+            </ul>
           </div>
-          <button
-            onClick={handleLogout}
-            title="Đăng xuất"
-            style={{
-              background: 'rgba(255,255,255,0.08)',
-              border: 'none',
-              color: 'rgba(255,255,255,0.55)',
-              cursor: 'pointer',
-              width: 30, height: 30,
-              borderRadius: 8,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 14,
-              flexShrink: 0,
-              transition: 'all 0.2s',
-              marginLeft: 6,
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = 'rgba(239,68,68,0.25)';
-              e.currentTarget.style.color = '#fca5a5';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-              e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
-            }}
-          >
-            🚪
-          </button>
+
+          {/* User Info */}
+          <div className="user-info" style={{ flexShrink: 0 }}>
+            <div className="avatar">
+              {user?.fullName?.charAt(0).toUpperCase()}
+            </div>
+            <div className="details">
+              <div className="name" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Link
+                  to="/profile"
+                  style={{ color: 'inherit', textDecoration: 'none', whiteSpace: 'nowrap' }}
+                  title="Hồ sơ cá nhân"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {user?.fullName} ⚙️
+                </Link>
+              </div>
+              <div className="role">{user?.role_name || user?.role}</div>
+            </div>
+            <button
+              onClick={handleLogout}
+              title="Đăng xuất"
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: 'none',
+                color: 'rgba(255,255,255,0.55)',
+                cursor: 'pointer',
+                width: 30, height: 30,
+                borderRadius: 8,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 14,
+                flexShrink: 0,
+                transition: 'all 0.2s',
+                marginLeft: 6,
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(239,68,68,0.25)';
+                e.currentTarget.style.color = '#fca5a5';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
+              }}
+            >
+              🚪
+            </button>
+          </div>
         </div>
       </aside>
 

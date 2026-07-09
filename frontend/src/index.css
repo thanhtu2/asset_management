@@ -50,7 +50,7 @@
   }
 
   .sidebar {
-    @apply fixed top-0 left-0 h-screen flex flex-col text-white; /* Xóa overflow-y-auto */
+    @apply fixed top-0 left-0 h-screen flex flex-col text-white;
     width: 256px;
     background: linear-gradient(180deg, #0f172a 0%, #1a2744 60%, #1e3a5f 100%);
     border-right: 1px solid rgba(255,255,255,0.06);
@@ -66,7 +66,7 @@
   }
 
   .sidebar-menu {
-    @apply list-none flex-1 px-3 py-2; /* Xóa overflow-y-auto để loại bỏ thanh cuộn */
+    @apply list-none px-3 py-2;
   }
 
   .sidebar-menu li {
@@ -115,6 +115,16 @@
     max-height: 500px; /* Chiều cao đủ lớn để chứa các mục con */
     @apply pt-1 pb-1;
   }
+
+  /* ── Sidebar Scroll Area (Hide Scrollbar) ──────────────── */
+  .sidebar-scroll-area {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .sidebar-scroll-area::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, and Opera */
+  }
+
 
   /* Sidebar toggle button - floating */
 .sidebar-float-toggle {
@@ -435,7 +445,7 @@
 
   /* ── User Info (sidebar bottom) ──────────────────────── */
   .user-info {
-    @apply flex items-center px-4 py-4 mt-auto;
+    @apply flex items-center px-4 py-4;
     border-top: 1px solid rgba(255,255,255,0.08);
   }
 
