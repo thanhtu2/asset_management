@@ -123,11 +123,15 @@ export const suppliersAPI = {
 
 // Users API
 export const usersAPI = {
-  getAll: () => apiClient.get('/users'),
+  getAll: (params) => apiClient.get('/users', { params }),
   getAllSimple: () => apiClient.get('/users/simple'), // 
   create: (data) => apiClient.post('/users', data),
   update: (id, data) => apiClient.put(`/users/${id}`, data),
   delete: (id) => apiClient.delete(`/users/${id}`),
+  importUsers: (formData) => apiClient.post('/users/import', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  downloadTemplate: () => apiClient.get('/users/import/template', { responseType: 'blob' }),
   exportUsers: async () => {
     const response = await apiClient.get('/users/export', { responseType: 'blob' });
     const url = window.URL.createObjectURL(new Blob([response.data]));

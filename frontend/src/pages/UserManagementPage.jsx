@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { usersAPI, departmentsAPI } from '../api';
 // Thêm rolesAPI để call danh sách vai trò
 import { rolesAPI } from '../api'; 
+import UserImportModal from '../components/UserImportModal';
 
 const UserManagementPage = () => {
   const [users, setUsers] = useState([]);
@@ -20,15 +21,21 @@ const UserManagementPage = () => {
   });
   const [deleteModal, setDeleteModal] = useState({ show: false, id: null });
   const [showPassword, setShowPassword] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [filters, setFilters] = useState({
+    search: '',
+    role: ''
+  });
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [filters]);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const [usersRes, deptRes, rolesRes] = await Promise.all([
-        usersAPI.getAll(),
+        usersAPI.getAll(filters),
         departmentsAPI.getAllSimple(), // Sử dụng getAllSimple cho dropdown
         rolesAPI.getAll() // getAll của rolesAPI đã trả về tất cả roles
       ]);
@@ -114,12 +121,37 @@ const UserManagementPage = () => {
       <div className="page-header">
         <h1>Quản lý người dùng</h1>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button onClick={() => usersAPI.exportUsers()} className="btn btn-outline">Xuất Excel</button>
+          <button onClick={() => usersAPI.exportUsers()} className="btn btn-outline">⬇ Xuất Excel</button>
+          <button onClick={() => setShowImportModal(true)} className="btn btn-outline">⬆ Import Excel</button>
           <button onClick={() => handleOpenModal()} className="btn btn-primary">+ Thêm người dùng</button>
         </div>
       </div>
 
       <div className="card">
+        <div className="toolbar">
+          <div className="search-box">
+            <input
+              type="text"
+              placeholder="Tìm theo tên đăng nhập, họ tên..."
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <select
+              value={filters.role}
+              onChange={(e) => setFilters({ ...filters, role: e.target.value })}
+            >
+              <option value="">Tất cả vai trò</option>
+              {roles.map((r) => (
+                <option key={r.code} value={r.code}>{r.name}</option>
+              ))}
+            </select>
+            <button onClick={() => fetchData()} className="btn btn-primary">
+              Tìm kiếm
+            </button>
+          </div>
+        </div>
         <div className="table-container">
           <table>
             <thead>
@@ -160,6 +192,13 @@ const UserManagementPage = () => {
           </table>
         </div>
       </div>
+
+      {showImportModal && (
+        <UserImportModal
+          onClose={() => setShowImportModal(false)}
+          onSuccess={() => { fetchData(); }}
+        />
+      )}
 
       {showModal && (
         <div className="modal-overlay">
