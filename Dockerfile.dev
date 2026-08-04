@@ -1,0 +1,18 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY ./frontend/package*.json ./
+RUN npm install && npm cache clean --force
+
+EXPOSE 5173
+
+# Bắt buộc có các biến này để Hot Reload hoạt động trên Windows Docker
+ENV VITE_WATCH_USEPOLLING=true
+ENV CHOKIDAR_USEPOLLING=true
+ENV WATCHPACK_POLLING=true
+
+COPY frontend/ .
+
+# Chạy Vite với flag --host để cho phép truy cập từ bên ngoài container
+CMD ["npm", "run", "dev", "--", "--host"]

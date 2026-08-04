@@ -1,0 +1,61 @@
+services:
+  # Cơ sở dữ liệu MySQL
+  db:
+    image: mysql:8.0
+    container_name: asset_management_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: asset_management
+      MYSQL_ROOT_PASSWORD: 123456
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # Backend API (Node.js)
+  backend:
+    build: ./backend
+    container_name: asset_management_api
+    restart: always
+    ports:
+      - "3001:3001"
+    # Gọi trực tiếp file .env từ thư mục backend để đồng bộ hóa JWT_SECRET tự động
+    env_file:
+      - ./backend/.env
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=123456
+      - DB_NAME=asset_management
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/uploads:/app/uploads
+
+  # Frontend UI (React + Nginx)
+  frontend:
+    build: ./frontend
+    container_name: asset_management_ui
+    restart: always
+    # Mở thêm cổng 443 để đón giao thức HTTPS bảo mật
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=/api
+    # Gắn chứng chỉ SSL tự chế của bạn vào trong container frontend
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
+volumes:
+  mysql_data:

@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: asset_management_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-asset_management}
+      MYSQL_USER: ${DB_USER:-asset_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-asset_password}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_secret_password}
+    volumes:
+      - db_data:/var/lib/mysql
+      # Tự động khởi tạo schema database từ file init.sql trong lần chạy đầu tiên
+      - ./backend/src/config/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - asset-network
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: asset_management_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=db
+      - DB_USER=${DB_USER:-asset_user}
+      - DB_PASSWORD=${DB_PASSWORD:-asset_password}
+      - DB_NAME=${DB_NAME:-asset_management}
+      - PORT=3001
+      - JWT_SECRET=${JWT_SECRET:-a_very_secret_key_for_docker_compose_please_change}
+      - FRONTEND_URL=http://localhost:8080
+      - VERCEL=false # Đảm bảo server chạy ở chế độ listen
+    volumes:
+      # Đồng bộ thư mục uploads để lưu file đính kèm
+      - ./backend/uploads:/app/uploads
+    networks:
+      - asset-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: asset_management_frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80" # Ánh xạ cổng 80 của container ra cổng 8080 trên máy của bạn
+    depends_on:
+      - backend
+    networks:
+      - asset-network
+
+networks:
+  asset-network:
+    driver: bridge
+
+volumes:
+  db_data:
+    driver: local

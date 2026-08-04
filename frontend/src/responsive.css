@@ -1,0 +1,246 @@
+/* CSS Responsive cho Thiết bị di động (Smartphone) */
+
+@media screen and (max-width: 768px) {
+  /* 0. Khắc phục lỗi Layout bị kéo giãn ngang (Bug Flexbox kinh điển) */
+  .main-content {
+    width: 100vw !important; /* Ép cứng chiều rộng 100% màn hình */
+    min-width: 0 !important; /* Ngăn Flex-item bị phình to theo bảng bên trong */
+    padding: 15px !important;
+    margin-left: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  /* 1. Layout tổng thể & Header */
+  .page-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 15px !important;
+  }
+
+  .page-header > div:last-child,
+  .page-header > div:nth-child(2) {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .page-header button,
+  .page-header a.btn {
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* 2. Bảng dữ liệu (Table Container) - Cho phép lướt ngang */
+  .table-container {
+    width: 100% !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  table {
+    min-width: 700px; /* Bắt buộc bảng không bị ép quá đà, phải vuốt ngang để xem */
+  }
+
+  th, td {
+    white-space: nowrap;
+  }
+
+  /* 3. Form Layouts / Modal */
+  .form-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 15px !important;
+  }
+
+  .form-group {
+    width: 100% !important;
+    margin-bottom: 15px !important;
+  }
+
+  .modal {
+    width: 95% !important;
+    margin: 10px auto !important;
+    max-height: 90vh !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-body {
+    overflow-y: auto;
+    overflow-x: auto; /* Cho phép các bảng phụ trong modal lướt ngang */
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .modal-footer button {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  /* 4. Action Buttons in Table */
+  td.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  /* 5. Toolbar (Thanh tìm kiếm & Lọc) */
+  .toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .toolbar > div {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .toolbar select, .toolbar button, .search-box, .search-box input {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* PurchaseProposalPage specific */
+  .purchase-proposal-page .workflow-steps,
+  .purchase-proposal-page .workflow-current .stepper {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    overflow-x: auto; /* Allow horizontal scroll if steps are too wide */
+    white-space: nowrap; /* Prevent wrapping of individual steps */
+  }
+
+  .purchase-proposal-page .workflow-steps .step,
+  .purchase-proposal-page .workflow-current .stepper .step {
+    flex-shrink: 0; /* Prevent steps from shrinking */
+    width: auto !important; /* Allow natural width */
+    padding: 8px 12px !important;
+  }
+
+  .purchase-proposal-page .workflow-current .step-arrow {
+    display: none !important; /* Hide arrows when stacked */
+  }
+
+  .purchase-proposal-page .totals {
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    gap: 8px !important;
+  }
+
+  .purchase-proposal-page .signoff-grid {
+    grid-template-columns: 1fr !important; /* Stack signoff items */
+  }
+
+  .purchase-proposal-page .action-buttons,
+  .purchase-proposal-page .processing-sidebar > div {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .purchase-proposal-page .processing-sidebar {
+    width: 100% !important;
+    position: static !important; /* Remove fixed positioning */
+    margin-top: 20px !important;
+  }
+
+  /* AssetListPage specific */
+  .asset-list-page .bulk-actions {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .asset-list-page .bulk-actions__btn {
+    width: 100%;
+  }
+
+  .asset-list-page .tabs {
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+  }
+
+  .asset-list-page .tabs .tab-btn {
+    width: 100%;
+    text-align: center;
+    border-bottom: none !important; /* Remove bottom border for stacking */
+    border: 1px solid #eee !important; /* Add border for visual separation */
+    border-radius: 6px;
+  }
+
+  .asset-list-page .tabs .tab-btn.active {
+    border-color: var(--color-primary) !important;
+  }
+
+  .asset-list-page .detail-grid {
+    grid-template-columns: 1fr !important; /* Stack detail items */
+  }
+
+  .asset-list-page .qr-batch-preview {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)) !important; /* Adjust grid for QR preview */
+    gap: 5px !important;
+  }
+
+  /* DashboardPage specific */
+  .dashboard-page .stats-grid,
+  .dashboard-page .charts-section, /* Assuming a class for the charts div */
+  .dashboard-page .distribution-tables-grid { /* Assuming a class for the distribution tables div */
+    grid-template-columns: 1fr !important; /* Stack items on small screens */
+  }
+
+  .dashboard-page .stat-card .value {
+    font-size: 24px !important; /* Adjust font size for smaller screens */
+  }
+
+  .dashboard-page .recharts-responsive-container {
+    height: 250px !important; /* Adjust chart height for mobile */
+  }
+
+  /* AssetFormPage specific */
+  .asset-form-page .action-buttons {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .asset-form-page .action-buttons > * {
+    width: 100%;
+  }
+
+  /* ProfilePage specific */
+  .profile-page .profile-cards-grid {
+    grid-template-columns: 1fr !important; /* Stack cards on small screens */
+  }
+
+  /* NotificationBell specific */
+  .notification-bell-dropdown {
+    width: 90vw !important; /* Make dropdown wider on small screens */
+  }
+
+  /* VehicleRegistrationPage specific */
+  .vehicle-registration-page .calendar-controls {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .vehicle-registration-page .calendar-controls button,
+  .vehicle-registration-page .calendar-controls strong {
+    width: 100%;
+    text-align: center;
+  }
+
+  .vehicle-registration-page .week-grid {
+    grid-template-columns: 1fr !important; /* Stack days vertically */
+  }
+}

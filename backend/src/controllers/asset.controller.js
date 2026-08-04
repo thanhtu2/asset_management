@@ -1,0 +1,891 @@
+import Asset from '../models/Asset.js';
+import MaintenanceRecord from '../models/MaintenanceRecord.js';
+import QRCode from 'qrcode';
+import * as XLSX from 'xlsx';
+import pool from '../config/database.js';
+import { createNotification } from '../notification.service.js';
+import AuditLog from '../models/AuditLog.js';
+
+// Hàm hỗ trợ chuyển đổi trạng thái từ Tiếng Việt sang mã chuẩn ENUM
+const normalizeStatus = (status) => {
+  if (!status) return 'new';
+  
+  const s = String(status).toLowerCase().trim();
+  
+  // Nếu đã là mã chuẩn thì trả về luôn
+  const validEnums = ['new', 'good', 'needs_repair', 'damaged', 'disposed'];
+  if (validEnums.includes(s)) return s;
+
+  const mapping = {
+    'chờ cấp': 'new',
+    'cho cap': 'new',
+    'mới': 'new',
+    'đang sử dụng': 'good',
+    'dang su dung': 'good',
+    'tốt': 'good',
+    'tot': 'good',
+    'cần sửa chữa': 'needs_repair',
+    'can sua chua': 'needs_repair',
+    'hỏng': 'damaged',
+    'hỏng': 'damaged',
+    'hong': 'damaged',
+    'đã thanh lý': 'disposed',
+    'da thanh ly': 'disposed'
+  };
+
+  // Kiểm tra khớp với cả NFC và NFD (quan trọng cho Tiếng Việt)
+  const nfc = s.normalize('NFC');
+  const nfd = s.normalize('NFD');
+
+  return mapping[nfc] || mapping[nfd] || mapping[s] || 'new';
+};
+
+const calculateCurrentValue = (asset) => {
+  if (!asset || !asset.purchase_price || !asset.purchase_date || !asset.depreciation_rate) {
+    return asset?.current_value ?? asset?.purchase_price ?? 0;
+  }
+
+  const purchaseDate = new Date(asset.purchase_date);
+  const now = new Date();
+  
+  let monthsPassed = (now.getFullYear() - purchaseDate.getFullYear()) * 12;
+  monthsPassed -= purchaseDate.getMonth();
+  monthsPassed += now.getMonth();  // ✅ FIXED!
+  
+  if (monthsPassed < 0) monthsPassed = 0;
+
+  const annualDepreciationRate = asset.depreciation_rate / 100;
+  const monthlyDepreciation = (asset.purchase_price * annualDepreciationRate) / 12;
+  const totalDepreciation = monthlyDepreciation * monthsPassed;
+  let calculatedValue = asset.purchase_price - totalDepreciation;
+  
+  const salvageValue = asset.salvage_value || 0;
+  return Math.max(salvageValue, Math.round(calculatedValue), 0);
+};
+
+// Hàm hỗ trợ trích xuất Tính chất sản phẩm từ Tên tài sản
+const extractNatureCodeFromName = (name) => {
+  if (!name) return 'XX';
+
+  // Chuẩn hóa chuỗi: loại bỏ dấu, loại bỏ khoảng trắng thừa, chuyển thành chữ thường
+  const n = name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Bỏ dấu
+    .replace(/đ/g, 'd') // Xử lý chữ 'đ'
+    .replace(/\s+/g, ' ') // Thay thế nhiều khoảng trắng bằng một
+    .trim(); // Cắt khoảng trắng đầu cuối
+
+  // Các từ khóa giờ đây được viết không dấu
+  if (n.includes('may tinh') || n.includes('laptop') || n.includes('macbook') || n.includes('pc')) return 'MT';
+  if (n.includes('may in') || n.includes('printer')) return 'MI';
+  if (n.includes('man hinh') || n.includes('monitor')) return 'MH';
+  if (n.includes('may chieu') || n.includes('projector')) return 'MC';
+  if (n.includes('dien thoai') || n.includes('smartphone')) return 'DT';
+  if (n.includes('ban')) return 'BA'; // 'bàn'
+  if (n.includes('ghe')) return 'GH'; // 'ghế'
+  if (n.includes('tu')) return 'TU'; // 'tủ'
+  if (n.includes('xe ')) return 'XE'; // Dấu cách để tránh nhầm với từ khác
+
+  return 'XX'; // Mặc định nếu không khớp từ khóa nào
+};
+
+// Hàm hỗ trợ tự động sinh mã tài sản
+const generateAssetCode = async (categoryId, purchaseDate, natureCode = 'XX') => {
+  let catPrefix = 'XXX';
+  if (categoryId) {
+    const [catRows] = await pool.query('SELECT code FROM categories WHERE id = ?', [categoryId])
+    if (catRows.length > 0 && catRows[0].code) catPrefix = catRows[0].code.substring(0, 3).toUpperCase();
+  }
+
+  const year = purchaseDate ? new Date(purchaseDate).getFullYear() : new Date().getFullYear();
+
+  // Tiền tố để tìm số thứ tự (chỉ gồm Danh mục + Năm)
+  const queryPrefix = `${catPrefix}${year}`;
+  // Tiền tố đầy đủ để ghép vào mã cuối cùng
+  const finalPrefix = `${queryPrefix}${natureCode.toUpperCase()}`;
+
+  // Tìm mã tài sản lớn nhất có cùng tiền tố (không phân biệt tính chất) để lấy số thứ tự tiếp theo
+  const [rows] = await pool.query(
+    'SELECT asset_code FROM assets WHERE asset_code LIKE ? ORDER BY asset_code DESC LIMIT 1',
+    [`${queryPrefix}%`]
+  );
+
+  let seq = 1;
+  if (rows.length > 0 && rows[0].asset_code) {
+    const lastSeq = parseInt(rows[0].asset_code.slice(-4), 10);
+    if (!isNaN(lastSeq)) seq = lastSeq + 1;
+  }
+
+  return `${finalPrefix}${seq.toString().padStart(4, '0')}`;
+};
+
+// Generate QR code for an asset
+export const generateQR = async (req, res) => {
+  try {
+    const asset = await Asset.findById(req.params.id);
+    if (!asset) {
+      return res.status(404).json({ message: 'Asset not found' });
+    }
+
+    // Logic để xác định URL của frontend cho mã QR
+    // Ưu tiên:
+    // 1. Query param `origin` (cho phép client tự chỉ định)
+    // 2. Header `Origin` từ request (tự động phát hiện frontend đang gọi)
+    // 3. Biến môi trường `FRONTEND_URL` làm phương án dự phòng
+    let frontendUrl = req.query.origin || req.get('Origin') || process.env.FRONTEND_URL;
+
+    if (!frontendUrl) {
+      console.error("Lỗi generateQR: FRONTEND_URL chưa được cấu hình trong .env và không thể xác định từ request.");
+      return res.status(500).json({ message: 'URL của Frontend chưa được cấu hình trên server.' });
+    }
+
+    // Dọn dẹp dấu gạch chéo thừa ở cuối URL
+    frontendUrl = frontendUrl.replace(/\/$/, "");
+
+    // Dữ liệu được mã hóa vào mã QR, sử dụng ID duy nhất của tài sản
+    const qrData = `${frontendUrl}/asset/${asset.id}`;
+
+    // Generate QR code as data URL (base64)
+    const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
+      width: 300,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#ffffff'
+      }
+    });
+
+    res.json({
+      asset_id: asset.id,
+      asset_code: asset.asset_code,
+      asset_name: asset.name,
+      qr_code: qrCodeDataUrl
+    });
+  } catch (error) {
+    console.error('generateQR error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getAll = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, ...filters } = req.query;
+    
+    // Gắn thông tin user đang request để lọc dữ liệu
+    if (req.user) {
+      filters.currentUser = req.user;
+    }
+
+    console.log('getAll controller - page:', page, 'limit:', limit, 'filters:', filters);
+    const result = await Asset.findAll(filters, page, limit);
+    console.log('getAll controller - result:', result ? 'success' : 'null');
+
+    // Dynamically calculate current_value for each asset
+    if (result && result.data && Array.isArray(result.data)) {
+      result.data = result.data.map(asset => ({
+        ...asset,
+        current_value: calculateCurrentValue(asset)
+      }));
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('getAll controller error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getAllSimple = async (req, res) => {
+  try {
+    const assets = await Asset.findAllSimple(req.user || null);
+    res.json(assets);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getById = async (req, res, next) => {
+  try {
+    // The route is now protected by a regex `/:id(\\d+)`, so no need to check for string routes.
+    const asset = await Asset.findById(req.params.id);
+    if (!asset) {
+      return res.status(404).json({ message: 'Asset not found' });
+    }
+
+    // Dynamically calculate current_value for the single asset
+    asset.current_value = calculateCurrentValue(asset);
+    res.json(asset);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Lấy lịch sử bàn giao/sử dụng của một tài sản
+export const getUserHistory = async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT h.*, u.username as user_name, u.fullName, d.name as department_name
+      FROM asset_user_history h
+      LEFT JOIN users u ON h.user_id = u.id
+      LEFT JOIN departments d ON h.department_id = d.id
+      WHERE h.asset_id = ?
+      ORDER BY h.start_date DESC
+    `, [req.params.id]);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getByCode = async (req, res) => {
+  try {
+    const asset = await Asset.findByCode(req.params.code);
+    if (!asset) {
+      return res.status(404).json({ message: 'Asset not found' });
+    }
+
+    // Dynamically calculate current_value for the single asset
+    asset.current_value = calculateCurrentValue(asset);
+    res.json(asset);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getByBarcode = async (req, res) => {
+  try {
+    const asset = await Asset.findByBarcode(req.params.barcode);
+    if (!asset) {
+      return res.status(404).json({ message: 'Asset not found' });
+    }
+
+    // Dynamically calculate current_value for the single asset
+    asset.current_value = calculateCurrentValue(asset);
+    res.json(asset);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// API CÔNG KHAI: Lấy lịch sử người dùng và lịch sử bảo trì cho trang public
+export const getPublicHistory = async (req, res) => {
+  try {
+    const assetId = req.params.id;
+
+    const [userHistory] = await pool.query(`
+      SELECT h.start_date, h.end_date, u.fullName as user_name, d.name as department_name
+      FROM asset_user_history h
+      LEFT JOIN users u ON h.user_id = u.id
+      LEFT JOIN departments d ON h.department_id = d.id
+      WHERE h.asset_id = ?
+      ORDER BY h.start_date DESC
+    `, [assetId]);
+
+    const [maintenanceHistory] = await pool.query(
+      'SELECT * FROM maintenance_records WHERE asset_id = ? ORDER BY maintenance_date DESC', 
+      [assetId]
+    );
+
+    res.json({ userHistory, maintenanceHistory });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const create = async (req, res) => {
+  try {
+    // Tự động sinh mã tài sản ghi đè lên mã gửi từ Client
+    // Tự động nhận diện tính chất sản phẩm từ Tên tài sản (VD: "Máy in HP" -> "MI")
+    if (req.body.status) {
+      req.body.status = normalizeStatus(req.body.status);
+    }
+    const natureCode = extractNatureCodeFromName(req.body.name); 
+    req.body.asset_code = await generateAssetCode(req.body.category_id, req.body.purchase_date, natureCode);
+
+    // Tự động gán ngày cấp là hôm nay nếu có người nhận mà chưa chọn ngày cấp
+    if (req.body.assigned_to && !req.body.assigned_date) {
+      req.body.assigned_date = new Date().toISOString().slice(0, 10);
+    }
+
+    const asset = await Asset.create(req.body);
+    
+    // Ghi log lịch sử người dùng nếu tài sản được gán ngay khi tạo
+    if (req.body.assigned_to) {
+      const [uRows] = await pool.query('SELECT department_id FROM users WHERE id = ?', [req.body.assigned_to]);
+      await pool.query(
+        'INSERT INTO asset_user_history (asset_id, user_id, department_id, start_date, assigned_by) VALUES (?, ?, ?, ?, ?)',
+        [asset.id, req.body.assigned_to, uRows.length > 0 ? uRows[0].department_id : null, req.body.assigned_date || new Date(), req.user?.id]
+      );
+    }
+
+    // Thông báo có tài sản mới
+    await createNotification(
+      null, 
+      'Tài sản mới', 
+      `Tài sản "${req.body.name}" vừa được thêm vào hệ thống.`, 
+      'success'
+    );
+
+    // Ghi log
+    await AuditLog.log(req.user?.id, 'CREATE', 'ASSET', asset.id, null, req.body, `Thêm mới tài sản: ${req.body.name}`, req.ip);
+
+    res.status(201).json(asset);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const update = async (req, res) => {
+  try {
+    const oldAsset = await Asset.findById(req.params.id);
+    if (!oldAsset) {
+      return res.status(404).json({ message: 'Asset not found' });
+    }
+
+    const updateData = { ...req.body };
+
+    // Nếu có cập nhật trạng thái, kiểm tra tính hợp lệ của trạng thái mới trước khi thực hiện update
+    if (updateData.status) {
+      updateData.status = normalizeStatus(updateData.status);
+      const validStatuses = ['new', 'good', 'needs_repair', 'damaged', 'disposed'];
+      if (!validStatuses.includes(updateData.status)) {
+        return res.status(400).json({ message: `Trạng thái không hợp lệ: ${updateData.status}. Các trạng thái hợp lệ là: ${validStatuses.join(', ')}` });
+      }
+    }
+
+    // Logic xử lý Lịch sử người dùng (Asset User History) khi thay đổi assigned_to
+    if (updateData.assigned_to !== undefined && String(updateData.assigned_to || '') !== String(oldAsset.assigned_to || '')) {
+      // 1. Kết thúc bản ghi lịch sử cũ (nếu có)
+      await pool.query(
+        'UPDATE asset_user_history SET end_date = NOW() WHERE asset_id = ? AND end_date IS NULL',
+        [req.params.id]
+      );
+
+      if (updateData.assigned_to) {
+        // Lấy thông tin User mới để đồng bộ tên và phòng ban
+        const [uRows] = await pool.query('SELECT fullName, department_id FROM users WHERE id = ?', [updateData.assigned_to]);
+        if (uRows.length > 0) {
+          updateData.assigned_to_name = uRows[0].fullName;
+          
+          // Nếu đổi người dùng mà không truyền ngày cấp mới, mặc định lấy ngày hiện tại
+          if (!updateData.assigned_date) {
+            updateData.assigned_date = new Date().toISOString().slice(0, 10);
+          }
+          
+          // 2. Tạo bản ghi lịch sử mới cho người dùng mới
+          await pool.query(
+            'INSERT INTO asset_user_history (asset_id, user_id, department_id, start_date, assigned_by) VALUES (?, ?, ?, NOW(), ?)',
+            [req.params.id, updateData.assigned_to, uRows[0].department_id, req.user?.id]
+          );
+        }
+      } else {
+        updateData.assigned_to_name = null;
+        updateData.assigned_date = null; // Xóa ngày cấp khi tài sản thu hồi về kho
+      }
+    }
+
+    const asset = await Asset.update(req.params.id, updateData);
+    
+    // Tạo mô tả chi tiết các trường bị thay đổi
+    const fieldMap = {
+      name: 'tên tài sản', description: 'mô tả', purchase_price: 'giá mua', 
+      salvage_value: 'giá trị thu hồi', status: 'trạng thái', 
+      barcode: 'mã vạch', category_id: 'ID danh mục', location_id: 'ID vị trí', 
+      department_id: 'ID phòng ban', supplier_id: 'ID nhà cung cấp', 
+      assigned_to_name: 'người sử dụng', assigned_to: 'ID người sử dụng',
+      purchase_date: 'ngày mua',
+      assigned_date: 'ngày cấp'
+    };
+
+    let changes = [];
+    // Sử dụng updateData đã được chuẩn hóa để so sánh thay vì req.body
+    Object.keys(updateData).forEach(key => {
+      let oldVal = oldAsset[key] ?? '';
+      let newVal = updateData[key] ?? '';
+
+      // Xử lý so sánh ngày tháng để tránh lệch định dạng (Date object vs String)
+      if ((key === 'purchase_date' || key === 'assigned_date') && oldVal && newVal) {
+        const d1 = new Date(oldVal).toISOString().split('T')[0];
+        const d2 = new Date(newVal).toISOString().split('T')[0];
+        if (d1 !== d2) {
+          changes.push(`${fieldMap[key]} từ "${d1}" thành "${d2}"`);
+        }
+        return;
+      }
+
+      // So sánh các trường khác
+      if (String(oldVal) !== String(newVal) && key !== 'current_value' && key !== 'image_url') {
+        // Chỉ ghi log nếu trường đó nằm trong danh sách hiển thị
+        if (fieldMap[key]) {
+          changes.push(`${fieldMap[key]} từ "${oldVal}" thành "${newVal}"`);
+        }
+      }
+    });
+
+    const logDesc = changes.length > 0 
+      ? `Cập nhật tài sản ${oldAsset.asset_code}: sửa ${changes.join(', ')}` 
+      : `Cập nhật tài sản: ${oldAsset.asset_code}`;
+
+    // Ghi log
+    await AuditLog.log(req.user?.id, 'UPDATE', 'ASSET', req.params.id, oldAsset, req.body, logDesc, req.ip);
+
+    // Thông báo cập nhật thông tin
+    await createNotification(
+      null,
+      'Cập nhật tài sản',
+      `Tài sản "${req.body.name || 'ID: ' + req.params.id}" đã được chỉnh sửa thông tin.`,
+      'info'
+    );
+
+    res.json(asset);
+  } catch (error) {
+    console.error('Error updating asset:', error); // Thêm log chi tiết lỗi
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const remove = async (req, res) => {
+  try {
+    const oldAsset = await Asset.findById(req.params.id);
+    const success = await Asset.delete(req.params.id);
+    if (!success) {
+      return res.status(404).json({ message: 'Asset not found' });
+    }
+    
+    // Ghi log
+    await AuditLog.log(req.user?.id, 'DELETE', 'ASSET', req.params.id, oldAsset, null, `Xóa tài sản: ${oldAsset?.name || req.params.id}`, req.ip);
+
+    res.json({ message: 'Asset deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateStatus = async (req, res) => {
+  try {
+    let { status, description } = req.body;
+    status = normalizeStatus(status);
+    const validStatuses = ['new', 'good', 'needs_repair', 'damaged', 'disposed'];
+    
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Trạng thái không hợp lệ' });
+    }
+
+    const oldAsset = await Asset.findById(req.params.id);
+    const asset = await Asset.update(req.params.id, { status });
+    if (!asset) {
+      return res.status(404).json({ message: 'Asset not found' });
+    }
+
+    let message = 'Cập nhật trạng thái thành công';
+    let maintenanceCreated = false;
+
+    const damageStatuses = ['needs_repair', 'damaged'];
+    
+    // Tự động tạo phiếu bảo trì nếu chuyển sang trạng thái hỏng (và trước đó chưa hỏng)
+    if (damageStatuses.includes(status)) {
+      if (!damageStatuses.includes(oldAsset.status)) {
+        const desc = description || `Tài sản chuyển sang trạng thái: ${status} (cập nhật bởi người dùng)`;
+        await MaintenanceRecord.create({
+          asset_id: parseInt(req.params.id),
+          maintenance_date: new Date(),
+          maintenance_type: 'emergency',
+          description: desc,
+          cost: 0,
+          technician: null,
+          next_maintenance_date: null
+        });
+        message = 'Đã cập nhật trạng thái và tạo phiếu bảo trì';
+        maintenanceCreated = true;
+      } else {
+        message = 'Đã cập nhật trạng thái (Tài sản đã nằm trong danh sách bảo trì)';
+      }
+    } else if (status === 'disposed') {
+      // Tự động hủy các phiếu bảo trì đang chờ nếu tài sản bị đem đi thanh lý
+      await pool.query(
+        "UPDATE maintenance_records SET status = 'completed', description = CONCAT(COALESCE(description, ''), ' (Tự động đóng phiếu do tài sản đã thanh lý)') WHERE asset_id = ? AND status != 'completed'",
+        [req.params.id]
+      );
+    }
+    
+    // Ghi log
+    await AuditLog.log(req.user?.id, 'UPDATE', 'ASSET', req.params.id, { status: oldAsset?.status }, { status }, `Cập nhật trạng thái tài sản thành "${status}"`, req.ip);
+
+    // Thông báo cập nhật trạng thái
+    await createNotification(
+      null, 
+      'Thay đổi trạng thái', 
+      `Tài sản ID: ${req.params.id} đã chuyển sang trạng thái: ${status}`, 
+      ['needs_repair', 'damaged'].includes(status) ? 'warning' : 'info'
+    );
+
+    res.json({ message, asset, maintenanceCreated });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const reportDamage = async (req, res) => {
+  try {
+    const { description } = req.body;
+    const assetId = req.params.id;
+    const finalDescription = description || 'Báo cáo hư hỏng từ trang công khai';
+
+    const oldAsset = await Asset.findById(assetId); // Lấy trạng thái cũ
+
+    // 1. Update asset
+    const updatedAsset = await Asset.update(assetId, { status: 'damaged' });
+    if (!updatedAsset) {
+      return res.status(404).json({ message: 'Tài sản không tồn tại' });
+    }
+
+    // 2. Chỉ tạo phiếu bảo trì nếu trước đó tài sản chưa ở trạng thái hỏng
+    const damageStatuses = ['needs_repair', 'damaged'];
+    if (!damageStatuses.includes(oldAsset.status)) {
+      await MaintenanceRecord.create({
+        asset_id: parseInt(assetId),
+        maintenance_date: new Date(),
+        maintenance_type: 'emergency',
+        description: finalDescription,
+        cost: 0,
+        technician: null,
+        next_maintenance_date: null
+      });
+    }
+    
+    // Ghi log (Khách từ Public quét mã QR báo hỏng, không có User ID)
+    await AuditLog.log(null, 'UPDATE', 'ASSET', assetId, null, { status: 'damaged' }, `Khách báo hỏng tài sản từ mã QR: ${finalDescription}`, req.ip);
+
+    // Thông báo có thiết bị báo hỏng từ Public
+    await createNotification(
+      null,
+      '⚠️ Báo hỏng thiết bị (Public)',
+      `Tài sản ID: ${assetId} vừa được báo hỏng. Lý do: ${finalDescription}`,
+      'warning'
+    );
+
+    res.json({
+      message: 'Đã báo cáo hư hỏng và tạo phiếu bảo trì',
+      asset: updatedAsset,
+      maintenanceCreated: true
+    });
+  } catch (error) {
+    console.error('reportDamage error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getStats = async (req, res) => {
+  try {
+    const stats = await Asset.getStats();
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Download Excel template for asset import
+export const downloadTemplate = (req, res) => {
+  const headers = [
+    'Mã tài sản', 'Tên tài sản', 'Mô tả', 'Mã danh mục', 'Mã vị trí',
+    'Mã phòng ban', 'Mã nhà cung cấp', 'Người sử dụng', 'Ngày cấp (YYYY-MM-DD)', 'Ngày mua (YYYY-MM-DD)',
+    'Giá mua', 'Giá trị thu hồi', 'Giá trị hiện tại',
+    'Trạng thái (chờ cấp/đang sử dụng/cần sửa chữa/hỏng/đã thanh lý)', 'Mã vạch'
+  ];
+  const sample = [
+    'COM2024MT0001', 'Máy tính Dell', 'Máy tính để bàn', 'COMPUTER', 'OFFICE', 'VP',
+    'Công ty TNHH FPT', 'Nguyễn Văn B', '2024-02-01', '2024-01-15',
+    '15000000',    '500000', '12000000',
+    'đang sử dụng', 'BC001'
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet([headers, sample]);
+  ws['!cols'] = headers.map(() => ({ wch: 22 }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Tài sản');
+
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  res.setHeader('Content-Disposition', 'attachment; filename="template_import_tai_san.xlsx"');
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.send(buf);
+};
+
+// Import assets from uploaded Excel/CSV file
+export const importAssets = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Không có file được tải lên' });
+    }
+
+    // Parse workbook
+    const wb = XLSX.read(req.file.buffer, { type: 'buffer', cellDates: true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+    if (rows.length < 2) {
+      return res.status(400).json({ message: 'File không có dữ liệu' });
+    }
+
+    // Pre-load lookup tables
+    const [categories] = await pool.query('SELECT id, code FROM categories');
+    const [locations]  = await pool.query('SELECT id, code FROM locations');
+    const [departments]= await pool.query('SELECT id, code FROM departments');
+    const [suppliers]  = await pool.query('SELECT id, code FROM suppliers');
+    const [users]      = await pool.query('SELECT id, fullName, username FROM users');
+
+    const catMap  = Object.fromEntries(categories.map(r => [r.code.toUpperCase(), r.id]));
+    const locMap  = Object.fromEntries(locations.map(r => [r.code.toUpperCase(), r.id]));
+    const deptMap = Object.fromEntries(departments.map(r => [r.code.toUpperCase(), r.id]));
+    const supMap  = Object.fromEntries(suppliers.map(r => [r.code.toUpperCase(), r.id]));
+
+    // Tạo object ánh xạ tên/username người dùng sang ID
+    const userMap = {};
+    users.forEach(u => {
+      if (u.fullName) userMap[u.fullName.toLowerCase().trim()] = { id: u.id, fullName: u.fullName };
+      if (u.username) userMap[u.username.toLowerCase().trim()] = { id: u.id, fullName: u.fullName };
+    });
+
+    // Ánh xạ trạng thái từ tiếng Việt (Excel) sang ENUM (Database)
+    const statusMapping = {
+      'new': 'new',
+      'good': 'good',
+      'needs_repair': 'needs_repair',
+      'damaged': 'damaged',
+      'disposed': 'disposed',
+      'damage': 'damaged',
+      ['chờ cấp'.normalize('NFC')]: 'new',
+      ['cho cap'.normalize('NFC')]: 'new',
+      ['mới'.normalize('NFC')]: 'new',
+      ['đang sử dụng'.normalize('NFC')]: 'good',
+      ['tốt'.normalize('NFC')]: 'good',
+      ['cần sửa chữa'.normalize('NFC')]: 'needs_repair',
+      ['hỏng'.normalize('NFC')]: 'damaged',
+      ['hỏng'.normalize('NFC')]: 'damaged',
+      ['hỏng'.normalize('NFD')]: 'damaged',
+      ['đã thanh lý'.normalize('NFC')]: 'disposed',
+    };
+
+    const results = { success: 0, failed: 0, errors: [] };
+    const dataRows = rows.slice(1); // skip header row
+
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    for (let i = 0; i < dataRows.length; i++) {
+      const row = dataRows[i];
+      const rowNum = i + 2; // 1-indexed, skip header
+
+      // Skip completely empty rows
+      if (row.every(cell => cell === '' || cell === null || cell === undefined)) continue;
+
+      // Handle different column orders - check if "Mã nhà cung cấp" column exists
+      // New format: Mã tài sản, Tên tài sản, Mô tả, Mã danh mục, Mã vị trí, Mã phòng ban, Mã nhà cung cấp, Người sử dụng, Ngày mua, Giá mua, Giá trị hiện tại, Trạng thái, Mã vạch
+      const asset_code = row[0] ? String(row[0]).trim() : '';
+      const name = row[1] ? String(row[1]).trim() : '';
+      const description = row[2] ? String(row[2]).trim() : '';
+      const category_code = row[3] ? String(row[3]).trim() : '';
+      const location_code = row[4] ? String(row[4]).trim() : '';
+      const department_code = row[5] ? String(row[5]).trim() : '';
+      const supplier_code = row[6] ? String(row[6]).trim() : '';
+      const assigned_to_name = row[7] ? String(row[7]).trim() : '';
+      const assigned_date_raw = row[8];
+      const purchase_date_raw = row[9];
+      const purchase_price_raw = row[10];
+      const salvage_value_raw = row[11];
+      const current_value_raw = row[12];
+      const status_raw = row[13] ? String(row[13]).trim() : '';
+      const barcode = row[14] ? String(row[14]).trim() : '';
+
+      // Validate required fields
+      if (!asset_code) {
+        results.failed++; 
+        results.errors.push({ row: rowNum, message: 'Thiếu mã tài sản' });
+        continue;
+      }
+      if (!name) {
+        results.failed++;
+        results.errors.push({ row: rowNum, message: `Dòng ${rowNum}: Thiếu tên tài sản` });
+        continue;
+      }
+
+      // Resolve IDs from codes
+      const category_id  = category_code  ? (catMap[category_code.toUpperCase()]  || null) : null;
+      const location_id  = location_code  ? (locMap[location_code.toUpperCase()]  || null) : null;
+      const department_id= department_code? (deptMap[department_code.toUpperCase()]|| null) : null;
+      const supplier_id  = supplier_code  ? (supMap[supplier_code.toUpperCase()]  || null) : null;
+
+      let assigned_to = null;
+      let final_assigned_to_name = assigned_to_name;
+
+      if (assigned_to_name && userMap[assigned_to_name.toLowerCase().trim()]) {
+        const matchedUser = userMap[assigned_to_name.toLowerCase().trim()];
+        assigned_to = matchedUser.id;
+        final_assigned_to_name = matchedUser.fullName; // Đồng bộ tên chuẩn từ Database
+      }
+
+      // Parse numeric fields
+      // Loại bỏ dấu phẩy phân cách hàng nghìn để tránh lỗi parseFloat (VD: 575,320,000 -> 575320000)
+      const cleanNumber = (val) => val ? String(val).replace(/,/g, '') : '';
+
+      const purchase_price = parseFloat(cleanNumber(purchase_price_raw)) || 0;
+      const salvage_value = parseFloat(cleanNumber(salvage_value_raw)) || 0;
+      // If current_value is not provided, use purchase_price as a fallback
+      const current_value = parseFloat(cleanNumber(current_value_raw)) || purchase_price;
+
+      // Parse date (handle Excel serial numbers too)
+      let purchase_date = null;
+      // Chỉ parse ngày nếu không phải là số thuần túy (tránh nhầm với giá tiền) hoặc là Date object
+      if (purchase_date_raw && (purchase_date_raw instanceof Date || isNaN(purchase_date_raw))) {
+        if (purchase_date_raw instanceof Date) {
+          purchase_date = purchase_date_raw.toISOString().slice(0, 10);
+        } else if (/^\d{4}-\d{2}-\d{2}$/.test(purchase_date_raw)) {
+          purchase_date = purchase_date_raw;
+        } else {
+          const d = new Date(purchase_date_raw);
+          // Kiểm tra năm hợp lệ (phải sau năm 1900) để tránh lỗi timestamp 1970
+          if (!isNaN(d.getTime()) && d.getFullYear() > 1900) purchase_date = d.toISOString().slice(0, 10);
+        }
+      }
+
+      // Parse assigned_date
+      let assigned_date = null;
+      if (assigned_date_raw) {
+        if (assigned_date_raw instanceof Date) {
+          assigned_date = assigned_date_raw.toISOString().slice(0, 10);
+        } else if (/^\d{4}-\d{2}-\d{2}$/.test(assigned_date_raw)) {
+          assigned_date = assigned_date_raw;
+        } else {
+          const d = new Date(assigned_date_raw);
+          if (!isNaN(d.getTime()) && d.getFullYear() > 1900) assigned_date = d.toISOString().slice(0, 10);
+        }
+      }
+
+      // Xử lý trạng thái: chuyển về chữ thường và ánh xạ sang giá trị DB
+      const status = normalizeStatus(status_raw) || 'new';
+
+      try {
+          const [result] = await connection.query(
+            `INSERT INTO assets (asset_code, name, description, category_id, location_id, department_id,
+              supplier_id, purchase_date, assigned_date, purchase_price, salvage_value, current_value, status, barcode, assigned_to, assigned_to_name)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [asset_code, name, description || null, category_id, location_id, department_id,
+            supplier_id, purchase_date, assigned_date, purchase_price, salvage_value, current_value, status, barcode || null, assigned_to, assigned_to_name || null]
+          );
+
+        // Ghi log lịch sử người dùng cho tài sản được import nếu có gán người dùng
+        if (assigned_to) {
+          const [uRows] = await connection.query('SELECT department_id FROM users WHERE id = ?', [assigned_to]);
+          await connection.query(
+            'INSERT INTO asset_user_history (asset_id, user_id, department_id, start_date, assigned_by) VALUES (?, ?, ?, ?, ?)',
+            [result.insertId, assigned_to, uRows.length > 0 ? uRows[0].department_id : null, assigned_date || new Date(), req.user?.id]
+          );
+        }
+
+        results.success++;
+      } catch (err) {
+        await connection.rollback();
+        connection.release();
+        results.failed++;
+        const msg = err.code === 'ER_DUP_ENTRY'
+          ? `Mã tài sản "${asset_code}" đã tồn tại`
+          : err.message;
+        results.errors.push({ row: rowNum, asset_code, message: msg });
+      }
+    }
+
+    await connection.commit();
+    connection.release();
+
+    // Tạo thông báo tổng hợp hệ thống sau khi import xong
+    if (results.success > 0) {
+      await createNotification(
+        null,
+        'Import tài sản thành công',
+        `Hệ thống vừa import thành công ${results.success} tài sản từ file Excel.${results.failed > 0 ? ` (Có ${results.failed} dòng bị lỗi/bỏ qua)` : ''}`,
+        'success'
+      );
+      
+      // Ghi log tác vụ Import
+      await AuditLog.log(req.user?.id, 'CREATE', 'ASSET_IMPORT', null, null, null, `Import thành công ${results.success} tài sản từ Excel`, req.ip);
+    }
+
+    res.json({
+      message: `Import hoàn tất: ${results.success} thành công, ${results.failed} thất bại`,
+      ...results
+    });
+  } catch (error) {
+    console.error('importAssets error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const exportAssets = async (req, res) => {
+  try {
+    const { page = 1, limit = 1000, ...filters } = req.query;
+    
+    // Gắn thông tin user đang request để lọc dữ liệu xuất Excel
+    if (req.user) {
+      filters.currentUser = req.user;
+    }
+
+    const result = await Asset.findAll(filters, page, limit);
+    const assets = result.data || result;
+
+    // Pre-load lookup tables for reverse mapping (name -> code)
+    const [categories] = await pool.query('SELECT id, code, name FROM categories');
+    const [locations]  = await pool.query('SELECT id, code, name FROM locations');
+    const [departments]= await pool.query('SELECT id, code, name FROM departments');
+    const [suppliers]  = await pool.query('SELECT id, code, name FROM suppliers');
+
+    const catMap  = Object.fromEntries(categories.map(r => [r.id, r.code]));
+    const locMap  = Object.fromEntries(locations.map(r => [r.id, r.code]));
+    const deptMap = Object.fromEntries(departments.map(r => [r.id, r.code]));
+    const supMap  = Object.fromEntries(suppliers.map(r => [r.id, r.code]));
+
+    // Ánh xạ trạng thái để xuất báo cáo
+    const statusLabels = {
+      'new': 'Chờ cấp',
+      'good': 'Đang sử dụng',
+      'needs_repair': 'Cần sửa chữa',
+      'damaged': 'Hỏng',
+      'disposed': 'Đã thanh lý'
+    };
+
+    const data = assets.map(asset => ({
+      'Mã tài sản': asset.asset_code,
+      'Tên tài sản': asset.name,
+      'Mô tả': asset.description || '',
+      'Mã danh mục': catMap[asset.category_id] || '',
+      'Mã vị trí': locMap[asset.location_id] || '',
+      'Mã phòng ban': deptMap[asset.department_id] || '',
+      'Mã nhà cung cấp': supMap[asset.supplier_id] || '',
+      'Người sử dụng': asset.user_full_name || asset.assigned_to_name || '',
+      'Ngày cấp (YYYY-MM-DD)': asset.assigned_date ? new Date(asset.assigned_date).toISOString().slice(0, 10) : '',
+      'Ngày mua (YYYY-MM-DD)': asset.purchase_date ? new Date(asset.purchase_date).toISOString().slice(0, 10) : '',
+      'Giá mua': asset.purchase_price || 0,
+      'Giá trị thu hồi': asset.salvage_value || 0,
+      'Giá trị hiện tại': asset.current_value || 0,
+      'Trạng thái': statusLabels[asset.status] || 'Chờ cấp',
+      'Mã vạch': asset.barcode || ''
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [
+      { wch: 15 }, { wch: 25 }, { wch: 30 }, { wch: 15 },
+      { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 20 },
+      { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Tài sản');
+
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename="danh_sach_tai_san.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+  } catch (error) {
+    console.error('exportAssets error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
