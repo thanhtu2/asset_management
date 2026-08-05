@@ -16,45 +16,41 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `purchase_requests`
+-- Table structure for table `vehicles`
 --
 
-DROP TABLE IF EXISTS `purchase_requests`;
+DROP TABLE IF EXISTS `vehicles`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `purchase_requests` (
+CREATE TABLE `vehicles` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `code` varchar(50) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `description` text,
-  `estimated_cost` decimal(15,2) DEFAULT '0.00',
-  `status` enum('draft','office_pending','director_pending','approved','rejected') DEFAULT 'draft',
-  `created_by` int NOT NULL,
-  `office_approved_by` int DEFAULT NULL,
-  `office_approved_at` timestamp NULL DEFAULT NULL,
-  `director_approved_by` int DEFAULT NULL,
-  `director_approved_at` timestamp NULL DEFAULT NULL,
+  `asset_id` int DEFAULT NULL,
+  `plate_number` varchar(20) NOT NULL,
+  `vehicle_type` varchar(100) DEFAULT NULL,
+  `brand` varchar(100) DEFAULT NULL,
+  `model` varchar(100) DEFAULT NULL,
+  `seats` int DEFAULT NULL,
+  `current_km` int DEFAULT '0',
+  `status` enum('available','in_use','maintenance','retired') DEFAULT 'available',
+  `inspection_expiration` date DEFAULT NULL,
+  `insurance_expiration` date DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `code` (`code`),
-  KEY `office_approved_by` (`office_approved_by`),
-  KEY `director_approved_by` (`director_approved_by`),
-  KEY `idx_status` (`status`),
-  KEY `idx_created_by` (`created_by`),
-  CONSTRAINT `purchase_requests_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `purchase_requests_ibfk_2` FOREIGN KEY (`office_approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `purchase_requests_ibfk_3` FOREIGN KEY (`director_approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  UNIQUE KEY `plate_number` (`plate_number`),
+  UNIQUE KEY `asset_id` (`asset_id`),
+  CONSTRAINT `vehicles_ibfk_1` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `purchase_requests`
+-- Dumping data for table `vehicles`
 --
 
-LOCK TABLES `purchase_requests` WRITE;
-/*!40000 ALTER TABLE `purchase_requests` DISABLE KEYS */;
-/*!40000 ALTER TABLE `purchase_requests` ENABLE KEYS */;
+LOCK TABLES `vehicles` WRITE;
+/*!40000 ALTER TABLE `vehicles` DISABLE KEYS */;
+INSERT INTO `vehicles` VALUES (1,14536,'50M-006.75','7 chỗ','Mitsubishi','Pajero X',7,0,'available',NULL,NULL,'2026-05-13 08:44:38','2026-05-13 08:47:08'),(2,14537,'50A-012.91','bán tải','Ford','Ranger',NULL,0,'available',NULL,NULL,'2026-05-13 08:47:08','2026-05-13 08:47:08');
+/*!40000 ALTER TABLE `vehicles` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -66,4 +62,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-19 16:38:40
+-- Dump completed on 2026-05-19 16:38:41

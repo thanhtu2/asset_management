@@ -129,12 +129,11 @@ CREATE TABLE IF NOT EXISTS vehicle_registrations (
   destination VARCHAR(255),
   participants TEXT,
   notes TEXT,
-  status ENUM('pending', 'approved', 'scheduled', 'rejected', 'cancelled') DEFAULT 'pending',
+  status ENUM('pending', 'approved', 'rejected', 'cancelled') DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (requester_id) REFERENCES users(id) ON DELETE SET NULL,
-  FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE SET NULL,
-  INDEX idx_merge_lookup (registration_date, departure_time, destination(100))
+  FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE SET NULL
 );
 
 -- Bảng trung gian Đăng ký xe - Phòng ban (để chọn nhiều phòng)
@@ -355,8 +354,7 @@ INSERT IGNORE INTO permissions (code, name, module) VALUES
 ('CREATE_VEHICLE_REGISTRATION', 'Thêm đăng ký xe', 'Đăng ký xe'),
 ('EDIT_VEHICLE_REGISTRATION', 'Sửa đăng ký xe', 'Đăng ký xe'),
 ('DELETE_VEHICLE_REGISTRATION', 'Xóa đăng ký xe', 'Đăng ký xe'),
-('COORDINATE_VEHICLE', 'Điều phối xe (chọn xe cụ thể sau khi được duyệt)', 'Đăng ký xe'),
-('APPROVE_VEHICLE_REGISTRATION', 'Duyệt yêu cầu đăng ký xe (lãnh đạo)', 'Đăng ký xe');
+('COORDINATE_VEHICLE', 'Điều phối xe', 'Đăng ký xe');
 
 INSERT IGNORE INTO role_permissions (role_code, permission_code)
 SELECT 'admin', code FROM permissions;
@@ -364,16 +362,14 @@ SELECT 'admin', code FROM permissions;
 INSERT IGNORE INTO role_permissions (role_code, permission_code)
 SELECT 'manager', code FROM permissions 
 WHERE module IN ('Tài sản', 'Danh mục', 'Bảo trì', 'Kiểm kê')
-OR code IN ('VIEW_DASHBOARD', 'VIEW_REPORTS', 'VIEW_VEHICLE_REGISTRATIONS', 'VIEW_VEHICLE_WEEKLY', 'CREATE_VEHICLE_REGISTRATION', 'EDIT_VEHICLE_REGISTRATION', 'DELETE_VEHICLE_REGISTRATION', 'COORDINATE_VEHICLE', 'APPROVE_VEHICLE_REGISTRATION');
+OR code IN ('VIEW_DASHBOARD', 'VIEW_REPORTS', 'VIEW_VEHICLE_REGISTRATIONS', 'VIEW_VEHICLE_WEEKLY', 'CREATE_VEHICLE_REGISTRATION', 'EDIT_VEHICLE_REGISTRATION', 'DELETE_VEHICLE_REGISTRATION', 'COORDINATE_VEHICLE');
 
 INSERT IGNORE INTO role_permissions (role_code, permission_code) VALUES 
 ('department-leader', 'VIEW_DASHBOARD'),
 ('department-leader', 'VIEW_ASSETS'),
 ('department-leader', 'VIEW_PURCHASE_PROPOSALS'),
 ('department-leader', 'CREATE_PURCHASE_PROPOSAL'),
-('department-leader', 'APPROVE_DEPARTMENT_PURCHASE'),
-('department-leader', 'VIEW_VEHICLE_REGISTRATIONS'),
-('department-leader', 'APPROVE_VEHICLE_REGISTRATION');
+('department-leader', 'APPROVE_DEPARTMENT_PURCHASE');
 
 INSERT IGNORE INTO role_permissions (role_code, permission_code) VALUES 
 ('director', 'VIEW_DASHBOARD'),

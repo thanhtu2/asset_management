@@ -2,7 +2,7 @@
 --
 -- Host: localhost    Database: asset_management
 -- ------------------------------------------------------
--- Server version	8.0.46
+-- Server version	8.0.45
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -46,7 +46,7 @@ CREATE TABLE `inventory_sessions` (
 
 LOCK TABLES `inventory_sessions` WRITE;
 /*!40000 ALTER TABLE `inventory_sessions` DISABLE KEYS */;
-INSERT INTO `inventory_sessions` VALUES (9,'test','2026-05-08','2026-05-08','completed',2,2,'2026-05-07 18:56:23','2026-05-07 19:01:23'),(10,'test 1','2026-05-08','2026-05-08','completed',NULL,2,'2026-05-08 01:31:31','2026-05-08 02:23:56'),(11,'test 2','2026-05-08','2026-05-08','completed',335,2,'2026-05-08 02:27:09','2026-05-08 02:27:18');
+INSERT INTO `inventory_sessions` VALUES (9,'test','2026-05-08','2026-05-08','completed',2,2,'2026-05-08 01:56:23','2026-05-08 02:01:23'),(10,'test 1','2026-05-08','2026-05-08','completed',NULL,2,'2026-05-08 08:31:31','2026-05-08 09:23:56'),(11,'test 2','2026-05-08','2026-05-08','completed',335,2,'2026-05-08 09:27:09','2026-05-08 09:27:18');
 /*!40000 ALTER TABLE `inventory_sessions` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -59,4 +59,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-07-30 13:46:06
+-- Dump completed on 2026-05-19 16:38:41

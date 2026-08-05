@@ -2,7 +2,7 @@
 --
 -- Host: localhost    Database: asset_management
 -- ------------------------------------------------------
--- Server version	8.0.46
+-- Server version	8.0.45
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -35,7 +35,7 @@ CREATE TABLE `categories` (
   UNIQUE KEY `code` (`code`),
   KEY `parent_id` (`parent_id`),
   CONSTRAINT `categories_ibfk_1` FOREIGN KEY (`parent_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=863 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=801 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -44,7 +44,7 @@ CREATE TABLE `categories` (
 
 LOCK TABLES `categories` WRITE;
 /*!40000 ALTER TABLE `categories` DISABLE KEYS */;
-INSERT INTO `categories` VALUES (1,'Máy tính','COMPUTER',NULL,'Máy tính để bàn và laptop',10.00,'2026-03-04 20:54:21','2026-04-01 00:49:12'),(2,'Thiết bị văn phòng','OFFICE',NULL,'Máy in, máy fax, điện thoại',20.00,'2026-03-04 20:54:21','2026-04-01 00:53:27'),(3,'Đồ đạc','FURNITURE',NULL,'Bàn, ghế, tủ',0.00,'2026-03-04 20:54:21','2026-03-04 20:54:21'),(4,'Phương tiện','VEHICLE',NULL,'Xe ô tô, xe máy',10.00,'2026-03-04 20:54:21','2026-04-01 00:53:39'),(5,'Thiết bị điện tử','ELECTRONIC',NULL,'TV, điều hòa, tủ lạnh',15.00,'2026-03-04 20:54:21','2026-04-01 00:53:55'),(482,'Thiết bị mạng','NETWORK',NULL,'các thiệt bị mạng',0.00,'2026-05-07 01:49:48','2026-05-07 01:49:48'),(483,'các thiết bị pccc','PCCC',NULL,NULL,0.00,'2026-05-07 01:50:01','2026-05-07 01:50:01'),(484,'Thiết bị ghi hình','CAMERA',NULL,NULL,0.00,'2026-05-07 01:50:28','2026-05-07 01:50:28'),(485,'Thiết bị cân','WEIGHBRIDGE',NULL,NULL,0.00,'2026-05-07 01:50:45','2026-05-07 01:50:45'),(486,'Thiết bị khác','OTHER',NULL,NULL,0.00,'2026-05-07 01:51:00','2026-05-07 01:51:00'),(487,'Thiết bị phòng họp','MEETING',NULL,NULL,0.00,'2026-05-07 01:56:22','2026-05-07 01:56:22');
+INSERT INTO `categories` VALUES (1,'Máy tính','COMPUTER',NULL,'Máy tính để bàn và laptop',10.00,'2026-03-05 03:54:21','2026-04-01 07:49:12'),(2,'Thiết bị văn phòng','OFFICE',NULL,'Máy in, máy fax, điện thoại',20.00,'2026-03-05 03:54:21','2026-04-01 07:53:27'),(3,'Đồ đạc','FURNITURE',NULL,'Bàn, ghế, tủ',0.00,'2026-03-05 03:54:21','2026-03-05 03:54:21'),(4,'Phương tiện','VEHICLE',NULL,'Xe ô tô, xe máy',10.00,'2026-03-05 03:54:21','2026-04-01 07:53:39'),(5,'Thiết bị điện tử','ELECTRONIC',NULL,'TV, điều hòa, tủ lạnh',15.00,'2026-03-05 03:54:21','2026-04-01 07:53:55'),(482,'Thiết bị mạng','NETWORK',NULL,'các thiệt bị mạng',0.00,'2026-05-07 08:49:48','2026-05-07 08:49:48'),(483,'các thiết bị pccc','PCCC',NULL,NULL,0.00,'2026-05-07 08:50:01','2026-05-07 08:50:01'),(484,'Thiết bị ghi hình','CAMERA',NULL,NULL,0.00,'2026-05-07 08:50:28','2026-05-07 08:50:28'),(485,'Thiết bị cân','WEIGHBRIDGE',NULL,NULL,0.00,'2026-05-07 08:50:45','2026-05-07 08:50:45'),(486,'Thiết bị khác','OTHER',NULL,NULL,0.00,'2026-05-07 08:51:00','2026-05-07 08:51:00'),(487,'Thiết bị phòng họp','MEETING',NULL,NULL,0.00,'2026-05-07 08:56:22','2026-05-07 08:56:22');
 /*!40000 ALTER TABLE `categories` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -57,4 +57,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-07-30 13:46:06
+-- Dump completed on 2026-05-19 16:38:40

@@ -237,19 +237,17 @@ export const vehicleRegistrationsAPI = {
   create: (data) => apiClient.post('/vehicle-registrations', data),
   update: (id, data) => apiClient.put(`/vehicle-registrations/${id}`, data),
   delete: (id) => apiClient.delete(`/vehicle-registrations/${id}`),
-  approve: (id) => apiClient.put(`/vehicle-registrations/${id}/approve`),
-  assignVehicle: (id, vehicle_id) => apiClient.put(`/vehicle-registrations/${id}/assign-vehicle`, { vehicle_id }),
-  reject: (id, reason) => apiClient.put(`/vehicle-registrations/${id}/reject`, { reason }),
-  getMergeSuggestions: (params) => apiClient.get('/vehicle-registrations/merge-suggestions', { params }),
-  join: (id, department_ids, note, participants) => apiClient.post(`/vehicle-registrations/${id}/join`, { department_ids, note, participants }),
   getVehicles: () => apiClient.get('/vehicles'),
-  // File đính kèm
-  uploadAttachment: (id, formData) => apiClient.post(`/vehicle-registrations/${id}/upload`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }),
-  deleteAttachment: (id) => apiClient.delete(`/vehicle-registrations/${id}/attachment`),
-  // Download URL helper
-  getAttachmentUrl: (filename) => `${API_BASE_URL}/download/${filename}`,
+  exportRegistrations: async (params) => {
+    const response = await apiClient.get('/vehicle-registrations/export', { params, responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'danh_sach_dang_ky_xe.xlsx');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  },
 };
 
 export const vehicleTripsAPI = {

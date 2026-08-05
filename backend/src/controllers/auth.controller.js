@@ -42,12 +42,11 @@ export const login = async (req, res) => {
       sameSite: 'none', // Đặt sameSite: 'none' để cookie được gửi trong các yêu cầu cross-site
       maxAge: 24 * 60 * 60 * 1000 // Timeout 24 giờ như yêu cầu
     });
-    // Trả về đầy đủ thông tin (giống hệt shape của getProfile) để tránh lệch dữ liệu
-    // giữa lúc vừa đăng nhập và lúc load lại trang (gây mất department_id -> sai bộ lọc phòng ban).
-    const { password: _pw, ...userData } = user;
     res.json({
       user: {
-        ...userData,
+        id: user.id,
+        fullName: user.fullName,
+        role: user.role,
         permissions
       }
     });

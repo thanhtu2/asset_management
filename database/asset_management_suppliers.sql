@@ -2,7 +2,7 @@
 --
 -- Host: localhost    Database: asset_management
 -- ------------------------------------------------------
--- Server version	8.0.46
+-- Server version	8.0.45
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -34,7 +34,7 @@ CREATE TABLE `suppliers` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `code` (`code`)
-) ENGINE=InnoDB AUTO_INCREMENT=187 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=172 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -43,7 +43,7 @@ CREATE TABLE `suppliers` (
 
 LOCK TABLES `suppliers` WRITE;
 /*!40000 ALTER TABLE `suppliers` DISABLE KEYS */;
-INSERT INTO `suppliers` VALUES (1,'Công ty TNHH FPT','SUP001','Nguyễn Văn A','0901234567','fpt@supplier.com',NULL,'2026-03-04 20:54:21','2026-03-31 21:12:56'),(172,'Công ty TNHH TM DV  Công nghệ Nam Khang','Công ty TNHH TM DV  Công nghệ Nam Khang',NULL,NULL,NULL,NULL,'2026-07-23 18:46:50','2026-07-23 18:46:50');
+INSERT INTO `suppliers` VALUES (1,'Công ty TNHH FPT','SUP001','Nguyễn Văn A','0901234567','fpt@supplier.com',NULL,'2026-03-05 03:54:21','2026-04-01 04:12:56');
 /*!40000 ALTER TABLE `suppliers` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -56,4 +56,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-07-30 13:46:06
+-- Dump completed on 2026-05-19 16:38:41

@@ -3,8 +3,7 @@
 ## 🚗 1. Phân hệ Quản lý Đăng ký xe (Cập nhật mới)
 
 ### 📋 Thay đổi Logic & Cấu trúc
-- **Loại bỏ bảng dư thừa**: Bảng `vehicle_trips` đã được loại khỏi schema (`init.sql` không còn tạo bảng này). Toàn bộ thông tin lịch trình hiện được quản lý tập trung tại bảng `vehicle_registrations`.
-  ⚠️ **Nợ kỹ thuật (chưa dọn hết)**: `backend/src/models/VehicleTrip.js`, `vehicleTrip.controller.js`, `vehicleTrip.routes.js` vẫn còn tồn tại và được mount tại `/api/vehicle-trips` trong `app.js`, và vẫn query trực tiếp bảng `vehicle_trips` đã bị xóa khỏi schema. Gọi các endpoint này trên DB khởi tạo theo `init.sql` hiện tại sẽ báo lỗi SQL. Cần gỡ bỏ route/controller/model này khỏi codebase.
+- **Loại bỏ bảng dư thừa**: Đã xóa bảng `vehicle_trips`. Toàn bộ thông tin lịch trình hiện được quản lý tập trung tại bảng `vehicle_registrations`.
 - **Hợp nhất dữ liệu**: Trường `departure_location` (Điểm khởi hành) đã được thêm vào bảng đăng ký xe để theo dõi lộ trình đầy đủ ngay từ bước yêu cầu.
 - **Tối ưu hiển thị**: Lịch trình xe giờ đây được hiển thị trực tiếp từ dữ liệu đăng ký, không cần qua bước điều phối trung gian phức tạp.
 
@@ -14,7 +13,6 @@ Quyền hạn cho module Xe đã được tách nhỏ để quản lý linh ho�
 - `VIEW_VEHICLE_WEEKLY`: Cho phép truy cập và xem giao diện **Lịch tuần** xe.
 - `CREATE_VEHICLE_REGISTRATION`: Quyền tạo mới và gửi yêu cầu đăng ký.
 - `COORDINATE_VEHICLE`: Quyền điều phối (xem dữ liệu toàn công ty, gán xe/tài xế). Nếu không có quyền này, người dùng chỉ thấy dữ liệu của phòng ban mình.
-  ⚠️ **Lưu ý bảo mật:** Việc giới hạn theo phòng ban ở trên hiện **chỉ được thực thi ở Frontend** (`VehicleRegistrationPage.jsx` tự gắn `department_id = user.department_id` khi gọi API nếu không có `COORDINATE_VEHICLE`). Backend (`vehicleRegistration.controller.js` / route `GET /api/vehicle-registrations`) chỉ kiểm tra quyền `VIEW_VEHICLE_REGISTRATIONS`, không tự kiểm tra hay ép `department_id` theo phòng ban của người gọi — nghĩa là người dùng có thể gọi trực tiếp API (Postman/curl) để xem dữ liệu đăng ký xe của phòng ban khác. Cần bổ sung kiểm tra phân quyền phòng ban ở tầng Controller/Model, không chỉ dựa vào Frontend.
 
 ### 🔄 Quy trình Nghiệp vụ
 1. **Người nhập liệu/Nhân viên**: Tạo đăng ký xe, nhập Điểm đi, Điểm đến, Thời gian và chọn xe (nếu có quyền hoặc xe có sẵn).
@@ -112,7 +110,7 @@ Quyền hạn cho module Xe đã được tách nhỏ để quản lý linh ho�
 - Giao diện bảng theo dõi trực quan dành riêng cho Ban Giám đốc và Quản trị viên hệ thống.
 
 ### 12. Bảo mật (Security) [ENHANCED]
-- **Chống Brute-force & DDoS:** Tích hợp Rate Limiting giới hạn số lần đăng nhập sai (5 lần/15 phút), API chung (300 req/15 phút khi chạy trên Vercel, 3000 req/15 phút khi chạy local/on-prem) và API Public báo hỏng (10 req/giờ).
+- **Chống Brute-force & DDoS:** Tích hợp Rate Limiting giới hạn số lần đăng nhập sai (5 lần/15 phút), API chung (300 req/15 phút) và API Public báo hỏng (10 req/giờ).
 - **Chống XSS (Cross-Site Scripting):** Mã hóa toàn bộ dữ liệu đầu vào khi hiển thị và in tem nhãn QR ở Frontend.
 - **Chống SQL Injection:** Sử dụng Parameterized Queries cho toàn bộ hệ thống API.
 - **Xác thực an toàn:** Sử dụng HTTP-only Cookie để lưu trữ JWT, giúp chống lại các cuộc tấn công XSS đánh cắp phiên đăng nhập.
@@ -168,6 +166,7 @@ asset-management/
 │   ├── package.json
 │   └── vite.config.js
 │
+├── ASSET_MANAGEMENT_PLAN.md   # Kế hoạch phát triển
 └── README.md                  # Tài liệu này
 ```
 

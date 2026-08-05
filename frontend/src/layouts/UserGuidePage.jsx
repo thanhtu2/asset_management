@@ -301,13 +301,12 @@ const UserGuidePage = () => {
 
           <section id="quan-ly-xe">
               <h1>3. Quản lý Đăng ký xe</h1>
-              <p>Phân hệ này cho phép tất cả nhân viên đăng ký sử dụng xe và theo dõi lịch trình xe công ty.</p>
+              <p>Phân hệ này giúp quản lý việc đăng ký sử dụng xe và theo dõi lịch trình của các xe trong công ty.</p>
               <div className="card">
                   <ul>
-                      <li><strong>Quyền sử dụng:</strong> Mọi nhân viên đã đăng nhập đều có thể xem danh sách đăng ký, xem lịch tuần và tạo yêu cầu đăng ký mới.</li>
-                      <li><strong>Tạo đăng ký:</strong> Nhấn nút <strong>"+ Thêm Đăng ký xe"</strong>, điền thông tin chuyến đi. Hệ thống sẽ tự động kiểm tra và gợi ý <strong>"Ghép chuyến"</strong> nếu có chuyến đi tương tự đã được duyệt, giúp tiết kiệm tài nguyên.</li>
-                      <li><strong>Lịch trình:</strong> Bạn có thể theo dõi tiến độ các chuyến đi ở chế độ <strong>"Danh sách"</strong> hoặc xem tổng quan theo ngày ở chế độ <strong>"Lịch tuần"</strong>.</li>
-                      <li><strong>Phê duyệt & Điều phối:</strong> Các lãnh đạo và điều phối viên có quyền duyệt yêu cầu, gán xe cụ thể (chuyển sang trạng thái "Đã lên lịch"), hoặc từ chối các yêu cầu không hợp lệ.</li>
+                      <li><strong>Chế độ xem:</strong> Bạn có thể chuyển đổi giữa chế độ xem <strong>"Danh sách"</strong> (hiển thị tất cả các yêu cầu) và <strong>"Lịch tuần"</strong> (hiển thị lịch trình trực quan theo từng ngày trong tuần).</li>
+                      <li><strong>Tạo yêu cầu:</strong> Nhấn nút <strong>"+ Thêm Đăng ký xe"</strong>, điền đầy đủ thông tin về điểm đi, điểm đến, thời gian, thành phần tham gia và chọn xe (nếu có).</li>
+                      <li><strong>Điều phối:</strong> Người có quyền điều phối sẽ thấy toàn bộ các yêu cầu và có thể gán xe, tài xế cho các chuyến đi chưa được phân công.</li>
                   </ul>
               </div>
           </section>
@@ -441,3 +440,4 @@ const UserGuidePage = () => {
 };
 
 export default UserGuidePage;
+

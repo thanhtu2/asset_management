@@ -2,7 +2,7 @@
 --
 -- Host: localhost    Database: asset_management
 -- ------------------------------------------------------
--- Server version	8.0.46
+-- Server version	8.0.45
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -58,7 +58,7 @@ CREATE TABLE `purchase_proposals` (
 
 LOCK TABLES `purchase_proposals` WRITE;
 /*!40000 ALTER TABLE `purchase_proposals` DISABLE KEYS */;
-INSERT INTO `purchase_proposals` VALUES (13,'PP-20260508-001','mua sắm máy tính 2026','',10,1,'approved',2,'',2,'',49200000.00,'[{\"name\": \"Bộ máy vi tính \", \"spec\": \"i5 12400f\", \"unit\": \"Bộ\", \"quantity\": 2, \"unit_price\": 15600000}, {\"name\": \"Bộ máy vi tính\", \"spec\": \"i4 10500\", \"unit\": \"Bộ\", \"quantity\": 1, \"unit_price\": 18000000}]','2026-05-07 21:10:16','2026-05-12 20:41:01','/uploads/1778213416903-261160726-Asset-Management-System.pdf'),(14,'PP-20260514-001','mua sắm server','....',10,1,'approved',11,'kính trình',12,'chấp thuận',17748000.00,'[{\"name\": \"cloud server\", \"spec\": \"8 core, 12gb ram, 100gb ssd\", \"unit\": \"Chiếc\", \"quantity\": 1, \"unit_price\": 16632000}, {\"name\": \"domain\", \"spec\": \"\", \"unit\": \"Chiếc\", \"quantity\": 2, \"unit_price\": 558000}]','2026-05-14 01:21:34','2026-05-14 01:22:40','/uploads/1778746894676-296669671-3.-[VIETNIX]---BÃO-GIÃ-Dá»CH-Vá»¤---ENTERPRISE-CLOUD-+-TÃN-MIá»N-VIá»T-NAM.pdf');
+INSERT INTO `purchase_proposals` VALUES (13,'PP-20260508-001','mua sắm máy tính 2026','',10,1,'approved',2,'',2,'',49200000.00,'[{\"name\": \"Bộ máy vi tính \", \"spec\": \"i5 12400f\", \"unit\": \"Bộ\", \"quantity\": 2, \"unit_price\": 15600000}, {\"name\": \"Bộ máy vi tính\", \"spec\": \"i4 10500\", \"unit\": \"Bộ\", \"quantity\": 1, \"unit_price\": 18000000}]','2026-05-08 04:10:16','2026-05-13 03:41:01','/uploads/1778213416903-261160726-Asset-Management-System.pdf'),(14,'PP-20260514-001','mua sắm server','....',10,1,'approved',11,'kính trình',12,'chấp thuận',17748000.00,'[{\"name\": \"cloud server\", \"spec\": \"8 core, 12gb ram, 100gb ssd\", \"unit\": \"Chiếc\", \"quantity\": 1, \"unit_price\": 16632000}, {\"name\": \"domain\", \"spec\": \"\", \"unit\": \"Chiếc\", \"quantity\": 2, \"unit_price\": 558000}]','2026-05-14 08:21:34','2026-05-14 08:22:40','/uploads/1778746894676-296669671-3.-[VIETNIX]---BÃO-GIÃ-Dá»CH-Vá»¤---ENTERPRISE-CLOUD-+-TÃN-MIá»N-VIá»T-NAM.pdf');
 /*!40000 ALTER TABLE `purchase_proposals` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -71,4 +71,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-07-30 13:46:06
+-- Dump completed on 2026-05-19 16:38:40

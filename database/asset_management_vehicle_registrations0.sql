@@ -16,39 +16,47 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `maintenance_records`
+-- Table structure for table `vehicle_registrations`
 --
 
-DROP TABLE IF EXISTS `maintenance_records`;
+DROP TABLE IF EXISTS `vehicle_registrations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `maintenance_records` (
+CREATE TABLE `vehicle_registrations` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `asset_id` int NOT NULL,
-  `maintenance_date` date NOT NULL,
-  `maintenance_type` enum('preventive','corrective','emergency') DEFAULT 'preventive',
-  `description` text,
-  `cost` decimal(15,2) DEFAULT '0.00',
-  `technician` varchar(100) DEFAULT NULL,
-  `next_maintenance_date` date DEFAULT NULL,
-  `status` enum('pending','in_progress','completed') DEFAULT 'pending',
-  `completion_date` date DEFAULT NULL,
+  `asset_id` int DEFAULT NULL,
+  `registration_number` varchar(100) NOT NULL,
+  `requester_id` int DEFAULT NULL,
+  `vehicle_id` int DEFAULT NULL,
+  `vehicle_type` varchar(100) DEFAULT NULL,
+  `model` varchar(100) DEFAULT NULL,
+  `registration_date` date DEFAULT NULL,
+  `departure_time` time DEFAULT NULL,
+  `participants` varchar(255) DEFAULT NULL,
+  `destination` varchar(255) DEFAULT NULL,
+  `expiration_date` date DEFAULT NULL,
+  `insurance_policy_number` varchar(255) DEFAULT NULL,
+  `notes` text,
+  `status` enum('pending','approved','rejected','cancelled') DEFAULT 'pending',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `registration_number` (`registration_number`),
   KEY `asset_id` (`asset_id`),
-  CONSTRAINT `maintenance_records_ibfk_1` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  KEY `owner_id` (`requester_id`),
+  CONSTRAINT `vehicle_registrations_ibfk_1` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `vehicle_registrations_ibfk_2` FOREIGN KEY (`requester_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `maintenance_records`
+-- Dumping data for table `vehicle_registrations`
 --
 
-LOCK TABLES `maintenance_records` WRITE;
-/*!40000 ALTER TABLE `maintenance_records` DISABLE KEYS */;
-INSERT INTO `maintenance_records` VALUES (37,14593,'2026-05-08','emergency','hỏng',0.00,NULL,NULL,'completed','2026-05-11','2026-05-08 09:52:00','2026-05-11 02:18:43'),(38,15003,'2026-05-12','emergency','Hư',0.00,NULL,NULL,'completed','2026-05-12','2026-05-12 09:57:11','2026-05-12 09:57:40');
-/*!40000 ALTER TABLE `maintenance_records` ENABLE KEYS */;
+LOCK TABLES `vehicle_registrations` WRITE;
+/*!40000 ALTER TABLE `vehicle_registrations` DISABLE KEYS */;
+INSERT INTO `vehicle_registrations` VALUES (10,NULL,'REG-1778728318044',2,1,NULL,NULL,'2026-05-15','06:11:00','Nguyễn Thành Đạt. Nguyễn Tiền Phong','TTC HM',NULL,NULL,'','pending','2026-05-14 03:11:58','2026-05-14 03:12:34');
+/*!40000 ALTER TABLE `vehicle_registrations` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -60,4 +68,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-19 16:38:41
+-- Dump completed on 2026-05-19 16:38:39

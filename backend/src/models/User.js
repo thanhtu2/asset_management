@@ -3,26 +3,13 @@ import bcrypt from 'bcryptjs';
 
 const User = {
   // Get all users
-  async findAll(filters = {}) {
-    let query = `
+  async findAll() {
+    const [rows] = await pool.query(`
       SELECT u.*, d.name as department_name 
       FROM users u 
       LEFT JOIN departments d ON u.department_id = d.id
-      WHERE 1=1
-    `;
-    const params = [];
-    
-    if (filters.search) {
-      query += ` AND (u.username LIKE ? OR u.fullName LIKE ?)`;
-      params.push(`%${filters.search}%`, `%${filters.search}%`);
-    }
-    if (filters.role) {
-      query += ` AND u.role = ?`;
-      params.push(filters.role);
-    }
-    
-    query += ` ORDER BY u.created_at DESC`;
-    const [rows] = await pool.query(query, params);
+      ORDER BY u.created_at DESC
+    `);
     return rows;
   },
   async findAllSimple() {

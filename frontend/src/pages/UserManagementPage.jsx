@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { usersAPI, departmentsAPI } from '../api';
 // Thêm rolesAPI để call danh sách vai trò
 import { rolesAPI } from '../api'; 
@@ -8,11 +8,7 @@ const UserManagementPage = () => {
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [roles, setRoles] = useState([]);
-  // Chỉ dùng cho lần tải đầu tiên khi vào trang (che toàn bộ trang bằng "Loading...").
-  const [initialLoading, setInitialLoading] = useState(true);
-  // Loading riêng cho bảng danh sách khi tìm kiếm/lọc, KHÔNG được che mất ô tìm kiếm,
-  // nếu không ô input sẽ bị unmount và mất focus sau mỗi ký tự gõ vào.
-  const [usersLoading, setUsersLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editData, setEditData] = useState(null);
   const [formData, setFormData] = useState({
@@ -31,56 +27,26 @@ const UserManagementPage = () => {
     role: ''
   });
 
-  const searchDebounceRef = useRef(null);
-
-  // Danh mục phụ trợ (phòng ban, vai trò) chỉ cần tải MỘT LẦN khi vào trang,
-  // không phụ thuộc vào bộ lọc tìm kiếm nên không cần gọi lại mỗi lần gõ phím.
   useEffect(() => {
-    fetchMeta();
-  }, []);
-
-  // Danh sách người dùng được tải lại mỗi khi bộ lọc thay đổi, có debounce 400ms
-  // để tránh gọi API dồn dập theo từng ký tự gõ vào ô tìm kiếm.
-  useEffect(() => {
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    searchDebounceRef.current = setTimeout(() => {
-      fetchUsers();
-    }, 400);
-    return () => clearTimeout(searchDebounceRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchData();
   }, [filters]);
 
-  const fetchMeta = async () => {
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const [deptRes, rolesRes] = await Promise.all([
+      const [usersRes, deptRes, rolesRes] = await Promise.all([
+        usersAPI.getAll(filters),
         departmentsAPI.getAllSimple(), // Sử dụng getAllSimple cho dropdown
         rolesAPI.getAll() // getAll của rolesAPI đã trả về tất cả roles
       ]);
+      setUsers(usersRes.data);
       setDepartments(Array.isArray(deptRes.data) ? deptRes.data : deptRes.data?.data || []);
       setRoles(rolesRes.data?.data || rolesRes.data || []);
     } catch (error) {
-      console.error('Error fetching metadata:', error);
-    }
-  };
-
-  const fetchUsers = async () => {
-    setUsersLoading(true);
-    try {
-      const usersRes = await usersAPI.getAll(filters);
-      setUsers(usersRes.data);
-    } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('Error fetching data:', error);
     } finally {
-      setUsersLoading(false);
-      setInitialLoading(false);
+      setLoading(false);
     }
-  };
-
-  // Giữ tên fetchData cho các chỗ gọi lại sau khi thêm/sửa/xóa/import (bấm nút "Tìm kiếm",
-  // hoặc sau khi lưu form) - gọi ngay lập tức, không qua debounce.
-  const fetchData = () => {
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    fetchUsers();
   };
 
   const handleOpenModal = (user = null) => {
@@ -146,7 +112,7 @@ const UserManagementPage = () => {
     }
   };
 
-  if (initialLoading) {
+  if (loading) {
     return <div className="loading">Loading...</div>;
   }
 
@@ -163,16 +129,13 @@ const UserManagementPage = () => {
 
       <div className="card">
         <div className="toolbar">
-          <div className="search-box" style={{ position: 'relative' }}>
+          <div className="search-box">
             <input
               type="text"
               placeholder="Tìm theo tên đăng nhập, họ tên..."
               value={filters.search}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
             />
-            {usersLoading && (
-              <span style={{ marginLeft: '8px', fontSize: '0.85em', color: '#888' }}>Đang tìm...</span>
-            )}
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
             <select

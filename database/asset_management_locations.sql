@@ -2,7 +2,7 @@
 --
 -- Host: localhost    Database: asset_management
 -- ------------------------------------------------------
--- Server version	8.0.46
+-- Server version	8.0.45
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -43,7 +43,7 @@ CREATE TABLE `locations` (
 
 LOCK TABLES `locations` WRITE;
 /*!40000 ALTER TABLE `locations` DISABLE KEYS */;
-INSERT INTO `locations` VALUES (34,'Trụ sở chính','OFFICE','40 Võ Thị Sáu, phường Tân Định',NULL,'2026-03-05 01:27:35','2026-03-23 17:26:44'),(80,'Văn phòng trạm cân Phước Hiệp','GSKL_VPPH',NULL,NULL,'2026-03-09 01:17:02','2026-03-23 17:26:35'),(228,'Trạm cân Vietstar','GSKL_VST',NULL,NULL,'2026-03-23 17:30:23','2026-03-23 17:30:23'),(229,'Trạm cân Tâm Sinh Nghĩa','GSKL_TSN',NULL,NULL,'2026-03-23 17:31:33','2026-03-23 17:31:33'),(230,'Văn phòng Container Phước Hiệp','GSKLH_VPPH',NULL,NULL,'2026-03-23 17:33:14','2026-03-23 17:33:14'),(231,'Trạm cân Đa Phước','GSKL_ĐP',NULL,NULL,'2026-03-23 17:33:57','2026-03-23 17:33:57'),(232,'Container Đa Phước','GSKLH_ĐP',NULL,NULL,'2026-03-23 17:34:25','2026-03-23 17:34:25'),(233,'Công trường Đông Thạnh','GSKLH_ĐT',NULL,NULL,'2026-03-23 17:35:15','2026-03-23 17:35:15'),(234,'Công trường Gò Cát','GSKLH_GC',NULL,NULL,'2026-03-23 17:35:38','2026-03-23 17:35:38');
+INSERT INTO `locations` VALUES (34,'Trụ sở chính','OFFICE','40 Võ Thị Sáu, phường Tân Định',NULL,'2026-03-05 08:27:35','2026-03-24 00:26:44'),(80,'Văn phòng trạm cân Phước Hiệp','GSKL_VPPH',NULL,NULL,'2026-03-09 08:17:02','2026-03-24 00:26:35'),(228,'Trạm cân Vietstar','GSKL_VST',NULL,NULL,'2026-03-24 00:30:23','2026-03-24 00:30:23'),(229,'Trạm cân Tâm Sinh Nghĩa','GSKL_TSN',NULL,NULL,'2026-03-24 00:31:33','2026-03-24 00:31:33'),(230,'Văn phòng Container Phước Hiệp','GSKLH_VPPH',NULL,NULL,'2026-03-24 00:33:14','2026-03-24 00:33:14'),(231,'Trạm cân Đa Phước','GSKL_ĐP',NULL,NULL,'2026-03-24 00:33:57','2026-03-24 00:33:57'),(232,'Container Đa Phước','GSKLH_ĐP',NULL,NULL,'2026-03-24 00:34:25','2026-03-24 00:34:25'),(233,'Công trường Đông Thạnh','GSKLH_ĐT',NULL,NULL,'2026-03-24 00:35:15','2026-03-24 00:35:15'),(234,'Công trường Gò Cát','GSKLH_GC',NULL,NULL,'2026-03-24 00:35:38','2026-03-24 00:35:38');
 /*!40000 ALTER TABLE `locations` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -56,4 +56,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-07-30 13:46:05
+-- Dump completed on 2026-05-19 16:38:40
