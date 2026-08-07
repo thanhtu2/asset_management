@@ -303,8 +303,12 @@ const MainLayout = ({ children }) => {
                   {(() => {
                     const roleMap = {
                       'admin': 'Quản trị viên',
-                      'department-leader': 'Lãnh đạo phòng',
                       'director': 'Giám đốc',
+                      'vice-director': 'Phó Giám đốc',
+                      'department-leader': 'Trưởng phòng',
+                      'vice-department-leader': 'Phó Trưởng phòng',
+                      'department-office': 'Chánh Văn phòng',
+                      'vice-department-office': 'Phó Chánh Văn phòng',
                       'manager': 'Quản lý tài sản',
                       'purchase-requester': 'Người đề xuất mua sắm',
                       'user': 'Người dùng'
