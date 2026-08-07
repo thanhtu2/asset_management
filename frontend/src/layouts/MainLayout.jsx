@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import NotificationBell from '../components/NotificationBell';
@@ -52,6 +52,18 @@ const MainLayout = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [openDropdowns, setOpenDropdowns] = useState({});
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const toggleDropdown = (dropdownId) => {
     setOpenDropdowns(prev => ({ ...prev, [dropdownId]: !prev[dropdownId] }));
@@ -59,24 +71,19 @@ const MainLayout = ({ children }) => {
 
   const hasPermission = (item) => {
     if (user?.role === 'admin') return true;
-    // Sửa đổi: Cho phép kiểm tra một mảng các quyền
     if (Array.isArray(item.permissions)) {
       return item.permissions.some(p => user?.permissions?.includes(p));
     }
     if (item.permission) return user?.permissions?.includes(item.permission);
-    return true; // Không yêu cầu quyền (ví dụ: Dashboard)
+    return true;
   };
 
   const filterVisibleItems = (items) => {
     return items.map(item => {
-      // Nếu là mục cha (có children)
       if (item.children) {
-        // Lọc ra các mục con mà user có quyền xem
         const visibleChildren = item.children.filter(hasPermission);
-        // Chỉ trả về mục cha nếu nó có ít nhất một mục con có thể xem được
         return visibleChildren.length > 0 ? { ...item, children: visibleChildren } : null;
       }
-      // Nếu là mục đơn, chỉ cần kiểm tra quyền của chính nó
       return hasPermission(item) ? item : null;
     }).filter(Boolean);
   };
@@ -87,16 +94,15 @@ const MainLayout = ({ children }) => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+    setIsUserMenuOpen(false);
   };
 
   return (
     <div className="app-container">
-      {/* Overlay Mobile */}
       {isMobileMenuOpen && (
         <div className="sidebar-overlay" onClick={() => setIsMobileMenuOpen(false)} />
       )}
 
-      {/* ── Nút floating thu nhỏ/mở rộng sidebar (chỉ desktop) ── */}
       <button
         onClick={() => setCollapsed(p => !p)}
         title={collapsed ? 'Mở rộng sidebar' : 'Thu nhỏ sidebar'}
@@ -134,12 +140,11 @@ const MainLayout = ({ children }) => {
         {collapsed ? '›' : '‹'}
       </button>
 
-      {/* ── Sidebar ── */}
       <aside
         className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}
         style={{
           width: collapsed ? 0 : SIDEBAR_WIDTH,
-          position: 'fixed', // Ghim cố định sidebar
+          position: 'fixed',
           top: 0,
           left: 0,
           minWidth: collapsed ? 0 : SIDEBAR_WIDTH,
@@ -148,7 +153,6 @@ const MainLayout = ({ children }) => {
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          {/* Logo */}
           <div className="sidebar-header" style={{ flexShrink: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{
@@ -168,9 +172,7 @@ const MainLayout = ({ children }) => {
             </div>
           </div>
 
-          {/* Scrollable Menu Area */}
           <div className="sidebar-scroll-area" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-            {/* Section: Chính */}
             <div style={{ padding: '16px 16px 6px', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
               Chính
             </div>
@@ -215,7 +217,6 @@ const MainLayout = ({ children }) => {
               })}
             </ul>
 
-            {/* Section: Quản trị */}
             {visibleAdminItems.length > 0 && (
               <>
                 <div style={{ padding: '16px 16px 6px', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
@@ -263,7 +264,6 @@ const MainLayout = ({ children }) => {
               </>
             )}
             
-            {/* Section: Trợ giúp */}
             <div style={{ padding: '16px 16px 6px', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
               Trợ giúp
             </div>
@@ -277,68 +277,71 @@ const MainLayout = ({ children }) => {
             </ul>
           </div>
 
-          {/* User Info */}
-          <div className="user-info" style={{ flexShrink: 0 }}>
-            <div className="avatar">
-              {user?.fullName?.charAt(0).toUpperCase()}
-            </div>
-            <div className="details">
-              <div className="name" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Link
-                  to="/profile"
-                  style={{ color: 'inherit', textDecoration: 'none', whiteSpace: 'nowrap' }}
-                  title="Hồ sơ cá nhân"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {user?.fullName} ⚙️
-                </Link>
-              </div>
-              <div className="role" title={user?.role}>
-                {(() => {
-                  const roleMap = {
-                    'admin': 'Quản trị viên',
-                    'department-leader': 'Lãnh đạo phòng',
-                    'director': 'Giám đốc',
-                    'manager': 'Quản lý tài sản',
-                    'purchase-requester': 'Người đề xuất mua sắm',
-                    'user': 'Người dùng'
-                  };
-                  return roleMap[user?.role] || user?.role || '';
-                })()}
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              title="Đăng xuất"
-              style={{
-                background: 'rgba(255,255,255,0.08)',
-                border: 'none',
-                color: 'rgba(255,255,255,0.55)',
-                cursor: 'pointer',
-                width: 30, height: 30,
-                borderRadius: 8,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 14,
-                flexShrink: 0,
-                transition: 'all 0.2s',
-                marginLeft: 6,
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(239,68,68,0.25)';
-                e.currentTarget.style.color = '#fca5a5';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
+          {/* User Info with Dropdown */}
+          <div className="user-info-container" ref={userMenuRef} style={{ position: 'relative', flexShrink: 0, padding: '16px' }}>
+            <div 
+              className="user-info" 
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              style={{ 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                padding: '8px', 
+                borderRadius: '8px',
+                background: isUserMenuOpen ? 'rgba(255,255,255,0.1)' : 'transparent',
+                transition: 'background 0.2s'
               }}
             >
-              🚪
-            </button>
+              <div className="avatar" style={{ flexShrink: 0 }}>
+                {user?.fullName?.charAt(0).toUpperCase()}
+              </div>
+              <div className="details" style={{ marginLeft: '10px', overflow: 'hidden' }}>
+                <div className="name" style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user?.fullName}
+                </div>
+                <div className="role" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}>
+                  {(() => {
+                    const roleMap = {
+                      'admin': 'Quản trị viên',
+                      'department-leader': 'Lãnh đạo phòng',
+                      'director': 'Giám đốc',
+                      'manager': 'Quản lý tài sản',
+                      'purchase-requester': 'Người đề xuất mua sắm',
+                      'user': 'Người dùng'
+                    };
+                    return roleMap[user?.role] || user?.role || '';
+                  })()}
+                </div>
+              </div>
+              <IconChevronRight style={{ marginLeft: 'auto', transform: isUserMenuOpen ? 'rotate(-90deg)' : 'rotate(90deg)', transition: 'transform 0.2s' }} />
+            </div>
+
+            {/* Dropdown Menu */}
+            {isUserMenuOpen && (
+              <div style={{
+                position: 'absolute',
+                bottom: '100%',
+                left: '16px',
+                right: '16px',
+                background: 'white',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                marginBottom: '8px',
+                zIndex: 1000,
+                color: '#333'
+              }}>
+                <Link to="/profile" onClick={() => setIsUserMenuOpen(false)} style={{ display: 'block', padding: '10px 16px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #eee' }}>
+                  👤 Hồ sơ cá nhân
+                </Link>
+                <button onClick={handleLogout} style={{ width: '100%', border: 'none', background: 'none', padding: '10px 16px', textAlign: 'left', color: '#dc2626', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  🚪 Đăng xuất
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </aside>
 
-      {/* ── Main Content ── */}
       <main
         className="main-content"
         style={{
@@ -347,7 +350,6 @@ const MainLayout = ({ children }) => {
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, position: 'relative', zIndex: 999 }}>
-          {/* Hamburger Mobile */}
           <button
             className="mobile-menu-btn"
             onClick={() => setIsMobileMenuOpen(true)}
