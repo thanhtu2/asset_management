@@ -215,7 +215,7 @@ const UserGuidePage = () => {
         <main className="user-guide-main-content" ref={mainContentRef}>
           <section id="dang-nhap">
               <h1>Chào mừng đến với Hệ thống Quản lý Tài sản</h1>
-              <p>Tài liệu này sẽ hướng dẫn bạn qua các tính năng chính của hệ thống, giúp bạn quản lý, theo dõi và bảo trì tài sản của công ty một cách hiệu quả.</p>
+              <p>Tài liệu này sẽ hướng dẫn bạn qua các tính năng chính của hệ thống, giúp bạn quản lý, theo dõi và bảo trì tài sản của cơ quan một cách hiệu quả.</p>
               
               <h2>Đăng nhập</h2>
               <div className="card">
@@ -241,7 +241,7 @@ const UserGuidePage = () => {
 
           <section id="dashboard">
               <h1>1. Dashboard - Bảng điều khiển</h1>
-              <p>Đây là màn hình đầu tiên sau khi đăng nhập, cung cấp cái nhìn tổng quan về tình hình tài sản trong công ty.</p>
+              <p>Đây là màn hình đầu tiên sau khi đăng nhập, cung cấp cái nhìn tổng quan về tình hình tài sản trong cơ quan.</p>
               <div className="card">
                   <ul>
                       <li><strong>Các thẻ thống kê nhanh:</strong> Hiển thị các con số quan trọng như tổng số tài sản, tổng giá trị, số lượng tài sản theo từng trạng thái (Chờ cấp, Đang sử dụng, Cần sửa chữa, Hỏng, Đã thanh lý).</li>
@@ -301,12 +301,16 @@ const UserGuidePage = () => {
 
           <section id="quan-ly-xe">
               <h1>3. Quản lý Đăng ký xe</h1>
-              <p>Phân hệ này giúp quản lý việc đăng ký sử dụng xe và theo dõi lịch trình của các xe trong công ty.</p>
+              <p>Phân hệ này giúp quản lý việc đăng ký sử dụng xe và theo dõi lịch trình của các xe trong cơ quan.</p>
               <div className="card">
                   <ul>
-                      <li><strong>Chế độ xem:</strong> Bạn có thể chuyển đổi giữa chế độ xem <strong>"Danh sách"</strong> (hiển thị tất cả các yêu cầu) và <strong>"Lịch tuần"</strong> (hiển thị lịch trình trực quan theo từng ngày trong tuần).</li>
-                      <li><strong>Tạo yêu cầu:</strong> Nhấn nút <strong>"+ Thêm Đăng ký xe"</strong>, điền đầy đủ thông tin về điểm đi, điểm đến, thời gian, thành phần tham gia và chọn xe (nếu có).</li>
-                      <li><strong>Điều phối:</strong> Người có quyền điều phối sẽ thấy toàn bộ các yêu cầu và có thể gán xe, tài xế cho các chuyến đi chưa được phân công.</li>
+                      <li><strong>Chế độ xem:</strong> Người dùng có thể chuyển đổi giữa chế độ xem <strong>"Danh sách"</strong> (hiển thị tất cả các yêu cầu) và <strong>"Lịch tuần"</strong> (hiển thị lịch trình trực quan theo từng ngày trong tuần).</li>
+                      <li><strong>Tạo yêu cầu:</strong> Nhấn nút <strong>"+ Thêm Đăng ký xe"</strong>, điền đầy đủ thông tin về điểm đi, điểm đến, thời gian, phòng, thành phần tham gia, upload file đính kèm (nếu có) và chọn Lưu, phiếu sẽ cập nhật trạng thái <strong>Chờ duyệt</strong></li>
+                      <li><strong>Phê duyệt:</strong> Người có quyền duyệt sẽ thấy các yêu cầu đang chờ phê duyệt. Có thể xem chi tiết, thêm ý kiến, và nhấn <strong>"Duyệt"</strong> hoặc <strong>"Từ chối"</strong>.</li>
+                      <li><strong>Ghép xe:</strong> Khi người dùng thực hiện đăng ký, nếu có trùng ngày đi và điểm đến hệ thống sẽ gợi ý ghép chuyến ghép xe (nếu người dùng ghép chuyến, yêu cầu đảm bảo nhập đủ các thông tin sau: phòng, thành phần tham gia).</li>
+                      <li><strong>Điều phối:</strong> Người có quyền điều phối sẽ thấy toàn bộ các yêu cầu và có thể gán xe cho các chuyến đi chưa được phân công.</li>
+                      <li><strong>Thay đổi lịch trình:</strong> Trong trường hợp có sự thay đổi thông tin về thành phần tham gia, đổi điểm đến khi đã lên lịch, người dùng có thể <strong>Yêu cầu đổi</strong> và điền đầy đủ các thông tin vào form và bấm <strong>Lưu</strong> khi đó hệ thống sẽ tạo 1 yêu cầu thay đổi thông tin gửi đến người quản lý (ở đây chỉ người có quyền gán xe), Người quản lý có thể xem lại các thông tin thay đã thay đổi và <strong>Duyệt thay đổi </strong> hoặc <strong>Từ chối thay đổi</strong>. Nếu được duyệt hệ thống sẽ ghi nhận sự thay đổi và cập nhật lại vào lịch tuần</li>
+                      <li><strong>*Lưu ý:</strong> Người dùng cần nhập đầy đủ các thông tin phiếu yêu cầu, đối với mục "Thành phần tham gia cần nhập đầy đủ người tham gia, ngăn cách nhau bằng dấu "," (ví dụ: Nguyễn Văn A, Nguyễn Văn B).</li>
                   </ul>
               </div>
           </section>
@@ -389,7 +393,7 @@ const UserGuidePage = () => {
 
           <section id="phong-ban">
               <h1>11. Quản lý Phòng ban</h1>
-              <p>Quản lý cơ cấu tổ chức các phòng ban trong công ty.</p>
+              <p>Quản lý cơ cấu tổ chức các phòng ban trong cơ quan.</p>
           </section>
 
           <section id="nguoi-dung">
