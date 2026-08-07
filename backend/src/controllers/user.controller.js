@@ -6,13 +6,16 @@ import { createNotification } from '../notification.service.js';
 
 export const getAll = async (req, res) => {
   try {
-    const { search, role } = req.query;
+    const { search, role, department_id } = req.query;
     const filters = {};
     if (search) {
       filters.search = search;
     }
     if (role) {
       filters.role = role;
+    }
+    if (department_id) {
+      filters.department_id = department_id;
     }
     const users = await User.findAll(filters);
     res.json(users);

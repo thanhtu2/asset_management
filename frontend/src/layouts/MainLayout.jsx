@@ -293,7 +293,19 @@ const MainLayout = ({ children }) => {
                   {user?.fullName} ⚙️
                 </Link>
               </div>
-              <div className="role">{user?.role_name || user?.role}</div>
+              <div className="role" title={user?.role}>
+                {(() => {
+                  const roleMap = {
+                    'admin': 'Quản trị viên',
+                    'department-leader': 'Lãnh đạo phòng',
+                    'director': 'Giám đốc',
+                    'manager': 'Quản lý tài sản',
+                    'purchase-requester': 'Người đề xuất mua sắm',
+                    'user': 'Người dùng'
+                  };
+                  return roleMap[user?.role] || user?.role || '';
+                })()}
+              </div>
             </div>
             <button
               onClick={handleLogout}
