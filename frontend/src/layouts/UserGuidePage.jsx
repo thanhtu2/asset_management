@@ -142,6 +142,11 @@ const UserGuidePage = () => {
             padding-bottom: 10px;
             border-bottom: 1px solid #e2e8f0;
         }
+        .user-guide-main-content h3 {
+            font-size: 18px;
+            color: #475569;
+            margin-top: 25px;
+        }
         .user-guide-main-content p, .user-guide-main-content li {
             font-size: 16px;
             color: #475569;
@@ -203,10 +208,10 @@ const UserGuidePage = () => {
               <h1>Tính năng mới</h1>
               <div className="card">
                   <h2>Menu Cá nhân (Dropdown)</h2>
-                  <p>Tại góc dưới bên trái màn hình, nhấn vào tên người dùng để mở menu:</p>
+                  <p>Để quản lý thông tin, nhấn vào tên người dùng ở góc dưới bên trái Sidebar:</p>
                   <ul>
-                      <li><strong>Xem hồ sơ:</strong> Chỉnh sửa họ tên, đổi mật khẩu.</li>
-                      <li><strong>Đăng xuất:</strong> Đảm bảo thoát tài khoản an toàn khi dùng chung máy.</li>
+                      <li><strong>Xem hồ sơ:</strong> Chỉnh sửa họ tên cá nhân (hệ thống sẽ tự cập nhật thông tin mới nhất).</li>
+                      <li><strong>Đăng xuất:</strong> Thoát tài khoản an toàn sau khi kết thúc phiên làm việc.</li>
                   </ul>
               </div>
           </section>
@@ -214,92 +219,128 @@ const UserGuidePage = () => {
           <section id="dang-nhap">
               <h1>Đăng nhập & Giao diện</h1>
               <div className="card">
-                  <h2>Đăng nhập</h2>
-                  <p>Sử dụng tài khoản cơ quan để đăng nhập. Nếu quên mật khẩu, vui lòng liên hệ bộ phận Quản trị viên hệ thống.</p>
-                  <h2>Giao diện Sidebar</h2>
-                  <p>Sidebar bên trái chứa danh mục chức năng. Bạn có thể sử dụng nút mũi tên ở cạnh phải sidebar để <strong>Thu nhỏ/Mở rộng</strong> không gian làm việc.</p>
+                  <h2>1. Đăng nhập</h2>
+                  <p>Nhập <strong>Tên đăng nhập</strong> và <strong>Mật khẩu</strong> do Quản trị viên cung cấp. Nếu hệ thống thông báo "Sai thông tin", vui lòng kiểm tra lại phím CapsLock và thử lại.</p>
+                  
+                  <h2>2. Điều hướng</h2>
+                  <p>Sử dụng các menu bên trái để di chuyển. Nếu Sidebar quá rộng, nhấn nút <strong>mũi tên {"<"}</strong> ở cạnh phải sidebar để thu gọn, giúp có nhiều không gian làm việc hơn.</p>
               </div>
           </section>
 
           <section id="quan-ly-tai-san">
               <h1>1. Quản lý Tài sản</h1>
-              <p>Đây là khu vực thao tác chính. Quy trình làm việc hiệu quả:</p>
-              
               <div className="card">
-                  <h3>Thêm tài sản mới</h3>
+                  <h3>Thao tác thêm tài sản</h3>
                   <ol>
-                      <li>Nhấn <strong>"+ Thêm tài sản"</strong>.</li>
-                      <li>Điền thông tin: Tên, loại tài sản, phòng ban sử dụng.</li>
-                      <li>Hệ thống tự tạo mã tài sản duy nhất. Nhấn <strong>Lưu</strong>.</li>
+                      <li>Nhấn nút <strong>"+ Thêm tài sản"</strong> ở góc trên bên phải bảng.</li>
+                      <li>Điền các thông tin: Tên, loại, tình trạng, phòng ban. Các trường có <code>*</code> là bắt buộc.</li>
+                      <li>Sau khi nhấn Lưu, mã tài sản sẽ tự động tạo.</li>
                   </ol>
                   
-                  <h3>In tem QR Code (Khuyên dùng)</h3>
-                  <p>Sau khi tạo tài sản, hệ thống cần tem để quét. Để in tem:</p>
+                  <h3>Cách in tem QR Code</h3>
+                  <p><strong>Tem QR là bắt buộc để kiểm kê.</strong></p>
                   <ul>
-                      <li><strong>Đơn lẻ:</strong> Nhấn nút "QR" trên dòng tài sản.</li>
-                      <li><strong>Hàng loạt:</strong> Tích chọn nhiều dòng → Nhấn <strong>"In QR"</strong> trên thanh công cụ hiện ra.</li>
+                      <li>Để in một tem: Nhấn nút <strong>"QR"</strong> trên hàng của tài sản đó.</li>
+                      <li>Để in nhiều tem: Tích vào ô vuông đầu mỗi hàng (bên trái) → nhấn nút <strong>"In QR"</strong> trên thanh công cụ vừa xuất hiện.</li>
                   </ul>
+                  
+                  <h3>Troubleshooting (Xử lý lỗi)</h3>
+                  <p><strong>Lỗi không tìm thấy tài sản trong danh sách:</strong> Kiểm tra xem bộ lọc (Phòng ban/Trạng thái) có đang được chọn hay không. Hãy nhấn nút <strong>"Đặt lại bộ lọc"</strong> để xem toàn bộ tài sản.</p>
               </div>
               
               <div className="note">
-                  <p><strong>Mẹo:</strong> Sử dụng ô tìm kiếm và các bộ lọc (Phòng ban/Trạng thái) để quản lý danh sách tài sản hàng nghìn dòng một cách nhanh chóng.</p>
+                  <p><strong>Mẹo:</strong> Sử dụng ô tìm kiếm để nhập nhanh Mã tài sản (Barcode) khi bạn có máy quét cầm tay.</p>
               </div>
           </section>
 
           <section id="kiem-ke">
               <h1>2. Kiểm kê</h1>
-              <p>Đảm bảo dữ liệu trên hệ thống khớp thực tế.</p>
               <div className="card">
                   <ol>
-                      <li><strong>Tạo phiên:</strong> Nhấn <strong>"+ Tạo phiên kiểm kê"</strong>, chọn phạm vi kiểm kê (theo phòng ban hoặc toàn bộ).</li>
-                      <li><strong>Quét thực tế:</strong> Vào chi tiết phiên, nhấn <strong>"Bắt đầu quét"</strong> (sử dụng camera điện thoại/máy quét).</li>
-                      <li><strong>Ghi nhận:</strong> Mỗi lần quét thành công, hệ thống tự đánh dấu "Tìm thấy". Những tài sản không quét được trong danh sách cuối phiên sẽ được đánh dấu là "Thiếu".</li>
-                      <li><strong>Hoàn thành:</strong> Sau khi kiểm tra xong, nhấn <strong>"Hoàn thành phiên"</strong> để hệ thống tạo báo cáo chênh lệch.</li>
+                      <li>Nhấn <strong>"+ Tạo phiên kiểm kê"</strong>, chọn phạm vi (VD: Kiểm kê toàn bộ hoặc kiểm kê theo phòng).</li>
+                      <li>Vào chi tiết phiên, nhấn <strong>"Bắt đầu quét"</strong>.</li>
+                      <li>Dùng điện thoại quét tem QR trên tài sản.</li>
                   </ol>
+                  <h3>Xử lý tình huống</h3>
+                  <ul>
+                      <li><strong>Quét không được/Tem bị hỏng:</strong> Chọn tài sản đó trong danh sách và nhấn nút <strong>✓</strong> (Tìm thấy) hoặc <strong>!</strong> (Hỏng) thủ công.</li>
+                      <li><strong>Quên nhấn hoàn thành:</strong> Phiên kiểm kê sẽ vẫn để trạng thái "Đang kiểm kê". Bạn phải nhấn <strong>"Hoàn thành phiên"</strong> để hệ thống chốt dữ liệu.</li>
+                  </ul>
               </div>
           </section>
 
           <section id="bao-tri">
               <h1>3. Bảo trì</h1>
-              <p>Quản lý vòng đời sửa chữa.</p>
               <div className="card">
-                  <ul>
-                      <li><strong>Tạo phiếu thủ công:</strong> Dành cho bảo trì định kỳ.</li>
-                      <li><strong>Phiếu tự động:</strong> Nếu tài sản chuyển trạng thái sang "Cần sửa chữa" hoặc "Hỏng", hệ thống tự động tạo 1 phiếu bảo trì liên kết.</li>
-                      <li><strong>Kết thúc:</strong> Khi sửa xong, nhấn <strong>"Hoàn thành"</strong>, hệ thống sẽ tự cập nhật tài sản về trạng thái "Đang sử dụng".</li>
-                  </ul>
+                  <p>Quy trình: <code>Tạo/Tự động sinh phiếu</code> → <code>Sửa chữa</code> → <code>Hoàn thành</code>.</p>
+                  <p>Khi nhấn <strong>"Hoàn thành"</strong> trên phiếu bảo trì, hệ thống sẽ <strong>tự động</strong> chuyển trạng thái tài sản từ "Cần sửa chữa" về "Đang sử dụng". Bạn không cần vào module tài sản để sửa thủ công.</p>
               </div>
           </section>
 
           <section id="quan-ly-xe">
               <h1>4. Quản lý Đăng ký xe</h1>
               <div className="card">
-                  <h3>Quy trình đăng ký:</h3>
+                  <p>Hệ thống hỗ trợ quản lý lịch trình xe, từ khâu đăng ký, phê duyệt đến điều phối xe.</p>
+                  
+                  <h3>Bước 1: Đăng ký chuyến xe</h3>
                   <ol>
-                      <li>Điền đầy đủ: Điểm đi, điểm đến, thời gian, phòng ban.</li>
-                      <li>Mục <strong>"Thành phần tham gia"</strong>: Nhập danh sách tên người tham gia, ngăn cách bằng dấu phẩy (VD: Nguyễn Văn A, Lê Thị B).</li>
-                      <li>Nhấn Lưu → Phiếu chờ duyệt.</li>
+                      <li>Nhấn <strong>"+ Thêm Đăng ký xe"</strong>.</li>
+                      <li>Điền Điểm đi, điểm đến, thời gian (Ngày/Giờ).</li>
+                      <li><strong>Thành phần tham gia (Rất quan trọng):</strong> Phải nhập danh sách tên người tham gia, ngăn cách bằng dấu phẩy.
+                          <br/><code>Ví dụ: Nguyễn Văn A, Lê Thị B, Trần Văn C</code>.
+                          <br/><em>Hệ thống sẽ dựa vào danh sách này để tính toán số ghế cần thiết.</em>
+                      </li>
+                      <li>Nhấn <strong>Lưu</strong>. Phiếu sẽ ở trạng thái <code>Chờ duyệt</code>.</li>
                   </ol>
-                  <h3>Lưu ý về thay đổi lịch:</h3>
-                  <p>Nếu đã được duyệt mà cần đổi thông tin: Nhấn <strong>"Yêu cầu đổi"</strong>, điền thông tin mới. Hệ thống gửi yêu cầu này đến Quản lý xe. Khi quản lý duyệt sự thay đổi, lịch tuần sẽ tự cập nhật.</p>
+
+                  <h3>Bước 2: Phê duyệt & Điều phối (Dành cho Quản lý/Lãnh đạo)</h3>
+                  <ul>
+                      <li><strong>Lãnh đạo phòng:</strong> Xem danh sách, kiểm tra thông tin và nhấn <strong>"Duyệt"</strong> để chuyển phiếu đến bộ phận Quản lý xe.</li>
+                      <li><strong>Quản lý xe/Điều phối:</strong> Nhận phiếu đã được duyệt, kiểm tra xe trống và nhấn <strong>"Gán xe"</strong> (chọn xe và tài xế).</li>
+                  </ul>
+
+                  <h3>Bước 3: Yêu cầu thay đổi (Nếu có thay đổi)</h3>
+                  <p>Khi chuyến đi đã được duyệt mà cần thay đổi thông tin (đổi giờ, đổi người tham gia):</p>
+                  <ol>
+                      <li>Tìm và chọn chuyến xe đã duyệt đó.</li>
+                      <li>Nhấn nút <strong>"Yêu cầu đổi"</strong>.</li>
+                      <li>Nhập thông tin <strong>mới</strong> vào form.</li>
+                      <li>Nhấn <strong>Lưu</strong>. Phiếu sẽ chuyển trạng thái <code>Chờ duyệt thay đổi</code>.</li>
+                  </ol>
+                  <p><em>Quản lý xe sẽ nhận được thông báo, xem lại thông tin mới và nhấn <strong>"Duyệt thay đổi"</strong> để cập nhật vào lịch tuần.</em></p>
+              </div>
+
+              <h3>Các tình huống thường gặp (Troubleshooting)</h3>
+              <div className="note">
+                  <ul>
+                      <li><strong>Lỗi "Xe không khả dụng":</strong> Do đã có chuyến khác đăng ký vào khung giờ đó. Hãy chọn thời gian khác hoặc liên hệ Quản lý xe để được hỗ trợ.</li>
+                      <li><strong>Tính năng "Ghép xe":</strong> Hệ thống tự động gợi ý ghép chuyến nếu có các yêu cầu cùng ngày, cùng điểm đến. Khi đó hãy chọn chuyến cần ghép để tối ưu hóa việc sử dụng xe.</li>
+                      <li><strong>Không thấy nút "Yêu cầu đổi":</strong> Chỉ xuất hiện khi phiếu đã được duyệt. Nếu phiếu còn ở trạng thái chờ, bạn có thể vào trực tiếp phiếu để chỉnh sửa thông tin.</li>
+                  </ul>
               </div>
           </section>
 
           <section id="de-xuat-mua-sam">
               <h1>5. Đề xuất Mua sắm</h1>
               <div className="card">
-                  <p>Luồng: <code>Soạn phiếu</code> → <code>Trưởng phòng duyệt</code> → <code>Giám đốc duyệt</code> → <code>Hoàn thành</code>.</p>
-                  <p><strong>Mẹo:</strong> Hãy luôn đính kèm file báo giá (PDF/Ảnh) trong phiếu đề xuất để quá trình phê duyệt diễn ra nhanh hơn mà không cần trao đổi thêm.</p>
+                  <p>Khi gửi đề xuất, nếu có file báo giá (PDF, ảnh), hãy đính kèm ngay vào phiếu.</p>
+                  <p><strong>Theo dõi trạng thái:</strong></p>
+                  <ul>
+                      <li><code>Chờ duyệt</code>: Đang đợi Trưởng phòng/Giám đốc xem.</li>
+                      <li><code>Đã duyệt</code>: Đã được thông qua.</li>
+                      <li><code>Từ chối</code>: Nhấn vào phiếu để đọc lý do tại sao bị từ chối (trong phần comment).</li>
+                  </ul>
               </div>
           </section>
 
           <section id="nguoi-dung">
               <h1>Quản trị: Người dùng & Phân quyền</h1>
               <div className="card">
-                  <h3>Quản lý người dùng</h3>
-                  <p>Quản trị viên có thể: Khóa tài khoản (khi nhân sự nghỉ), Đặt lại mật khẩu (khi người dùng quên).</p>
-                  <h3>Phân quyền (RBAC)</h3>
-                  <p><strong>Cảnh báo:</strong> Việc thay đổi quyền hạn của một Role có tác động ngay lập tức. Người dùng thuộc Role đó cần <strong>Đăng xuất và Đăng nhập lại</strong> để cập nhật quyền mới.</p>
+                  <p><strong>Quy tắc quan trọng cho Quản trị viên:</strong></p>
+                  <ul>
+                      <li>Khi thêm mới người dùng, hãy nhắc họ <strong>Đăng nhập lần đầu</strong> bằng mật khẩu mặc định (nếu có).</li>
+                      <li>Khi thay đổi quyền hạn của một Role: Người dùng thuộc Role đó phải <strong>Đăng xuất</strong> thì quyền mới cập nhật vào phiên làm việc tiếp theo.</li>
+                  </ul>
               </div>
           </section>
         </main>
