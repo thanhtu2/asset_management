@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usersAPI, departmentsAPI } from '../api';
 // Thêm rolesAPI để call danh sách vai trò
 import { rolesAPI } from '../api'; 
@@ -22,16 +22,31 @@ const UserManagementPage = () => {
   const [deleteModal, setDeleteModal] = useState({ show: false, id: null });
   const [showPassword, setShowPassword] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  // searchInput: giá trị người dùng đang gõ (cập nhật ngay lập tức, để ô input không bị giật/trễ)
+  // filters.search: giá trị THỰC SỰ dùng để gọi API, chỉ cập nhật sau khi người dùng ngừng gõ 400ms (debounce)
+  const [searchInput, setSearchInput] = useState('');
   const [filters, setFilters] = useState({
     search: '',
     role: ''
   });
+  // Đánh số thứ tự request để loại bỏ response của các lần gọi API cũ trả về muộn (race condition)
+  const requestIdRef = useRef(0);
+
+  // Debounce: chỉ áp filters.search sau khi người dùng ngừng gõ 400ms,
+  // tránh gọi API dồn dập theo từng ký tự.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters(prev => (prev.search === searchInput ? prev : { ...prev, search: searchInput }));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
     fetchData();
   }, [filters]);
 
   const fetchData = async () => {
+    const requestId = ++requestIdRef.current; // đánh dấu đây là request mới nhất
     setLoading(true);
     try {
       const [usersRes, deptRes, rolesRes] = await Promise.all([
@@ -39,13 +54,16 @@ const UserManagementPage = () => {
         departmentsAPI.getAllSimple(), // Sử dụng getAllSimple cho dropdown
         rolesAPI.getAll() // getAll của rolesAPI đã trả về tất cả roles
       ]);
+      // Nếu trong lúc chờ mà đã có request mới hơn được gọi (người dùng gõ tiếp) -> bỏ qua kết quả cũ này,
+      // tránh trường hợp response về muộn đè lên kết quả của lần tìm kiếm mới hơn.
+      if (requestId !== requestIdRef.current) return;
       setUsers(usersRes.data);
       setDepartments(Array.isArray(deptRes.data) ? deptRes.data : deptRes.data?.data || []);
       setRoles(rolesRes.data?.data || rolesRes.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   };
 
@@ -133,8 +151,8 @@ const UserManagementPage = () => {
             <input
               type="text"
               placeholder="Tìm theo tên đăng nhập, họ tên..."
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
             />
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -147,7 +165,7 @@ const UserManagementPage = () => {
                 <option key={r.code} value={r.code}>{r.name}</option>
               ))}
             </select>
-            <button onClick={() => fetchData()} className="btn btn-primary">
+            <button onClick={() => setFilters(prev => ({ ...prev, search: searchInput }))} className="btn btn-primary">
               Tìm kiếm
             </button>
           </div>

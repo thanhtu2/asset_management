@@ -2,14 +2,32 @@ import pool from '../config/database.js';
 import bcrypt from 'bcryptjs';
 
 const User = {
-  // Get all users
-  async findAll() {
-    const [rows] = await pool.query(`
+  // Get all users — CÓ áp dụng bộ lọc search (theo username/họ tên) và role
+  async findAll(filters = {}) {
+    let query = `
       SELECT u.*, d.name as department_name 
       FROM users u 
       LEFT JOIN departments d ON u.department_id = d.id
-      ORDER BY u.created_at DESC
-    `);
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (filters.search) {
+      query += ` AND (u.username LIKE ? OR u.fullName LIKE ?)`;
+      params.push(`%${filters.search}%`, `%${filters.search}%`);
+    }
+    if (filters.role) {
+      query += ` AND u.role = ?`;
+      params.push(filters.role);
+    }
+    if (filters.department_id) {
+      query += ` AND u.department_id = ?`;
+      params.push(filters.department_id);
+    }
+
+    query += ` ORDER BY u.created_at DESC`;
+
+    const [rows] = await pool.query(query, params);
     return rows;
   },
   async findAllSimple() {

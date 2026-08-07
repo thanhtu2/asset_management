@@ -2,9 +2,18 @@ import { useState, useEffect } from 'react';
 import { authAPI } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 
+const ROLE_MAP = {
+  'admin': 'Quản trị viên',
+  'department-leader': 'Lãnh đạo phòng',
+  'director': 'Giám đốc',
+  'manager': 'Quản lý tài sản',
+  'purchase-requester': 'Người đề xuất mua sắm',
+  'user': 'Người dùng'
+};
+
 const ProfilePage = () => {
   const { user } = useAuth();
-  const [profileData, setProfileData] = useState({ fullName: '' });
+  const [profileData, setProfileData] = useState({ fullName: '', department: '' });
   const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   
   const [profileMessage, setProfileMessage] = useState({ type: '', text: '' });
@@ -13,7 +22,7 @@ const ProfilePage = () => {
 
   useEffect(() => {
     if (user) {
-      setProfileData({ fullName: user.fullName || '' });
+      setProfileData({ fullName: user.fullName || '', department: user.department_name || 'Chưa phân phòng' });
     }
   }, [user]);
 
@@ -23,7 +32,7 @@ const ProfilePage = () => {
     setProfileMessage({ type: '', text: '' });
     try {
       await authAPI.updateProfile(profileData);
-      setProfileMessage({ type: 'success', text: 'Cập nhật tên thành công! Vui lòng đăng nhập lại để thay đổi có hiệu lực toàn hệ thống.' });
+      setProfileMessage({ type: 'success', text: 'Cập nhật thông tin thành công! Vui lòng đăng nhập lại để thay đổi có hiệu lực toàn hệ thống.' });
     } catch (error) {
       setProfileMessage({ type: 'error', text: error.response?.data?.message || 'Lỗi khi cập nhật thông tin' });
     } finally {
@@ -75,11 +84,15 @@ const ProfilePage = () => {
             </div>
             <div className="form-group">
               <label>Vai trò</label>
-              <input type="text" value={user?.role_name || user?.role || ''} disabled style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }} />
+              <input type="text" value={ROLE_MAP[user?.role] || user?.role || ''} disabled style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }} />
             </div>
             <div className="form-group">
               <label>Họ và tên</label>
               <input type="text" value={profileData.fullName} onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })} required />
+            </div>
+            <div className="form-group">
+              <label>Phòng</label>
+              <input type="text" value={profileData.department} disabled style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }} />
             </div>
             <button type="submit" className="btn btn-primary" disabled={loading}>Lưu thông tin</button>
           </form>

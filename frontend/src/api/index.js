@@ -237,7 +237,19 @@ export const vehicleRegistrationsAPI = {
   create: (data) => apiClient.post('/vehicle-registrations', data),
   update: (id, data) => apiClient.put(`/vehicle-registrations/${id}`, data),
   delete: (id) => apiClient.delete(`/vehicle-registrations/${id}`),
+  approve: (id) => apiClient.put(`/vehicle-registrations/${id}/approve`),
+  reject: (id, reason) => apiClient.put(`/vehicle-registrations/${id}/reject`, { reason }),
+  assign: (id, vehicle_id) => apiClient.put(`/vehicle-registrations/${id}/assign`, { vehicle_id }),
+  getChangeDetails: (id, changeId) => apiClient.get(`/vehicle-registrations/${id}/change/${changeId}`),
+  requestChange: (id, data) => apiClient.post(`/vehicle-registrations/${id}/request-change`, data),
+  approveChange: (id, changeId) => apiClient.put(`/vehicle-registrations/${id}/approve-change/${changeId}`),
+  rejectChange: (id, changeId) => apiClient.put(`/vehicle-registrations/${id}/reject-change/${changeId}`),
   getVehicles: () => apiClient.get('/vehicles'),
+  merge: (targetRegistrationId, newRegistrationId) => apiClient.post('/vehicle-registrations/merge', { targetRegistrationId, newRegistrationId }),
+  findSimilar: (date, destination, excludeId) => apiClient.get('/vehicle-registrations/find-similar', {
+    params: { registration_date: date, destination, exclude_id: excludeId || undefined }
+  }),
+  addDepartmentToTrip: (registrationId, departmentId) => apiClient.post(`/vehicle-registrations/add-department/${registrationId}`, { department_id: departmentId }),
   exportRegistrations: async (params) => {
     const response = await apiClient.get('/vehicle-registrations/export', { params, responseType: 'blob' });
     const url = window.URL.createObjectURL(new Blob([response.data]));
