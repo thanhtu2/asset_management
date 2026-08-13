@@ -78,12 +78,41 @@ export const assignVehicle = async (req, res) => {
     const { vehicle_id } = req.body;
     if (!vehicle_id) return res.status(400).json({ message: 'Vui lòng chọn xe để gán.' });
 
-    const { affected, reason } = await VehicleRegistration.assignVehicle(req.params.id, vehicle_id, req.user.id);
+    const { affected, reason, conflict } = await VehicleRegistration.assignVehicle(req.params.id, vehicle_id, req.user.id);
     if (reason === 'NOT_FOUND') return res.status(404).json({ message: 'Không tìm thấy đăng ký xe.' });
+    if (reason === 'VEHICLE_CONFLICT') {
+      return res.status(409).json({
+        message: `Xe này đã được gán cho phiếu ${conflict.registration_number} cùng ngày (giờ ${conflict.departure_time || '?'}, điểm đến: ${conflict.destination || '?'}). Vui lòng chọn xe khác hoặc đổi lịch.`
+      });
+    }
     if (reason === 'INVALID_STATUS' || affected === 0) {
       return res.status(400).json({ message: 'Chỉ có thể gán xe cho phiếu đã được duyệt.' });
     }
     res.json({ message: 'Đã gán xe và lên lịch thành công.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+// Hủy phiếu đăng ký xe — áp dụng được cả khi xe đã được gán/lên lịch (status = 'scheduled'),
+// khác với reject (chỉ dùng cho phiếu đang 'pending'). Chỉ chủ phiếu hoặc điều phối viên mới được hủy.
+export const cancelRegistration = async (req, res) => {
+  try {
+    const registration = await VehicleRegistration.findById(req.params.id);
+    if (!registration) return res.status(404).json({ message: 'Không tìm thấy đăng ký xe.' });
+
+    const isOwner = registration.requester_id === req.user.id;
+    const canCoordinate = req.user.role === 'admin' || (req.user.permissions && req.user.permissions.includes('COORDINATE_VEHICLE'));
+    if (!isOwner && !canCoordinate) {
+      return res.status(403).json({ message: 'Bạn không có quyền hủy phiếu đăng ký này.' });
+    }
+
+    const { reason } = req.body;
+    const { affected, reason: failReason } = await VehicleRegistration.cancel(req.params.id, req.user.id, reason);
+    if (failReason === 'NOT_FOUND') return res.status(404).json({ message: 'Không tìm thấy đăng ký xe.' });
+    if (failReason === 'INVALID_STATUS' || affected === 0) {
+      return res.status(400).json({ message: 'Không thể hủy phiếu đã bị từ chối, đã hủy hoặc đã hoàn thành.' });
+    }
+    res.json({ message: 'Đã hủy chuyến đi thành công.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
