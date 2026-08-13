@@ -212,6 +212,7 @@ const UserGuidePage = () => {
                   <ul>
                       <li><strong>Xem hồ sơ:</strong> Chỉnh sửa họ tên cá nhân (hệ thống sẽ tự cập nhật thông tin mới nhất).</li>
                       <li><strong>Đăng xuất:</strong> Thoát tài khoản an toàn sau khi kết thúc phiên làm việc.</li>
+                      <li><strong>Hủy chuyến đi:</strong>Người dùng có thể chủ động hủy chuyến đi khi đã lên lịch (khi đã hủy chuyến, phiếu đăng ký sẽ cập nhật trái đã hủy và sẽ không xuất hiện trong lịch tuần)</li>
                   </ul>
               </div>
           </section>
@@ -307,6 +308,8 @@ const UserGuidePage = () => {
                       <li>Nhập thông tin <strong>mới</strong> vào form.</li>
                       <li>Nhấn <strong>Lưu</strong>. Phiếu sẽ chuyển trạng thái <code>Chờ duyệt thay đổi</code>.</li>
                   </ol>
+                  <p><strong>Hủy chuyến đi:</strong> Người dùng có thể chủ động hủy chuyến đi khi đã lên lịch bằng cách bấm nút <strong>Hủy chuyến</strong>, nhập lý do và bấm <strong>Xác nhận hủy.</strong>
+</p>
                   <p><em>Quản lý xe sẽ nhận được thông báo, xem lại thông tin mới và nhấn <strong>"Duyệt thay đổi"</strong> để cập nhật vào lịch tuần.</em></p>
               </div>
 

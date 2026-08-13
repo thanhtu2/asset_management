@@ -261,12 +261,25 @@ class VehicleRegistration {
     return { affected: result.affectedRows };
   }
 
-  // Gán xe — CHỈ cho phép khi phiếu đã 'approved' (hoặc đang 'scheduled' để đổi xe khác)
-  static async assignVehicle(id, vehicleId, userId) {
+static async assignVehicle(id, vehicleId, userId) {
     const oldData = await this.findById(id);
     if (!oldData) return { affected: 0, reason: 'NOT_FOUND' };
     if (!['approved', 'scheduled'].includes(oldData.status)) {
       return { affected: 0, reason: 'INVALID_STATUS' };
+    }
+
+    // Kiểm tra trùng lịch
+    // trong cùng ngày khởi hành hay chưa. Trước đây không có bước này nên xảy ra tình trạng
+    // 1 xe bị gán cho 2 chuyến khác nhau cùng ngày ("gán trùng xe").
+    const [conflicts] = await pool.query(
+      `SELECT id, registration_number, departure_time, destination
+       FROM vehicle_registrations
+       WHERE vehicle_id = ? AND status = 'scheduled' AND registration_date = ? AND id != ?
+       LIMIT 1`,
+      [vehicleId, oldData.registration_date, id]
+    );
+    if (conflicts.length > 0) {
+      return { affected: 0, reason: 'VEHICLE_CONFLICT', conflict: conflicts[0] };
     }
 
     const [result] = await pool.query(
@@ -278,6 +291,32 @@ class VehicleRegistration {
         { vehicle_id: oldData.vehicle_id, status: oldData.status },
         { vehicle_id: vehicleId, status: 'scheduled' },
         `Gán xe cho phiếu đăng ký ${oldData.registration_number}`);
+    }
+    return { affected: result.affectedRows };
+  }
+  // Hủy chuyến — cho phép khi phiếu chưa hoàn thành và chưa bị từ chối/hủy trước đó.
+  // Áp dụng được cả khi xe ĐÃ được gán/lên lịch (khác với reject chỉ áp dụng cho 'pending').
+  static async cancel(id, userId, reason) {
+    const oldData = await this.findById(id);
+    if (!oldData) return { affected: 0, reason: 'NOT_FOUND' };
+    if (['rejected', 'cancelled', 'completed'].includes(oldData.status)) {
+      return { affected: 0, reason: 'INVALID_STATUS' };
+    }
+
+    // Schema chưa có cột lưu lý do riêng -> ghi kèm vào notes để không mất thông tin.
+    const newNotes = reason
+      ? `${oldData.notes ? oldData.notes + '\n' : ''}[Lý do hủy]: ${reason}`
+      : oldData.notes;
+
+    const [result] = await pool.query(
+      `UPDATE vehicle_registrations SET status = 'cancelled', notes = ? WHERE id = ? AND status NOT IN ('rejected', 'cancelled', 'completed')`,
+      [newNotes, id]
+    );
+    if (result.affectedRows > 0) {
+      await AuditLog.log(userId, 'CANCEL', 'vehicle_registrations', id,
+        { status: oldData.status, vehicle_id: oldData.vehicle_id },
+        { status: 'cancelled', reason },
+        `Hủy phiếu đăng ký xe ${oldData.registration_number}`);
     }
     return { affected: result.affectedRows };
   }

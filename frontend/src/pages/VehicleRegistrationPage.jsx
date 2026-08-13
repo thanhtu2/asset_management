@@ -94,7 +94,7 @@ const VehicleRegistrationPage = () => {
   // Modal gán xe (chỉ điều phối viên, chỉ khi phiếu đã được duyệt)
   const [assignModal, setAssignModal] = useState({ show: false, registration: null, vehicleId: '' });
 
-  const hasActions = canEditRegistration || canDeleteRegistration || canApprove || canCoordinate;
+  const hasActions = canEditRegistration || canDeleteRegistration || canApprove || canCoordinate || canCreateRegistration;
 
   useEffect(() => {
     if (!canViewRegistrations && !canViewWeekly) {
@@ -411,6 +411,20 @@ const VehicleRegistrationPage = () => {
     }
   };
 
+  // Hủy chuyến — dùng cho cả phiếu đã lên lịch (đã gán xe), khác với "Từ chối" chỉ áp dụng khi đang chờ duyệt
+  const handleCancel = async (id) => {
+    const reason = window.prompt('Nhập lý do hủy chuyến (không bắt buộc):', '');
+    if (reason === null) return; // người dùng bấm Hủy trên hộp thoại
+    if (!window.confirm('Xác nhận hủy chuyến đi này? Hành động này không thể hoàn tác.')) return;
+    try {
+      await vehicleRegistrationsAPI.cancel(id, reason);
+      alert('Đã hủy chuyến đi thành công.');
+      refreshData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Lỗi khi hủy chuyến đi.');
+    }
+  };
+
   const openAssignModal = (registration) => {
     setAssignModal({ show: true, registration, vehicleId: registration.vehicle_id || '' });
   };
@@ -625,6 +639,9 @@ const VehicleRegistrationPage = () => {
                           </>
                         )}
                         {canEditRegistration && reg.status === 'pending' && <button className="btn btn-sm btn-outline" onClick={() => handleEditClick(reg)}>Sửa</button>}
+                        {(isOwner || canCoordinate) && ['pending', 'approved', 'scheduled', 'pending_change'].includes(reg.status) && (
+                          <button className="btn btn-sm btn-danger" onClick={() => handleCancel(reg.id)}>Hủy chuyến</button>
+                        )}
                         {canDeleteRegistration && <button className="btn btn-sm btn-danger" onClick={() => handleDeleteClick(reg.id)}>Xóa</button>}
                       </td>
                     )}
@@ -641,7 +658,7 @@ const VehicleRegistrationPage = () => {
           <div className="week-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '10px', minWidth: '900px' }}>
           {getDaysOfWeek().map((day, idx) => {
             const dateStr = formatDateForInput(day);
-            const dayRegistrations = registrations.filter(r => formatDateForInput(r.registration_date) === dateStr);
+            const dayRegistrations = registrations.filter(r => formatDateForInput(r.registration_date) === dateStr && r.status === 'scheduled');            
             const isToday = new Date().toDateString() === day.toDateString();
 
             return (

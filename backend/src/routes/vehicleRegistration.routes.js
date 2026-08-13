@@ -6,6 +6,7 @@ import {
   updateVehicleRegistration,
   approveRegistration,
   rejectRegistration,
+  cancelRegistration,
   assignVehicle,
   requestChange,
   approveChangeRequest,
@@ -23,6 +24,16 @@ import { generalUpload } from '../middleware/upload.middleware.js';
 const router = express.Router();
 
 router.use(authMiddleware);
+// Middleware riêng cho route hủy chuyến: chấp nhận người có quyền CREATE_VEHICLE_REGISTRATION
+// (chủ phiếu) HOẶC quyền COORDINATE_VEHICLE (điều phối viên) — vì checkPermission() gốc chỉ
+// kiểm tra được đúng 1 mã quyền, không đủ cho trường hợp "một trong hai quyền" này.
+const canCreateOrCoordinateVehicle = (req, res, next) => {
+  const perms = req.user?.permissions || [];
+  if (req.user?.role === 'admin' || perms.includes('CREATE_VEHICLE_REGISTRATION') || perms.includes('COORDINATE_VEHICLE')) {
+    return next();
+  }
+  return res.status(403).json({ message: 'Bạn không có quyền thực hiện thao tác này.' });
+};
 
 router.post('/', checkPermission('CREATE_VEHICLE_REGISTRATION'), generalUpload.single('file'), createVehicleRegistration);
 router.get('/', checkPermission('VIEW_VEHICLE_REGISTRATIONS'), getAllVehicleRegistrations);
@@ -45,6 +56,8 @@ router.put('/:id/reject', checkPermission('APPROVE_VEHICLE_REGISTRATION'), rejec
 
 // Gán xe (chỉ điều phối viên)
 router.put('/:id/assign', checkPermission('COORDINATE_VEHICLE'), assignVehicle);
+// Hủy chuyến (chủ phiếu hoặc điều phối viên)
+router.put('/:id/cancel', canCreateOrCoordinateVehicle, cancelRegistration);
 // Lấy chi tiết yêu cầu thay đổi (chỉ điều phối viên)
 router.get('/:id/change/:changeId', checkPermission('COORDINATE_VEHICLE'), getChangeDetails);
 

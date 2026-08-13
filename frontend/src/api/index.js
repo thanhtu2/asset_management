@@ -238,6 +238,7 @@ export const vehicleRegistrationsAPI = {
   update: (id, data) => apiClient.put(`/vehicle-registrations/${id}`, data),
   delete: (id) => apiClient.delete(`/vehicle-registrations/${id}`),
   approve: (id) => apiClient.put(`/vehicle-registrations/${id}/approve`),
+  cancel: (id, reason) => apiClient.put(`/vehicle-registrations/${id}/cancel`, { reason }),
   reject: (id, reason) => apiClient.put(`/vehicle-registrations/${id}/reject`, { reason }),
   assign: (id, vehicle_id) => apiClient.put(`/vehicle-registrations/${id}/assign`, { vehicle_id }),
   getChangeDetails: (id, changeId) => apiClient.get(`/vehicle-registrations/${id}/change/${changeId}`),

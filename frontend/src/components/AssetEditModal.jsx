@@ -23,7 +23,7 @@ const AssetEditModal = ({ assetId, onClose, onSuccess }) => {
     purchase_date: '',
     purchase_price: 0,
     current_value: 0,
-    status: 'chờ cấp',
+    status: 'new',
     barcode: '',
     image_url: '',
     assigned_to: '',
@@ -62,7 +62,7 @@ const AssetEditModal = ({ assetId, onClose, onSuccess }) => {
             : '',
           purchase_price: asset.purchase_price || 0,
           current_value: asset.current_value || 0,
-          status: asset.status || 'chờ cấp',
+          status: asset.status || 'new',
           barcode: asset.barcode || '',
           image_url: asset.image_url || '',
           assigned_to: asset.assigned_to || '',
@@ -278,11 +278,11 @@ const AssetEditModal = ({ assetId, onClose, onSuccess }) => {
                 <div className="form-group">
                   <label>Trạng thái</label>
                   <select name="status" value={formData.status} onChange={handleChange}>
-                    <option value="chờ cấp">Chờ cấp</option>
-                    <option value="đang sử dụng">Đang sử dụng</option>
-                    <option value="cần sửa chữa">Cần sửa chữa</option>
-                    <option value="hỏng">Hỏng</option>
-                    <option value="đã thanh lý">Đã thanh lý</option>
+                    <option value="new">Chờ cấp</option>
+                    <option value="good">Đang sử dụng</option>
+                    <option value="needs_repair">Cần sửa chữa</option>
+                    <option value="damaged">Hỏng</option>
+                    <option value="disposed">Đã thanh lý</option>
                   </select>
                 </div>
               </div>
