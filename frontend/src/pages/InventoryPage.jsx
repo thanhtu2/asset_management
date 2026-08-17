@@ -33,22 +33,31 @@ const InventoryPage = () => {
   const [showScannerModal, setShowScannerModal] = useState(false);
   const [scanResult, setScanResult] = useState({ message: '', type: '', assetName: null });
   const isScanning = useRef(false);
-
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  });
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [pagination.page, pagination.limit]);
 
   const fetchData = async () => {
     try {
       const [sessionsRes, assetsRes, deptsRes] = await Promise.all([
-        inventoryAPI.getAll(),
+        inventoryAPI.getAll({ page: pagination.page, limit: pagination.limit }),
         assetsAPI.getAll({ page: 1, limit: 1000 }),
         departmentsAPI.getAllSimple()
       ]);
-      setSessions(sessionsRes.data);
+      setSessions(sessionsRes.data?.data || sessionsRes.data || []);
+      setPagination(prev => ({
+        ...prev,
+        total: sessionsRes.data?.pagination?.total ?? prev.total,
+        totalPages: sessionsRes.data?.pagination?.totalPages ?? prev.totalPages
+      }));
       setAssets(assetsRes.data?.data || assetsRes.data || []);
-      // Xử lý an toàn: Tự động bóc tách mảng dù API trả về Array hay Object phân trang
       setDepartments(Array.isArray(deptsRes.data) ? deptsRes.data : deptsRes.data?.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -57,6 +66,16 @@ const InventoryPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      setPagination(prev => ({ ...prev, page: newPage }));
+    }
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setPagination(prev => ({ ...prev, limit: parseInt(newLimit), page: 1 }));
   };
 
   const handleOpenModal = () => {
@@ -452,6 +471,29 @@ const InventoryPage = () => {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 0 && (
+        <div className="pagination">
+          <div className="pagination-info">
+            Hiển thị {(pagination.page - 1) * pagination.limit + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} của {pagination.total} bản ghi
+          </div>
+          <div className="pagination-controls">
+            <select value={pagination.limit} onChange={(e) => handleLimitChange(e.target.value)} className="pagination-limit">
+              <option value="10">10 / trang</option>
+              <option value="20">20 / trang</option>
+              <option value="50">50 / trang</option>
+            </select>
+            <div className="pagination-buttons">
+              <button onClick={() => handlePageChange(1)} disabled={pagination.page === 1} className="btn btn-sm">««</button>
+              <button onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1} className="btn btn-sm">«</button>
+              <span className="pagination-page-info">Trang {pagination.page} / {pagination.totalPages}</span>
+              <button onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages} className="btn btn-sm">»</button>
+              <button onClick={() => handlePageChange(pagination.totalPages)} disabled={pagination.page === pagination.totalPages} className="btn btn-sm">»»</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Session Modal */}
       {showModal && (

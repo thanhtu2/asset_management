@@ -29,11 +29,15 @@ const UserManagementPage = () => {
     search: '',
     role: ''
   });
-  // Đánh số thứ tự request để loại bỏ response của các lần gọi API cũ trả về muộn (race condition)
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  });
   const requestIdRef = useRef(0);
 
-  // Debounce: chỉ áp filters.search sau khi người dùng ngừng gõ 400ms,
-  // tránh gọi API dồn dập theo từng ký tự.
+  // Debounce: chỉ áp filters.search sau khi người dùng ngừng gõ 400ms
   useEffect(() => {
     const timer = setTimeout(() => {
       setFilters(prev => (prev.search === searchInput ? prev : { ...prev, search: searchInput }));
@@ -41,23 +45,31 @@ const UserManagementPage = () => {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // Khi filters thay đổi thì luôn quay về trang 1
   useEffect(() => {
-    fetchData();
+    setPagination(prev => (prev.page === 1 ? prev : { ...prev, page: 1 }));
   }, [filters]);
 
+  useEffect(() => {
+    fetchData();
+  }, [filters, pagination.page, pagination.limit]);
+
   const fetchData = async () => {
-    const requestId = ++requestIdRef.current; // đánh dấu đây là request mới nhất
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     try {
       const [usersRes, deptRes, rolesRes] = await Promise.all([
-        usersAPI.getAll(filters),
-        departmentsAPI.getAllSimple(), // Sử dụng getAllSimple cho dropdown
-        rolesAPI.getAll() // getAll của rolesAPI đã trả về tất cả roles
+        usersAPI.getAll({ ...filters, page: pagination.page, limit: pagination.limit }),
+        departmentsAPI.getAllSimple(),
+        rolesAPI.getAll()
       ]);
-      // Nếu trong lúc chờ mà đã có request mới hơn được gọi (người dùng gõ tiếp) -> bỏ qua kết quả cũ này,
-      // tránh trường hợp response về muộn đè lên kết quả của lần tìm kiếm mới hơn.
       if (requestId !== requestIdRef.current) return;
-      setUsers(usersRes.data);
+      setUsers(usersRes.data?.data || usersRes.data || []);
+      setPagination(prev => ({
+        ...prev,
+        total: usersRes.data?.pagination?.total ?? prev.total,
+        totalPages: usersRes.data?.pagination?.totalPages ?? prev.totalPages
+      }));
       setDepartments(Array.isArray(deptRes.data) ? deptRes.data : deptRes.data?.data || []);
       setRoles(rolesRes.data?.data || rolesRes.data || []);
     } catch (error) {
@@ -65,6 +77,16 @@ const UserManagementPage = () => {
     } finally {
       if (requestId === requestIdRef.current) setLoading(false);
     }
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      setPagination(prev => ({ ...prev, page: newPage }));
+    }
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setPagination(prev => ({ ...prev, limit: parseInt(newLimit), page: 1 }));
   };
 
   const handleOpenModal = (user = null) => {
@@ -210,6 +232,29 @@ const UserManagementPage = () => {
           </table>
         </div>
       </div>
+      
+      {/* Pagination */}
+      {pagination.totalPages > 0 && (
+        <div className="pagination">
+          <div className="pagination-info">
+            Hiển thị {(pagination.page - 1) * pagination.limit + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} của {pagination.total} bản ghi
+          </div>
+          <div className="pagination-controls">
+            <select value={pagination.limit} onChange={(e) => handleLimitChange(e.target.value)} className="pagination-limit">
+              <option value="10">10 / trang</option>
+              <option value="20">20 / trang</option>
+              <option value="50">50 / trang</option>
+            </select>
+            <div className="pagination-buttons">
+              <button onClick={() => handlePageChange(1)} disabled={pagination.page === 1} className="btn btn-sm">««</button>
+              <button onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1} className="btn btn-sm">«</button>
+              <span className="pagination-page-info">Trang {pagination.page} / {pagination.totalPages}</span>
+              <button onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages} className="btn btn-sm">»</button>
+              <button onClick={() => handlePageChange(pagination.totalPages)} disabled={pagination.page === pagination.totalPages} className="btn btn-sm">»»</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showImportModal && (
         <UserImportModal

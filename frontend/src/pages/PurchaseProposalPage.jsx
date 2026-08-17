@@ -12,6 +12,12 @@ const PurchaseProposalPage = () => {
   const [activeProposal, setActiveProposal] = useState(null);
   const [history, setHistory] = useState([]);
   const [attachedFile, setAttachedFile] = useState(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  });
 
   useEffect(() => {
     fetchDepartments();
@@ -37,7 +43,7 @@ const PurchaseProposalPage = () => {
       fetchProposalsList();
       setAttachedFile(null);
     }
-  }, [searchParams]);
+  }, [searchParams,  pagination.page, pagination.limit]);
 
   const fetchDepartments = async () => {
     try {
@@ -49,16 +55,31 @@ const PurchaseProposalPage = () => {
   };
 
   const fetchProposalsList = async () => {
-    setLoading(true);
-    try {
-      const response = await purchaseProposalsAPI.getAll({ page: 1, limit: 10 });
-      setProposals(response.data.data);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      setLoading(true);
+      try {
+        const response = await purchaseProposalsAPI.getAll({ page: pagination.page, limit: pagination.limit });
+        setProposals(response.data.data);
+        setPagination(prev => ({
+          ...prev,
+          total: response.data?.pagination?.total ?? prev.total,
+          totalPages: response.data?.pagination?.totalPages ?? prev.totalPages
+        }));
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const handlePageChange = (newPage) => {
+      if (newPage >= 1 && newPage <= pagination.totalPages) {
+        setPagination(prev => ({ ...prev, page: newPage }));
+      }
+    };
+
+    const handleLimitChange = (newLimit) => {
+      setPagination(prev => ({ ...prev, limit: parseInt(newLimit), page: 1 }));
+    };
 
   const fetchProposal = async (id) => {
     setLoading(true);
@@ -389,6 +410,29 @@ const PurchaseProposalPage = () => {
               </div>
             )}
           </div>
+
+          {/* Pagination */}
+          {pagination.totalPages > 0 && (
+            <div className="pagination">
+              <div className="pagination-info">
+                Hiển thị {(pagination.page - 1) * pagination.limit + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} của {pagination.total} bản ghi
+              </div>
+              <div className="pagination-controls">
+                <select value={pagination.limit} onChange={(e) => handleLimitChange(e.target.value)} className="pagination-limit">
+                  <option value="10">10 / trang</option>
+                  <option value="20">20 / trang</option>
+                  <option value="50">50 / trang</option>
+                </select>
+                <div className="pagination-buttons">
+                  <button onClick={() => handlePageChange(1)} disabled={pagination.page === 1} className="btn btn-sm">««</button>
+                  <button onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1} className="btn btn-sm">«</button>
+                  <span className="pagination-page-info">Trang {pagination.page} / {pagination.totalPages}</span>
+                  <button onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages} className="btn btn-sm">»</button>
+                  <button onClick={() => handlePageChange(pagination.totalPages)} disabled={pagination.page === pagination.totalPages} className="btn btn-sm">»»</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         // Detail view matching mockup

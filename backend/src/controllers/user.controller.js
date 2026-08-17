@@ -4,21 +4,35 @@ import AuditLog from '../models/AuditLog.js';
 import pool from '../config/database.js';
 import { createNotification } from '../notification.service.js';
 
+// export const getAll = async (req, res) => {
+//   try {
+//     const { search, role, department_id } = req.query;
+//     const filters = {};
+//     if (search) {
+//       filters.search = search;
+//     }
+//     if (role) {
+//       filters.role = role;
+//     }
+//     if (department_id) {
+//       filters.department_id = department_id;
+//     }
+//     const users = await User.findAll(filters);
+//     res.json(users);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+
 export const getAll = async (req, res) => {
   try {
-    const { search, role, department_id } = req.query;
+    const { search, role, department_id, page = 1, limit = 10 } = req.query;
     const filters = {};
-    if (search) {
-      filters.search = search;
-    }
-    if (role) {
-      filters.role = role;
-    }
-    if (department_id) {
-      filters.department_id = department_id;
-    }
-    const users = await User.findAll(filters);
-    res.json(users);
+    if (search) filters.search = search;
+    if (role) filters.role = role;
+    if (department_id) filters.department_id = department_id;
+    const { data, pagination } = await User.findAll(filters, parseInt(page), parseInt(limit));
+    res.json({ data, pagination });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -213,7 +227,9 @@ export const remove = async (req, res) => {
 
 export const exportUsers = async (req, res) => {
   try {
-    const users = await User.findAll();
+    // const users = await User.findAll();
+    const { data: users } = await User.findAll({}, 1, Number.MAX_SAFE_INTEGER);
+
     
     const data = users.map(user => ({
       'Tên đăng nhập': user.username,
