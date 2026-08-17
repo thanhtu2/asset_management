@@ -155,7 +155,7 @@ export const maintenanceAPI = {
 
 // Inventory API
 export const inventoryAPI = {
-  getAll: () => apiClient.get('/inventory'),
+  getAll: (params) => apiClient.get('/inventory', { params }),
   create: (data) => apiClient.post('/inventory', data),
   delete: (id) => apiClient.delete(`/inventory/${id}`),
   addAssetsByDepartment: (sessionId, departmentId) => apiClient.post(`/inventory/${sessionId}/add-by-department`, { department_id: departmentId }),

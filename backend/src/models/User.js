@@ -1,9 +1,10 @@
 import pool from '../config/database.js';
 import bcrypt from 'bcryptjs';
+import { buildPaginationQuery, getPagination } from '../ultis/pagination.js';
 
 const User = {
   // Get all users — CÓ áp dụng bộ lọc search (theo username/họ tên) và role
-  async findAll(filters = {}) {
+  async findAll(filters = {}, page = 1, limit = 10) {
     let query = `
       SELECT u.*, d.name as department_name 
       FROM users u 
@@ -25,11 +26,16 @@ const User = {
       params.push(filters.department_id);
     }
 
-    query += ` ORDER BY u.created_at DESC`;
+    const { paginatedQuery, countQuery, limitNum, offset } = buildPaginationQuery(query, page, limit, 'u.created_at DESC');
 
-    const [rows] = await pool.query(query, params);
-    return rows;
+    const [rows] = await pool.query(paginatedQuery, [...params, limitNum, offset]);
+    const [totalRes] = await pool.query(countQuery, params);
+    const total = totalRes[0].count;
+    const pagination = getPagination(page, limit, total);
+
+    return { data: rows, pagination };
   },
+
   async findAllSimple() {
     const [rows] = await pool.query(`
       SELECT id, username, fullName 

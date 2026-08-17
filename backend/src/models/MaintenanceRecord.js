@@ -1,25 +1,78 @@
 import pool from '../config/database.js';
+import { buildPaginationQuery, getPagination } from '../ultis/pagination.js';
 
 const MaintenanceRecord = {
   // Get all maintenance records
-  async findAll(filters = {}) {
-    let query = `
-      SELECT m.*, a.asset_code, a.name as asset_name
+  // async findAll(filters = {}, page = 1, limit = 10) {
+  //   let query = `
+  //     SELECT m.*, a.asset_code, a.name as asset_name
+  //     FROM maintenance_records m
+  //     LEFT JOIN assets a ON m.asset_id = a.id
+  //     WHERE 1=1
+  //   `;
+  //   const params = [];
+
+  //   if (filters.asset_id) {
+  //     query += ' AND m.asset_id = ?';
+  //     params.push(filters.asset_id);
+  //   }
+
+  //   const { paginatedQuery, countQuery, limitNum, offset } = buildPaginationQuery(query, page, limit, 'm.maintenance_date DESC');
+
+  //   const [rows] = await pool.query(paginatedQuery, [...params, limitNum, offset]);
+  //   const [totalRes] = await pool.query(countQuery, params);
+  //   const total = totalRes[0].count;
+  //   const pagination = getPagination(page, limit, total);
+
+  //   return { data: rows, pagination };
+  // },
+
+  // Get all maintenance records
+  async findAll(filters = {}, page = 1, limit = 10) {
+    let baseQuery = `
       FROM maintenance_records m
       LEFT JOIN assets a ON m.asset_id = a.id
       WHERE 1=1
     `;
     const params = [];
 
-    if (filters.asset_id) {
-      query += ' AND m.asset_id = ?';
+    // Chỉ filter khi asset_id có giá trị thực sự
+    if (filters.asset_id && filters.asset_id !== '') {
+      baseQuery += ' AND m.asset_id = ?';
       params.push(filters.asset_id);
     }
 
-    query += ' ORDER BY m.maintenance_date DESC';
+    // 1. Đếm tổng số bản ghi
+    const countSql = `SELECT COUNT(*) as total ${baseQuery}`;
+    const [totalRes] = await pool.query(countSql, params);
+    const total = totalRes[0]?.total || 0;
 
-    const [rows] = await pool.query(query, params);
-    return rows;
+    // 2. Lấy dữ liệu phân trang
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, parseInt(limit) || 10);
+    const offset = (pageNum - 1) * limitNum;
+
+    const dataSql = `
+      SELECT m.*, a.asset_code, a.name as asset_name
+      ${baseQuery}
+      ORDER BY m.maintenance_date DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    // Ép kiểu Number cho limit và offset để tránh lỗi MySQL Prepared Statement
+    const [rows] = await pool.query(dataSql, [...params, Number(limitNum), Number(offset)]);
+    
+    const totalPages = Math.ceil(total / limitNum) || 1;
+
+    return { 
+      data: rows || [], 
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages
+      } 
+    };
   },
 
   // Get maintenance record by ID

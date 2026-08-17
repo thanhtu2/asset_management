@@ -39,10 +39,12 @@ const getRecordStatusLabel = (status) => {
   return labels[status] || status;
 };
 
+// hàm xử lý lấy danh sách phân trang các phiên kiểm kê
 export const getAll = async (req, res) => {
   try {
-    const sessions = await InventorySession.findAll();
-    res.json(sessions);
+    const { page = 1, limit = 10 } = req.query;
+    const { data, pagination } = await InventorySession.findAll(parseInt(page), parseInt(limit));
+    res.json({ data, pagination });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

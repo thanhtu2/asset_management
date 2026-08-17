@@ -59,6 +59,12 @@ const VehicleRegistrationPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [viewMode, setViewMode] = useState('list'); // 'list', 'week', or 'trips'
   const [currentWeekStart, setCurrentWeekStart] = useState(new Date());
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  });
   // State cho modal đăng ký xe
   const [isEditing, setIsEditing] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null); // Khai báo state bị thiếu
@@ -118,7 +124,7 @@ const VehicleRegistrationPage = () => {
     
     fetchUsers();
     fetchDepartments();
-  }, [canViewRegistrations, canViewWeekly, viewMode]);
+  }, [canViewRegistrations, canViewWeekly, viewMode, pagination.page, pagination.limit]);
 
   useEffect(() => {
   }, [canViewRegistrations, canViewWeekly, viewMode, currentWeekStart]);
@@ -161,18 +167,33 @@ const VehicleRegistrationPage = () => {
   };
 
 
-   const fetchRegistrations = async () => {
+const fetchRegistrations = async () => {
     setLoading(true);
       try {
-        const params = {};
+        const params = { page: pagination.page, limit: pagination.limit };
         const response = await vehicleRegistrationsAPI.getAll(params);
         setRegistrations(response.data.data);
+        setPagination(prev => ({
+          ...prev,
+          total: response.data?.pagination?.total ?? prev.total,
+          totalPages: response.data?.pagination?.totalPages ?? prev.totalPages
+        }));
       } catch (err) {
       setError(err.response?.data?.message || 'Lỗi khi tải danh sách đăng ký xe.');
       console.error('Error fetching vehicle registrations:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      setPagination(prev => ({ ...prev, page: newPage }));
+    }
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setPagination(prev => ({ ...prev, limit: parseInt(newLimit), page: 1 }));
   };
 
   const fetchWeekRegistrations = async () => {
@@ -565,6 +586,7 @@ const VehicleRegistrationPage = () => {
       )}
       
       {viewMode === 'list' ? (
+        <>
       <div className="card">
         <div className="table-container">
           <table>
@@ -653,6 +675,29 @@ const VehicleRegistrationPage = () => {
           </table>
         </div>
       </div>
+
+      {pagination.totalPages > 0 && (
+        <div className="pagination">
+          <div className="pagination-info">
+            Hiển thị {(pagination.page - 1) * pagination.limit + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} của {pagination.total} bản ghi
+          </div>
+          <div className="pagination-controls">
+            <select value={pagination.limit} onChange={(e) => handleLimitChange(e.target.value)} className="pagination-limit">
+              <option value="10">10 / trang</option>
+              <option value="20">20 / trang</option>
+              <option value="50">50 / trang</option>
+            </select>
+            <div className="pagination-buttons">
+              <button onClick={() => handlePageChange(1)} disabled={pagination.page === 1} className="btn btn-sm">««</button>
+              <button onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1} className="btn btn-sm">«</button>
+              <span className="pagination-page-info">Trang {pagination.page} / {pagination.totalPages}</span>
+              <button onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages} className="btn btn-sm">»</button>
+              <button onClick={() => handlePageChange(pagination.totalPages)} disabled={pagination.page === pagination.totalPages} className="btn btn-sm">»»</button>
+            </div>
+          </div>
+        </div>
+      )}
+        </>
       ) : viewMode === 'week' ? (
         <div className="table-container" style={{ padding: '5px' }}>
           <div className="week-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '10px', minWidth: '900px' }}>

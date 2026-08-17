@@ -1,16 +1,24 @@
 import pool from '../config/database.js';
+import { buildPaginationQuery, getPagination } from '../ultis/pagination.js';
 
 const InventorySession = {
   // Get all inventory sessions
-  async findAll() {
-    const [rows] = await pool.query(`
+  async findAll(page = 1, limit = 10) {
+    const baseQuery = `
       SELECT i.*, u.fullName as created_by_name, d.name as department_name
       FROM inventory_sessions i
       LEFT JOIN users u ON i.created_by = u.id
       LEFT JOIN departments d ON i.department_id = d.id
-      ORDER BY i.created_at DESC
-    `);
-    return rows;
+    `;
+
+    const { paginatedQuery, countQuery, limitNum, offset } = buildPaginationQuery(baseQuery, page, limit, 'i.created_at DESC');
+
+    const [rows] = await pool.query(paginatedQuery, [limitNum, offset]);
+    const [totalRes] = await pool.query(countQuery);
+    const total = totalRes[0].count;
+    const pagination = getPagination(page, limit, total);
+
+    return { data: rows, pagination };
   },
 
   // Get inventory session by ID

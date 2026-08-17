@@ -3,8 +3,11 @@ import Asset from '../models/Asset.js';
 
 export const getAll = async (req, res) => {
   try {
-    const records = await MaintenanceRecord.findAll(req.query);
-    res.json(records);
+    const { asset_id, page = 1, limit = 10 } = req.query;
+    const filters = {};
+    if (asset_id) filters.asset_id = asset_id;
+    const { data, pagination } = await MaintenanceRecord.findAll(filters, parseInt(page), parseInt(limit));
+    res.json({ data, pagination });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

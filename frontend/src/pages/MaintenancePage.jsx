@@ -20,26 +20,101 @@ const MaintenancePage = () => {
   });
   const [deleteModal, setDeleteModal] = useState({ show: false, id: null });
   const [filter, setFilter] = useState({ asset_id: '', type: '' });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  });
+
+  // const fetchData = async () => {
+  //   try {
+  //     const [recordsRes, assetsRes] = await Promise.all([
+  //       maintenanceAPI.getAll({ ...filter, page: pagination.page, limit: pagination.limit }),
+  //       assetsAPI.getAllSimple()
+  //     ]);
+  //     console.log('recordsRes:', recordsRes);
+      
+
+  //     // Xử lý linh hoạt cấu trúc API trả về (data array, data.records, data.data, ...)
+  //     const recordsPayload = recordsRes.data?.records || recordsRes.data?.data || recordsRes.data;
+  //     const assetsPayload = assetsRes.data?.assets || assetsRes.data?.data || assetsRes.data;
+
+  //     // Đảm bảo dữ liệu set vào state luôn là một Mảng (Array)
+  //     setRecords(Array.isArray(recordsPayload) ? recordsPayload : []);
+  //     setAssets(Array.isArray(assetsPayload) ? assetsPayload : []);
+
+  //     setPagination(prev => ({
+  //       ...prev,
+  //       total: recordsRes.data?.pagination?.total ?? prev.total,
+  //       totalPages: recordsRes.data?.pagination?.totalPages ?? prev.totalPages
+  //     }));
+  //   } catch (error) {
+  //     console.error('Error fetching data:', error);
+  //     setRecords([]);
+  //     setAssets([]);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const fetchData = async () => {
+    setLoading(true);
     try {
+      // Clean query params (loại bỏ chuỗi rỗng)
+      const cleanParams = {
+        page: pagination.page,
+        limit: pagination.limit
+      };
+      if (filter.asset_id) cleanParams.asset_id = filter.asset_id;
+
       const [recordsRes, assetsRes] = await Promise.all([
-        maintenanceAPI.getAll(filter),
+        maintenanceAPI.getAll(cleanParams),
         assetsAPI.getAllSimple()
       ]);
-      // Handle paginated response
-      setRecords(recordsRes.data?.data || recordsRes.data || []);
-      setAssets(assetsRes.data?.data || assetsRes.data || []);
+
+      // Controller trả về: res.json({ data, pagination })
+      // Axios bọc thành: recordsRes.data = { data: [...], pagination: {...} }
+      
+      const recordsArray = recordsRes.data?.data || (Array.isArray(recordsRes.data) ? recordsRes.data : []);
+      const assetsArray = assetsRes.data?.assets || assetsRes.data?.data || (Array.isArray(assetsRes.data) ? assetsRes.data : []);
+
+      setRecords(Array.isArray(recordsArray) ? recordsArray : []);
+      setAssets(Array.isArray(assetsArray) ? assetsArray : []);
+
+      // Cập nhật phân trang từ response
+      if (recordsRes.data?.pagination) {
+        setPagination(prev => ({
+          ...prev,
+          total: recordsRes.data.pagination.total ?? prev.total,
+          totalPages: recordsRes.data.pagination.totalPages ?? prev.totalPages
+        }));
+      }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Lỗi khi tải dữ liệu:', error);
+      setRecords([]);
+      setAssets([]);
     } finally {
       setLoading(false);
     }
   };
+  useEffect(() => {
+    setPagination(prev => (prev.page === 1 ? prev : { ...prev, page: 1 }));
+  }, [filter]);
 
   useEffect(() => {
     fetchData();
-  }, [filter]);
+  }, [filter, pagination.page, pagination.limit]);
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      setPagination(prev => ({ ...prev, page: newPage }));
+    }
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setPagination(prev => ({ ...prev, limit: parseInt(newLimit), page: 1 }));
+  };
 
   const handleOpenModal = (record = null) => {
     if (record) {
@@ -147,7 +222,7 @@ const MaintenancePage = () => {
               onChange={(e) => setFilter({ ...filter, asset_id: e.target.value })}
             >
               <option value="">Tất cả tài sản</option>
-              {assets.map((asset) => (
+              {Array.isArray(assets) && assets.map((asset) => (
                 <option key={asset.id} value={asset.id}>{asset.name}</option>
               ))}
             </select>
@@ -177,7 +252,7 @@ const MaintenancePage = () => {
               </tr>
             </thead>
             <tbody>
-              {records.map((record) => (
+              {Array.isArray(records) && records.map((record) => (
                 <tr key={record.id}>
                   <td>{record.asset_name}</td>
                   <td>{new Date(record.maintenance_date).toLocaleDateString('vi-VN')}</td>
@@ -191,20 +266,20 @@ const MaintenancePage = () => {
                         ✓ Đã bảo trì
                       </span>
                     ) : (
-                  (user?.role === 'admin' || user?.permissions?.includes('EDIT_MAINTENANCE')) && (
+                      (user?.role === 'admin' || user?.permissions?.includes('EDIT_MAINTENANCE')) && (
                         <button onClick={() => handleCompleteRepair(record)} className="btn btn-sm btn-success" title="Hoàn thành sửa chữa">✓ Hoàn thành</button>
                       )
                     )}
-                {(user?.role === 'admin' || user?.permissions?.includes('EDIT_MAINTENANCE')) && (
+                    {(user?.role === 'admin' || user?.permissions?.includes('EDIT_MAINTENANCE')) && (
                       <button onClick={() => handleOpenModal(record)} className="btn btn-sm btn-outline">Sửa</button>
                     )}
-                {(user?.role === 'admin' || user?.permissions?.includes('DELETE_MAINTENANCE')) && (
+                    {(user?.role === 'admin' || user?.permissions?.includes('DELETE_MAINTENANCE')) && (
                       <button onClick={() => setDeleteModal({ show: true, id: record.id })} className="btn btn-sm btn-danger">Xóa</button>
                     )}
                   </td>
                 </tr>
               ))}
-              {records.length === 0 && (
+              {(!Array.isArray(records) || records.length === 0) && (
                 <tr>
                   <td colSpan="7" style={{ textAlign: 'center' }}>Không có dữ liệu</td>
                 </tr>
@@ -213,6 +288,29 @@ const MaintenancePage = () => {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 0 && (
+        <div className="pagination">
+          <div className="pagination-info">
+            Hiển thị {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)} - {Math.min(pagination.page * pagination.limit, pagination.total)} của {pagination.total} bản ghi
+          </div>
+          <div className="pagination-controls">
+            <select value={pagination.limit} onChange={(e) => handleLimitChange(e.target.value)} className="pagination-limit">
+              <option value="10">10 / trang</option>
+              <option value="20">20 / trang</option>
+              <option value="50">50 / trang</option>
+            </select>
+            <div className="pagination-buttons">
+              <button onClick={() => handlePageChange(1)} disabled={pagination.page === 1} className="btn btn-sm">««</button>
+              <button onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1} className="btn btn-sm">«</button>
+              <span className="pagination-page-info">Trang {pagination.page} / {pagination.totalPages}</span>
+              <button onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages} className="btn btn-sm">»</button>
+              <button onClick={() => handlePageChange(pagination.totalPages)} disabled={pagination.page === pagination.totalPages} className="btn btn-sm">»»</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showModal && (
         <div className="modal-overlay">
@@ -232,7 +330,7 @@ const MaintenancePage = () => {
                     required
                   >
                     <option value="">Chọn tài sản</option>
-                    {assets.map((asset) => (
+                    {Array.isArray(assets) && assets.map((asset) => (
                       <option key={asset.id} value={asset.id}>{asset.name}</option>
                     ))}
                   </select>
