@@ -40,20 +40,20 @@ const LoginPage = () => {
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
-        background: 'linear-gradient(135deg, #6fa6ff 0%, #1478f3 35%, #3b7ac7 65%, #34b8e0 100%)',
+        background: 'linear-gradient(135deg, #6fa6ff 0%, #3fcbf5 35%, #3b8bec 65%, #34b8e0 100%)',
       }}
     >
       {/* Ambient blobs */}
       <div style={{
         position: 'absolute', width: 'max(360px, 55vw)', height: 'max(360px, 55vw)',
         borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(56,189,248,0.35) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(44, 189, 252, 0.88) 0%, transparent 70%)',
         top: '-120px', left: '-100px', pointerEvents: 'none', filter: 'blur(10px)',
       }} />
       <div style={{
         position: 'absolute', width: 'max(260px, 42vw)', height: 'max(260px, 42vw)',
         borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(67,143,235,0.5) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(150, 195, 252, 0.5) 0%, transparent 70%)',
         bottom: '-60px', right: '0px', pointerEvents: 'none', filter: 'blur(10px)',
       }} />
 
