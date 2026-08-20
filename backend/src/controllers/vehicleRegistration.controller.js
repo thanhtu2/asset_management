@@ -24,14 +24,15 @@ const parseDeptIds = (raw) => {
 export const createVehicleRegistration = async (req, res) => {
   try {
     const { registration_date, destination, departure_location } = req.body;
-    if (!registration_date || !destination || !departure_location) {
-      return res.status(400).json({ message: 'Ngày khởi hành, điểm đi và điểm đến là bắt buộc.' });
+    if (!registration_date || !destination || !departure_location || !req.file) {
+      return res.status(400).json({ message: 'Ngày khởi hành, điểm đi, điểm đến, phòng  và File đính kèm là bắt buộc.' });
     }
     
-    let attachment_path = null;
-    if (req.file) {
-      attachment_path = `/uploads/${req.file.filename}`;
-    }
+    // let attachment_path = null;
+    // if (req.file) {
+    //   attachment_path = `/uploads/${req.file.filename}`;
+    // }
+    const attachment_path = `/uploads/${req.file.filename}`;
 
     // Whitelist tường minh — người tạo phiếu tuyệt đối KHÔNG được gửi vehicle_id/status
     const { departure_time, participants, notes, department_ids } = req.body;

@@ -912,7 +912,7 @@ const fetchRegistrations = async () => {
                   <textarea name="notes" value={currentRegistration.notes} onChange={handleChange}></textarea>
                 </div>
                 <div className="form-group">
-                  <label>File đính kèm (nếu có)</label>
+                  <label>File đính kèm</label>
                   <input 
                     type="file" 
                     onChange={(e) => setAttachedFile(e.target.files[0])} 
