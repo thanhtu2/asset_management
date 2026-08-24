@@ -172,6 +172,11 @@
   }
 
   /* ── Page Header ─────────────────────────────────────── */
+   .page-header h1 {
+    font-size: 1.5rem !important;
+    margin: 0 !important;
+    padding: 0 10px !important;
+  }
   .page-header {
     @apply flex justify-between items-center mb-6;
   }
@@ -305,7 +310,12 @@
   .table-container {
     @apply overflow-x-auto;
   }
-
+  table td.col-long-text {
+    min-width: 180px;
+    white-space: normal;
+    word-break: keep-all;
+    vertical-align: top;
+  }
   table {
     @apply w-full border-collapse;
   }
@@ -326,6 +336,9 @@
     background: #f8fafc;
   }
 
+  table thead tr th{
+    text-align: center;
+  }
   /* ── Status Badges ───────────────────────────────────── */
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;

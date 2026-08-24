@@ -149,6 +149,7 @@ const MainLayout = ({ children }) => {
           left: 0,
           minWidth: collapsed ? 0 : SIDEBAR_WIDTH,
           overflow: 'hidden',
+          // background: 'linear-gradient(135deg, #6fa6ff 0%, #3fcbf5 35%, #3b8bec 65%, #34b8e0 100%)',
           transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1), min-width 0.3s cubic-bezier(0.4,0,0.2,1)',
         }}
       >
@@ -158,10 +159,10 @@ const MainLayout = ({ children }) => {
               <div style={{
                 width: 34, height: 34,
                 borderRadius: 8,
-                background: 'linear-gradient(135deg,#2563eb,#7c3aed)',
+                // background: 'linear-gradient(135deg, #6fd6ff 0%, #4dd4fd 35%, #3b8bec 65%, #34b8e0 100%)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 16, flexShrink: 0,
-                boxShadow: '0 4px 10px rgba(37,99,235,0.4)',
+                boxShadow: '0 4px 10px rgba(48, 224, 236, 0.57)',
               }}>
                 🏛️
               </div>
@@ -277,7 +278,33 @@ const MainLayout = ({ children }) => {
             </ul>
           </div>
 
-          {/* User Info with Dropdown */}
+        </div>
+      </aside>
+
+      <main
+        className="main-content"
+        style={{
+          marginLeft: collapsed ? 0 : SIDEBAR_WIDTH,
+          transition: 'margin-left 0.3s cubic-bezier(0.4,0,0.2,1)',
+          padding: 0
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, position: 'relative', zIndex: 999, borderBottom: '1px solid #E5E7EB' }}>
+          <button
+            className="mobile-menu-btn"
+            onClick={() => setIsMobileMenuOpen(true)}
+            style={{ display: 'none', padding:0 }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+          <div style={{ marginLeft: 'auto' }}>
+            <NotificationBell />
+          </div>
+           {/* Info user with dropdown */}
           <div className="user-info-container" ref={userMenuRef} style={{ position: 'relative', flexShrink: 0, padding: '16px' }}>
             <div 
               className="user-info" 
@@ -292,14 +319,14 @@ const MainLayout = ({ children }) => {
                 transition: 'background 0.2s'
               }}
             >
-              <div className="avatar" style={{ flexShrink: 0 }}>
+              <div className="avatar" style={{ flexShrink: 0, backgroundColor: '#E5E7EB' }}>
                 {user?.fullName?.charAt(0).toUpperCase()}
               </div>
               <div className="details" style={{ marginLeft: '10px', overflow: 'hidden' }}>
-                <div className="name" style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div className="name" style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'rgb(2, 2, 2)' }}>
                   {user?.fullName}
                 </div>
-                <div className="role" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}>
+                <div className="role" style={{ fontSize: '12px', color: 'rgb(14, 14, 14)', whiteSpace: 'nowrap' }}>
                   {(() => {
                     const roleMap = {
                       'admin': 'Quản trị viên',
@@ -324,7 +351,7 @@ const MainLayout = ({ children }) => {
             {isUserMenuOpen && (
               <div style={{
                 position: 'absolute',
-                bottom: '100%',
+                top: '100%',
                 left: '16px',
                 right: '16px',
                 background: 'white',
@@ -342,31 +369,6 @@ const MainLayout = ({ children }) => {
                 </button>
               </div>
             )}
-          </div>
-        </div>
-      </aside>
-
-      <main
-        className="main-content"
-        style={{
-          marginLeft: collapsed ? 0 : SIDEBAR_WIDTH,
-          transition: 'margin-left 0.3s cubic-bezier(0.4,0,0.2,1)',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, position: 'relative', zIndex: 999 }}>
-          <button
-            className="mobile-menu-btn"
-            onClick={() => setIsMobileMenuOpen(true)}
-            style={{ display: 'none' }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
-          <div style={{ marginLeft: 'auto' }}>
-            <NotificationBell />
           </div>
         </div>
 
