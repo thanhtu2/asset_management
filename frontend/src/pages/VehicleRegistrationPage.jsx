@@ -134,6 +134,50 @@ const VehicleRegistrationPage = () => {
   const toggleDropdown = (id) => {
     setActiveDropdownId(prev => prev === id ? null : id);
   };
+  // Component bọc menu thả xuống
+  const DropdownMenu = ({ children }) => (
+    <div style={{
+      position: 'absolute',
+      right: '10px',
+      top: '80%',
+      backgroundColor: '#fff',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      borderRadius: '6px',
+      padding: '6px 0',
+      zIndex: 1000,
+      minWidth: '150px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'stretch',
+      textAlign: 'left',
+    }}>
+      {children}
+    </div>
+  );
+
+  // Component từng mục trong menu
+  const DropdownItem = ({ children, onClick, color = '#333', hoverBg = '#f3f4f6' }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        width: '100%',
+        padding: '8px 16px',
+        border: 'none',
+        background: 'transparent',
+        textAlign: 'left',
+        fontSize: '13px',
+        fontWeight: '500',
+        color: color,
+        cursor: 'pointer',
+        transition: 'background-color 0.15s ease',
+      }}
+      onMouseEnter={(e) => (e.target.style.backgroundColor = hoverBg)}
+      onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
+    >
+      {children}
+    </button>
+  );
   // Hàm xử lý xem chi tiết yêu cầu thay đổi (chỉ điều phối viên)
   const handlePreviewChange = async (reg) => {
     try {
@@ -647,110 +691,86 @@ const fetchRegistrations = async () => {
                       </span>
                     </td>
                     {hasActions && (
-                      // <td style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '140px' }}>
-                      //   {/* Buoc 2: Duyet / Tu choi phieu - chi khi dang cho duyet */}
-                      //   {canApprove && reg.status === 'pending' && (
-                      //     <>
-                      //       <button className="btn btn-sm btn-info" onClick={() => handlePreviewChange(reg)}>Xem thay đổi</button>
-                      //       <button className="btn btn-sm btn-primary" onClick={() => handleApprove(reg.id)}>Duyệt</button>
-                      //       <button className="btn btn-sm btn-danger" onClick={() => handleReject(reg.id)}>Từ chối</button>
-                      //     </>
-                      //   )}
-                      //   {/* Buoc 3: Gan xe - chi khi da duyet (hoac doi xe khi da len lich) */}
-                      //   {canCoordinate && (reg.status === 'approved' || reg.status === 'scheduled') && (
-                      //     <button className="btn btn-sm btn-outline" onClick={() => openAssignModal(reg)}>Gán xe</button>
-                      //   )}
-                      //   {/* Mo rong: gui yeu cau thay doi khi da duyet/len lich - chi chu phieu hoac dieu phoi vien */}
-                      //   {(isOwner || canCoordinate) && ['approved', 'scheduled'].includes(reg.status) && (
-                      //     <button className="btn btn-sm btn-outline" onClick={() => handleRequestChangeClick(reg)}>Yêu cầu đổi</button>
-                      //   )}
-                      //   {/* Mo rong: duyet/tu choi yeu cau thay doi - dieu phoi vien */}
-                      //   {canCoordinate && reg.status === 'pending_change' && reg.pending_change_id && (
-                      //     <>
-                      //       <button className="btn btn-sm btn-outline" onClick={() => handlePreviewChange(reg)}>Xem thay đổi</button>
-                      //       <button className="btn btn-sm btn-primary" onClick={() => handleApproveChange(reg)}>Duyệt đổi</button>
-                      //       <button className="btn btn-sm btn-danger" onClick={() => handleRejectChange(reg)}>Từ chối đổi</button>
-                      //     </>
-                      //   )}
-                      //   {canEditRegistration && reg.status === 'pending' && <button className="btn btn-sm btn-outline" onClick={() => handleEditClick(reg)}>Sửa</button>}
-                      //   {(isOwner || canCoordinate) && ['pending', 'approved', 'scheduled', 'pending_change'].includes(reg.status) && (
-                      //     <button className="btn btn-sm btn-danger" onClick={() => handleCancel(reg.id)}>Hủy chuyến</button>
-                      //   )}
-                      //   {canDeleteRegistration && <button className="btn btn-sm btn-danger" onClick={() => handleDeleteClick(reg.id)}>Xóa</button>}
-                      // </td>
-                      
-                        <td style={{ textAlign: 'center', position: 'relative', verticalAlign: 'middle' }}>
-                          {/* Nút kích hoạt Dropdown */}
-                          <button 
-                            className="btn btn-sm btn-light" 
-                            onClick={() => toggleDropdown(reg.id)}
-                            style={{ padding: '4px 10px', fontSize: '16px', fontWeight: 'bold' }}
-                          >
-                            ⋮
-                          </button>
+                    <td style={{ textAlign: 'center', position: 'relative', verticalAlign: 'middle' }}>
+                        {/* Nút kích hoạt Dropdown */}
+                        <button 
+                          className="btn btn-sm btn-light" 
+                          onClick={() => toggleDropdown(reg.id)}
+                          style={{ padding: '4px 10px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
+                        >
+                          ⋮
+                        </button>
 
-                          {/* Menu hành động dạng Popover */}
-                          {activeDropdownId === reg.id && (
-                            <div style={{
-                              position: 'absolute',
-                              right: '10px',
-                              top: '80%',
-                              backgroundColor: '#fff',
-                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                              borderRadius: '6px',
-                              padding: '6px 0',
-                              zIndex: 1000,
-                              minWidth: '150px',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'stretch',
-                              textAlign: 'left',
-                            }}>
-                              {/* Bước 2: Duyệt / Từ chối phiếu */}
-                              {canApprove && reg.status === 'pending' && (
-                                <>
-                                  <button className="dropdown-item" onClick={() => { handlePreviewChange(reg); setActiveDropdownId(null); }}>Xem thay đổi</button>
-                                  <button className="dropdown-item text-primary" onClick={() => { handleApprove(reg.id); setActiveDropdownId(null); }}>Duyệt đổi </button>
-                                  <button className="dropdown-item text-danger" onClick={() => { handleReject(reg.id); setActiveDropdownId(null); }}>Từ chối</button>
-                                </>
-                              )}
+                        {/* Menu danh sách hành động */}
+                        {activeDropdownId === reg.id && (
+                          <DropdownMenu>
+                            {/* Duyệt / Từ chối phiếu */}
+                            {canApprove && reg.status === 'pending' && (
+                              <>
+                                <DropdownItem onClick={() => { handlePreviewChange(reg); setActiveDropdownId(null); }}>
+                                  Xem thay đổi
+                                </DropdownItem>
+                                <DropdownItem color="#2563eb" hoverBg="#eff6ff" onClick={() => { handleApprove(reg.id); setActiveDropdownId(null); }}>
+                                  Duyệt
+                                </DropdownItem>
+                                <DropdownItem color="#dc2626" hoverBg="#fef2f2" onClick={() => { handleReject(reg.id); setActiveDropdownId(null); }}>
+                                  Từ chối
+                                </DropdownItem>
+                              </>
+                            )}
 
-                              {/* Bước 3: Gán xe */}
-                              {canCoordinate && ['approved', 'scheduled'].includes(reg.status) && (
-                                <button className="dropdown-item" onClick={() => { openAssignModal(reg); setActiveDropdownId(null); }}>Gán xe</button>
-                              )}
+                            {/* Gán xe */}
+                            {canCoordinate && ['approved', 'scheduled'].includes(reg.status) && (
+                              <DropdownItem onClick={() => { openAssignModal(reg); setActiveDropdownId(null); }}>
+                                Gán xe
+                              </DropdownItem>
+                            )}
 
-                              {/* Yêu cầu đổi */}
-                              {(isOwner || canCoordinate) && ['approved', 'scheduled'].includes(reg.status) && (
-                                <button className="dropdown-item" onClick={() => { handleRequestChangeClick(reg); setActiveDropdownId(null); }}>Yêu cầu đổi</button>
-                              )}
+                            {/* Yêu cầu đổi */}
+                            {(isOwner || canCoordinate) && ['approved', 'scheduled'].includes(reg.status) && (
+                              <DropdownItem onClick={() => { handleRequestChangeClick(reg); setActiveDropdownId(null); }}>
+                                Yêu cầu đổi
+                              </DropdownItem>
+                            )}
 
-                              {/* Duyệt / Từ chối yêu cầu thay đổi */}
-                              {canCoordinate && reg.status === 'pending_change' && reg.pending_change_id && (
-                                <>
-                                  <button className="dropdown-item" onClick={() => { handlePreviewChange(reg); setActiveDropdownId(null); }}>Xem thay đổi</button>
-                                  <button className="dropdown-item text-primary" onClick={() => { handleApproveChange(reg); setActiveDropdownId(null); }}>Duyệt đổi</button>
-                                  <button className="dropdown-item text-danger" onClick={() => { handleRejectChange(reg); setActiveDropdownId(null); }}>Từ chối đổi</button>
-                                </>
-                              )}
+                            {/* Duyệt / Từ chối yêu cầu thay đổi */}
+                            {canCoordinate && reg.status === 'pending_change' && reg.pending_change_id && (
+                              <>
+                                <DropdownItem onClick={() => { handlePreviewChange(reg); setActiveDropdownId(null); }}>
+                                  Xem thay đổi
+                                </DropdownItem>
+                                <DropdownItem color="#2563eb" hoverBg="#eff6ff" onClick={() => { handleApproveChange(reg); setActiveDropdownId(null); }}>
+                                  Duyệt đổi
+                                </DropdownItem>
+                                <DropdownItem color="#dc2626" hoverBg="#fef2f2" onClick={() => { handleRejectChange(reg); setActiveDropdownId(null); }}>
+                                  Từ chối đổi
+                                </DropdownItem>
+                              </>
+                            )}
 
-                              {/* Sửa */}
-                              {canEditRegistration && reg.status === 'pending' && (
-                                <button className="dropdown-item" onClick={() => { handleEditClick(reg); setActiveDropdownId(null); }}>Sửa</button>
-                              )}
+                            {/* Sửa */}
+                            {canEditRegistration && reg.status === 'pending' && (
+                              <DropdownItem onClick={() => { handleEditClick(reg); setActiveDropdownId(null); }}>
+                                Sửa
+                              </DropdownItem>
+                            )}
 
-                              {/* Hủy chuyến */}
-                              {(isOwner || canCoordinate) && ['pending', 'approved', 'scheduled', 'pending_change'].includes(reg.status) && (
-                                <button className="dropdown-item text-warning" onClick={() => { handleCancel(reg.id); setActiveDropdownId(null); }}>Hủy chuyến</button>
-                              )}
+                            {/* Hủy chuyến */}
+                            {(isOwner || canCoordinate) && ['pending', 'approved', 'scheduled', 'pending_change'].includes(reg.status) && (
+                              <DropdownItem color="#d97706" hoverBg="#fffbeb" onClick={() => { handleCancel(reg.id); setActiveDropdownId(null); }}>
+                                Hủy chuyến
+                              </DropdownItem>
+                            )}
 
-                              {/* Xóa */}
-                              {canDeleteRegistration && (
-                                <button className="dropdown-item text-danger" onClick={() => { handleDeleteClick(reg.id); setActiveDropdownId(null); }}>Xóa</button>
-                              )}
-                            </div>
-                          )}
-                        </td>
+                            {/* Xóa */}
+                            {canDeleteRegistration && (
+                              <DropdownItem color="#dc2626" hoverBg="#fef2f2" onClick={() => { handleDeleteClick(reg.id); setActiveDropdownId(null); }}>
+                                Xóa
+                              </DropdownItem>
+                            )}
+                          </DropdownMenu>
+                        )}
+                      </td>
                     )}
                   </tr>
                   );
