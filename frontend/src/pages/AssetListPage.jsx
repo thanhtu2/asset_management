@@ -360,7 +360,7 @@ const AssetListPage = () => {
     <div>
       <div className="page-header">
         <h1>Quản lý tài sản</h1>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px'}}>
           <button onClick={() => assetsAPI.exportAssets()} className="btn btn-outline">⬇ Xuất Excel</button>
           {(user?.role === 'admin' || user?.permissions?.includes('CREATE_ASSET')) && (
             <>

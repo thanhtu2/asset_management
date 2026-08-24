@@ -40,7 +40,7 @@ const LoginPage = () => {
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
-        background: 'linear-gradient(135deg, #6fa6ff 0%, #3fcbf5 35%, #3b8bec 65%, #34b8e0 100%)',
+        // background: 'linear-gradient(135deg, #6fa6ff 0%, #3fcbf5 35%, #3b8bec 65%, #34b8e0 100%)',
       }}
     >
       {/* Ambient blobs */}
