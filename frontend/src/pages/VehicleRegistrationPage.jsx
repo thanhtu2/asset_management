@@ -990,7 +990,7 @@ const fetchRegistrations = async () => {
                 </div>
                 <div className="form-group">
                   <label>Thành phần tham gia</label>
-                  <input type="text" name="participants" value={currentRegistration.participants} onChange={handleChange} />
+                  <textarea name="participants" value={currentRegistration.participants} onChange={handleChange}></textarea>
                 </div>
                 <div className="form-group">
                   <label>Ghi chú</label>
