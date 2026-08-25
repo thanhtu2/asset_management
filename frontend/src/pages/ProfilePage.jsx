@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { authAPI } from '../api';
+import { useNavigate } from 'react-router-dom';
+import { authAPI, permissionsAPI } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 
 const ROLE_MAP = {
@@ -13,8 +14,10 @@ const ROLE_MAP = {
 
 const ProfilePage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [profileData, setProfileData] = useState({ fullName: '', department: '' });
   const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [permissionMap, setPermissionMap] = useState({});
   
   const [profileMessage, setProfileMessage] = useState({ type: '', text: '' });
   const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' });
@@ -25,6 +28,22 @@ const ProfilePage = () => {
       setProfileData({ fullName: user.fullName || '', department: user.department_name || 'Chưa phân phòng' });
     }
   }, [user]);
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const response = await permissionsAPI.getAll();
+        const map = response.data.data.reduce((acc, perm) => {
+          acc[perm.code] = perm.name;
+          return acc;
+        }, {});
+        setPermissionMap(map);
+      } catch (error) {
+        console.error('Lỗi khi tải danh sách quyền:', error);
+      }
+    };
+    fetchPermissions();
+  }, []);
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
@@ -65,10 +84,10 @@ const ProfilePage = () => {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+        <button onClick={() => navigate(-1)} className="btn btn-secondary">← Trở về</button>
         <h1>Hồ sơ cá nhân</h1>
       </div>
-
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
         <div className="card">
           <h2 style={{ marginBottom: '20px', fontSize: '18px' }}>Cập nhật thông tin</h2>
@@ -93,6 +112,18 @@ const ProfilePage = () => {
             <div className="form-group">
               <label>Phòng</label>
               <input type="text" value={profileData.department} disabled style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }} />
+            </div>
+            <div className="form-group">
+              <label>Ngày tham gia</label>
+              <input type="text" value={user?.created_at ? new Date(user.created_at).toLocaleDateString('vi-VN') : 'N/A'} disabled style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }} />
+            </div>
+            <div className="form-group">
+              <label>Quyền hạn</label>
+              <div style={{ padding: '10px', backgroundColor: '#f9f9f9', borderRadius: '4px', border: '1px solid #ddd' }}>
+                {user?.permissions && user.permissions.length > 0 
+                  ? user.permissions.map(code => permissionMap[code] || code).join(', ') 
+                  : 'Không có quyền hạn đặc biệt'}
+              </div>
             </div>
             <button type="submit" className="btn btn-primary" disabled={loading}>Lưu thông tin</button>
           </form>
