@@ -404,7 +404,7 @@ const InventoryPage = () => {
   }
 
   return (
-    <div>
+    <div style={{ padding: '0 20px' }}>
       <div className="page-header">
         <h1>Quản lý kiểm kê tài sản</h1>
         {(user?.role === 'admin' || user?.permissions?.includes('CREATE_INVENTORY')) && (

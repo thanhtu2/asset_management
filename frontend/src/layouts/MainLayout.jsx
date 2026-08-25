@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Footer from '../components/Footer';
 import NotificationBell from '../components/NotificationBell';
 
 // Icon cho dropdown
@@ -283,11 +284,19 @@ const MainLayout = ({ children }) => {
 
       <main
         className="main-content"
-        style={{
-          marginLeft: collapsed ? 0 : SIDEBAR_WIDTH,
-          transition: 'margin-left 0.3s cubic-bezier(0.4,0,0.2,1)',
-          padding: 0
-        }}
+        // style={{
+        //   marginLeft: collapsed ? 0 : SIDEBAR_WIDTH,
+        //   transition: 'margin-left 0.3s cubic-bezier(0.4,0,0.2,1)',
+        //   padding: 0
+        // }}
+          style={{
+            marginLeft: collapsed ? 0 : SIDEBAR_WIDTH,
+            transition: 'margin-left 0.3s cubic-bezier(0.4,0,0.2,1)',
+            padding: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '100vh',
+          }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, position: 'relative', zIndex: 999, borderBottom: '1px solid #E5E7EB' }}>
           <button
@@ -371,8 +380,10 @@ const MainLayout = ({ children }) => {
             )}
           </div>
         </div>
-
-        {children}
+        <div style={{ flex: 1 }}>
+          {children}
+        </div>
+        <Footer />
       </main>
     </div>
   );

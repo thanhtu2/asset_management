@@ -351,7 +351,7 @@ const PurchaseProposalPage = () => {
     <div className="purchase-proposal-page">
       {!activeProposal ? (
         // List view
-        <div className="proposals-list">
+        <div className="proposals-list" style={{ padding: '0 20px' }}>
           <div className="page-header">
             <h1>Phiếu đề xuất mua sắm</h1>
             <button className="btn btn-primary" onClick={() => setSearchParams({ action: 'create' })}>

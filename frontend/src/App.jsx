@@ -21,6 +21,8 @@ import AuditLogPage from './pages/AuditLogPage';
 import VehicleRegistrationPage from './pages/VehicleRegistrationPage';
 import UserGuidePage from './layouts/UserGuidePage';
 import { departmentsAPI } from './api';
+import Changelog from './pages/Changelog';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 function App() {
   return (
@@ -159,7 +161,8 @@ function App() {
               </MainLayout>
             </ProtectedRoute>
           } />
-
+          <Route path="/changelog" element={<Changelog />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

@@ -83,7 +83,7 @@ const ProfilePage = () => {
   };
 
   return (
-    <div>
+    <div style={{ padding: '0 20px' }}>
       <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
         <button onClick={() => navigate(-1)} className="btn btn-secondary">← Trở về</button>
         <h1>Hồ sơ cá nhân</h1>

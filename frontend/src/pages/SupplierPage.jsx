@@ -114,7 +114,7 @@ const SupplierPage = () => {
   }
 
   return (
-    <div>
+    <div style={{ padding: '0 20px' }}>
       <div className="page-header">
         <h1>Quản lý nhà cung cấp</h1>
         {(user?.role === 'admin' || user?.permissions?.includes('CREATE_SUPPLIER')) && (

@@ -29,6 +29,8 @@ import vehicleTripRoutes from './routes/vehicleTrip.routes.js';
 import vehicleRoutes from './routes/vehicle.routes.js'; // Đảm bảo import từ routes/
 import vehicleRegistrationRoutes from './routes/vehicleRegistration.routes.js';
 import auditRoutes from './routes/audit.routes.js';
+import systemRoutes from './routes/system.routes.js';
+
 
 import { initDatabase, testConnection, getPool } from './config/database.js';
 import { initCronJobs } from './cron.service.js';
@@ -190,6 +192,7 @@ app.use('/api/audit-logs', auditRoutes);
 app.use('/api/vehicle-registrations', vehicleRegistrationRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/vehicle-trips', vehicleTripRoutes);
+app.use('/api/system', systemRoutes);
 
 // New Logout Route
 app.post('/api/auth/logout', (req, res) => {

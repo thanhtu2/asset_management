@@ -590,10 +590,10 @@ const fetchRegistrations = async () => {
   if (!canViewRegistrations && !canViewWeekly) return <div className="error-message">Bạn không có quyền truy cập trang này.</div>;
 
   return (
-    <div className="page-container">
+    <div className="page-container" style={{ padding: '0 20px' }}>
       <div className="page-header">
         <h1>Quản lý Đăng ký xe</h1>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center'}}>
           <div className="btn-group">
             {canViewRegistrations && (
               <button 
