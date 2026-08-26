@@ -153,6 +153,14 @@ export const maintenanceAPI = {
   completeRepair: (data) => apiClient.post('/maintenance/complete-repair', data),
 };
 
+// Technical support requests API
+export const supportRequestsAPI = {
+  getAll: (params) => apiClient.get('/support-requests', { params }),
+  getById: (id) => apiClient.get(`/support-requests/${id}`),
+  create: (data) => apiClient.post('/support-requests', data),
+  update: (id, data) => apiClient.put(`/support-requests/${id}`, data),
+};
+
 // Inventory API
 export const inventoryAPI = {
   getAll: (params) => apiClient.get('/inventory', { params }),

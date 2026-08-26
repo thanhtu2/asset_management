@@ -178,6 +178,50 @@ CREATE TABLE IF NOT EXISTS maintenance_records (
   FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
 );
 
+-- Technical support requests and processing history
+CREATE TABLE IF NOT EXISTS technical_support_requests (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  request_number VARCHAR(50) UNIQUE NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  category ENUM('hardware', 'software', 'network', 'account', 'peripheral', 'other') NOT NULL,
+  priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
+  status ENUM('submitted', 'assigned', 'in_progress', 'waiting_user', 'resolved', 'closed', 'rejected', 'cancelled') DEFAULT 'submitted',
+  asset_id INT NULL,
+  requester_id INT NOT NULL,
+  department_id INT NULL,
+  assigned_to INT NULL,
+  resolution_summary TEXT NULL,
+  resolution_cost DECIMAL(15,2) DEFAULT 0,
+  first_response_at DATETIME NULL,
+  started_at DATETIME NULL,
+  resolved_at DATETIME NULL,
+  closed_at DATETIME NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE SET NULL,
+  FOREIGN KEY (requester_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL,
+  FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_support_status (status),
+  INDEX idx_support_category (category),
+  INDEX idx_support_created (created_at)
+);
+
+CREATE TABLE IF NOT EXISTS technical_support_histories (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  request_id INT NOT NULL,
+  actor_id INT NULL,
+  action VARCHAR(50) NOT NULL,
+  old_status VARCHAR(30) NULL,
+  new_status VARCHAR(30) NULL,
+  comment TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (request_id) REFERENCES technical_support_requests(id) ON DELETE CASCADE,
+  FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_support_history_request (request_id, created_at)
+);
+
 -- 12. Inventory Sessions (phụ thuộc users, departments)
 CREATE TABLE IF NOT EXISTS inventory_sessions (
   id INT PRIMARY KEY AUTO_INCREMENT,
@@ -227,9 +271,8 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 -- 15. Roles, Permissions (không phụ thuộc ai)
-DROP TABLE IF EXISTS role_permissions;
-DROP TABLE IF EXISTS permissions;
-DROP TABLE IF EXISTS roles;
+-- Không xóa các bảng này khi khởi động: quyền và mapping có thể được quản trị viên
+-- tạo/cập nhật từ giao diện và phải được giữ lại giữa các lần restart.
 
 CREATE TABLE IF NOT EXISTS roles (
   code VARCHAR(50) PRIMARY KEY,
@@ -340,6 +383,10 @@ INSERT IGNORE INTO permissions (code, name, module) VALUES
 ('CREATE_MAINTENANCE', 'Thêm bảo trì', 'Bảo trì'),
 ('EDIT_MAINTENANCE', 'Sửa bảo trì', 'Bảo trì'),
 ('DELETE_MAINTENANCE', 'Xóa bảo trì', 'Bảo trì'),
+('VIEW_SUPPORT_REQUESTS', 'Xem yêu cầu hỗ trợ kỹ thuật', 'Hỗ trợ kỹ thuật'),
+('CREATE_SUPPORT_REQUEST', 'Tạo yêu cầu hỗ trợ kỹ thuật', 'Hỗ trợ kỹ thuật'),
+('PROCESS_SUPPORT_REQUEST', 'Xử lý yêu cầu hỗ trợ kỹ thuật', 'Hỗ trợ kỹ thuật'),
+('VIEW_SUPPORT_REPORTS', 'Xem báo cáo hỗ trợ kỹ thuật', 'Hỗ trợ kỹ thuật'),
 ('VIEW_INVENTORY', 'Xem kiểm kê', 'Kiểm kê'),
 ('CREATE_INVENTORY', 'Thêm kiểm kê', 'Kiểm kê'),
 ('EDIT_INVENTORY', 'Sửa kiểm kê', 'Kiểm kê'),
@@ -362,7 +409,7 @@ SELECT 'admin', code FROM permissions;
 INSERT IGNORE INTO role_permissions (role_code, permission_code)
 SELECT 'manager', code FROM permissions 
 WHERE module IN ('Tài sản', 'Danh mục', 'Bảo trì', 'Kiểm kê')
-OR code IN ('VIEW_DASHBOARD', 'VIEW_REPORTS', 'VIEW_VEHICLE_REGISTRATIONS', 'VIEW_VEHICLE_WEEKLY', 'CREATE_VEHICLE_REGISTRATION', 'EDIT_VEHICLE_REGISTRATION', 'DELETE_VEHICLE_REGISTRATION', 'COORDINATE_VEHICLE');
+OR code IN ('VIEW_DASHBOARD', 'VIEW_REPORTS', 'VIEW_SUPPORT_REQUESTS', 'CREATE_SUPPORT_REQUEST', 'PROCESS_SUPPORT_REQUEST', 'VIEW_SUPPORT_REPORTS', 'VIEW_VEHICLE_REGISTRATIONS', 'VIEW_VEHICLE_WEEKLY', 'CREATE_VEHICLE_REGISTRATION', 'EDIT_VEHICLE_REGISTRATION', 'DELETE_VEHICLE_REGISTRATION', 'COORDINATE_VEHICLE');
 
 INSERT IGNORE INTO role_permissions (role_code, permission_code) VALUES 
 ('department-leader', 'VIEW_DASHBOARD'),

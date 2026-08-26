@@ -11,6 +11,7 @@ import LocationPage from './pages/LocationPage';
 import SupplierPage from './pages/SupplierPage';
 import DepartmentPage from './pages/DepartmentPage';
 import MaintenancePage from './pages/MaintenancePage';
+import SupportRequestPage from './pages/SupportRequestPage';
 import InventoryPage from './pages/InventoryPage';
 import UserManagementPage from './pages/UserManagementPage';
 import RoleManagementPage from './pages/RoleManagementPage';
@@ -97,6 +98,14 @@ function App() {
             <ProtectedRoute>
               <MainLayout>
                 <MaintenancePage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/support-requests" element={
+            <ProtectedRoute requiredPermission="VIEW_SUPPORT_REQUESTS">
+              <MainLayout>
+                <SupportRequestPage />
               </MainLayout>
             </ProtectedRoute>
           } />
