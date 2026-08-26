@@ -35,8 +35,16 @@ const canCreateOrCoordinateVehicle = (req, res, next) => {
   return res.status(403).json({ message: 'Bạn không có quyền thực hiện thao tác này.' });
 };
 
+const canViewVehicleRegistrationData = (req, res, next) => {
+  const perms = req.user?.permissions || [];
+  if (req.user?.role === 'admin' || perms.includes('VIEW_VEHICLE_REGISTRATIONS') || perms.includes('VIEW_VEHICLE_WEEKLY')) {
+    return next();
+  }
+  return res.status(403).json({ message: 'Bạn không có quyền xem dữ liệu đăng ký xe.' });
+};
+
 router.post('/', checkPermission('CREATE_VEHICLE_REGISTRATION'), generalUpload.single('file'), createVehicleRegistration);
-router.get('/', checkPermission('VIEW_VEHICLE_REGISTRATIONS'), getAllVehicleRegistrations);
+router.get('/', canViewVehicleRegistrationData, getAllVehicleRegistrations);
 router.get('/export', checkPermission('VIEW_VEHICLE_REGISTRATIONS'), exportVehicleRegistrations);
 // QUAN TRỌNG: route tĩnh '/find-similar' phải khai báo TRƯỚC route động '/:id',
 // nếu không Express sẽ hiểu "find-similar" là giá trị của :id.

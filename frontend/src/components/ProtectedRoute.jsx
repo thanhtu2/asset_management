@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-const ProtectedRoute = ({ children, requiredPermission }) => {
+const ProtectedRoute = ({ children, requiredPermission, requiredPermissions }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -17,7 +17,11 @@ const ProtectedRoute = ({ children, requiredPermission }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (requiredPermission && !user?.permissions?.includes(requiredPermission)) {
+  const hasRequiredPermission = requiredPermission
+    ? user?.permissions?.includes(requiredPermission)
+    : requiredPermissions?.some(permission => user?.permissions?.includes(permission));
+
+  if ((requiredPermission || requiredPermissions) && !hasRequiredPermission) {
     return <Navigate to="/" replace />;
   }
 

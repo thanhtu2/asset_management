@@ -17,6 +17,14 @@
   --color-sidebar-bg:    #0f172a;
 }
 
+:root {
+  --motion-fast: 160ms;
+  --motion-standard: 240ms;
+  --motion-slow: 360ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* =========================================================
    Base Resets (must be in @layer base for v4 cascade)
    ========================================================= */
@@ -74,13 +82,15 @@
   }
 
   .sidebar-menu a {
-    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm no-underline transition-all duration-200;
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm no-underline;
     color: rgba(255,255,255,0.55);
+    transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out);
   }
 
   .sidebar-menu a:hover {
     background: rgba(255,255,255,0.08);
     color: rgba(255,255,255,0.9);
+    transform: translateX(3px);
   }
 
   .sidebar-menu a.active {
@@ -108,7 +118,7 @@
   .sidebar-dropdown .dropdown-menu {
     @apply list-none pl-4 mt-1 overflow-hidden;
     max-height: 0;
-    transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
+    transition: max-height var(--motion-standard) var(--ease-out), padding var(--motion-standard) var(--ease-out);
   }
 
   .sidebar-dropdown.open .dropdown-menu {
@@ -167,8 +177,10 @@
 
   .main-content {
     @apply flex-1 p-6 min-h-screen;
+    min-width: 0;
     margin-left: 256px;
     background-color: var(--color-page-bg);
+    animation: pageEnter var(--motion-slow) var(--ease-out) both;
   }
 
   /* ── Page Header ─────────────────────────────────────── */
@@ -190,6 +202,13 @@
     @apply bg-white rounded-xl p-5 mb-5;
     border: 1px solid #e8edf5;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    transition: transform var(--motion-standard) var(--ease-out), box-shadow var(--motion-standard) var(--ease-out), border-color var(--motion-standard) var(--ease-out);
+  }
+
+  .card:hover {
+    border-color: #dbe5f2;
+    box-shadow: 0 10px 24px rgba(15,23,42,0.08);
+    transform: translateY(-2px);
   }
 
   .card-header {
@@ -206,10 +225,22 @@
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   }
 
+  @media (min-width: 1024px) {
+    .dashboard-page .stats-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
   .stat-card {
     @apply bg-white rounded-xl p-5 relative overflow-hidden;
     border: 1px solid #e8edf5;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    transition: transform var(--motion-standard) var(--ease-spring), box-shadow var(--motion-standard) var(--ease-out);
+  }
+
+  .stat-card:hover {
+    box-shadow: 0 12px 26px rgba(15,23,42,0.1);
+    transform: translateY(-4px);
   }
 
   .stat-card::before {
@@ -260,8 +291,9 @@
 
   /* ── Buttons ─────────────────────────────────────────── */
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer no-underline transition-all duration-200;
+    @apply inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer no-underline;
     border: none;
+    transition: transform var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out);
   }
 
   .btn-primary {
@@ -309,6 +341,38 @@
   /* ── Tables ──────────────────────────────────────────── */
   .table-container {
     @apply overflow-x-auto;
+  }
+
+  .asset-list-page .table-container {
+    border: 1px solid #e8edf5;
+    border-radius: 10px;
+    background: #fff;
+  }
+
+  .asset-list-page table {
+    min-width: 1180px;
+  }
+
+  .asset-list-page table th,
+  .asset-list-page table td {
+    white-space: nowrap;
+  }
+
+  .asset-list-page table td:nth-child(3),
+  .asset-list-page table td:nth-child(4),
+  .asset-list-page table td:nth-child(5),
+  .asset-list-page table td:nth-child(6),
+  .asset-list-page table td:nth-child(7) {
+    white-space: normal;
+    min-width: 110px;
+    max-width: 170px;
+    overflow-wrap: break-word;
+  }
+
+  .asset-list-page .toolbar > div:last-child {
+    flex: 1;
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
   table td.col-long-text {
     min-width: 180px;
@@ -388,6 +452,7 @@
     background: rgba(0,0,0,0.55);
     backdrop-filter: blur(4px);
     z-index: 1000;
+    animation: overlayEnter var(--motion-standard) var(--ease-out) both;
   }
 
   .modal {
@@ -397,6 +462,7 @@
     overflow-y: auto;
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    animation: modalEnter var(--motion-slow) var(--ease-spring) both;
   }
 
   .modal-lg {
@@ -593,6 +659,7 @@
   .import-dropzone--active {
     border-color: var(--color-primary);
     background: #eff6ff;
+    transform: translateY(-1px);
   }
 
   .import-dropzone--has-file {
@@ -702,6 +769,30 @@
   }
   .bell-icon.ringing {
     animation: smoothBellRing 1.2s ease-in-out;
+  }
+
+  @keyframes pageEnter {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes overlayEnter {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes modalEnter {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 
   /* ── Purchase Proposal Form & Detail ─────────────────── */

@@ -147,7 +147,7 @@ function App() {
           } />
 
           <Route path="/vehicle-registrations" element={
-            <ProtectedRoute requiredPermission="VIEW_VEHICLE_REGISTRATIONS">
+            <ProtectedRoute requiredPermissions={['VIEW_VEHICLE_REGISTRATIONS', 'VIEW_VEHICLE_WEEKLY']}>
               <MainLayout>
                 <VehicleRegistrationPage />
               </MainLayout>

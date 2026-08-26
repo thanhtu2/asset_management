@@ -357,7 +357,7 @@ const AssetListPage = () => {
   }
 
   return (
-    <div style={{ marginBottom: '30px', padding: '0 20px' }}>
+    <div className="asset-list-page" style={{ marginBottom: '30px', padding: '0 20px' }}>
       <div className="page-header">
         <h1>Quản lý tài sản</h1>
         <div style={{ display: 'flex', gap: '10px'}}>

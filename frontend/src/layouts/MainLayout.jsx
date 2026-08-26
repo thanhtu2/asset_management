@@ -125,7 +125,7 @@ const MainLayout = ({ children }) => {
           justifyContent: 'center',
           fontSize: 13,
           color: 'var(--color-text-secondary)',
-          transition: 'left 0.3s cubic-bezier(0.4,0,0.2,1), background 0.15s',
+          transition: 'left var(--motion-slow) var(--ease-spring), background-color var(--motion-fast) var(--ease-out)',
           padding: 0,
         }}
         onMouseEnter={e => {
@@ -151,7 +151,7 @@ const MainLayout = ({ children }) => {
           minWidth: collapsed ? 0 : SIDEBAR_WIDTH,
           overflow: 'hidden',
           // background: 'linear-gradient(135deg, #6fa6ff 0%, #3fcbf5 35%, #3b8bec 65%, #34b8e0 100%)',
-          transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1), min-width 0.3s cubic-bezier(0.4,0,0.2,1)',
+          transition: 'width var(--motion-slow) var(--ease-spring), min-width var(--motion-slow) var(--ease-spring)',
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -291,7 +291,7 @@ const MainLayout = ({ children }) => {
         // }}
           style={{
             marginLeft: collapsed ? 0 : SIDEBAR_WIDTH,
-            transition: 'margin-left 0.3s cubic-bezier(0.4,0,0.2,1)',
+            transition: 'margin-left var(--motion-slow) var(--ease-spring)',
             padding: 0,
             display: 'flex',
             flexDirection: 'column',
@@ -325,7 +325,7 @@ const MainLayout = ({ children }) => {
                 padding: '8px', 
                 borderRadius: '8px',
                 background: isUserMenuOpen ? 'rgba(255,255,255,0.1)' : 'transparent',
-                transition: 'background 0.2s'
+                transition: 'background-color var(--motion-fast) var(--ease-out)'
               }}
             >
               <div className="avatar" style={{ flexShrink: 0, backgroundColor: '#E5E7EB' }}>
@@ -353,7 +353,7 @@ const MainLayout = ({ children }) => {
                   })()}
                 </div>
               </div>
-              <IconChevronRight style={{ marginLeft: 'auto', transform: isUserMenuOpen ? 'rotate(-90deg)' : 'rotate(90deg)', transition: 'transform 0.2s' }} />
+              <IconChevronRight style={{ marginLeft: 'auto', transform: isUserMenuOpen ? 'rotate(-90deg)' : 'rotate(90deg)', transition: 'transform var(--motion-standard) var(--ease-out)' }} />
             </div>
 
             {/* Dropdown Menu */}
