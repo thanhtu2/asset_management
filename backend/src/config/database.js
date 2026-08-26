@@ -205,6 +205,39 @@ const createDatabase = async () => {
       console.log('Added maintenance_records.completion_date column');
     } catch (e) {}
 
+    try {
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS technical_support_requests (
+          id INT PRIMARY KEY AUTO_INCREMENT,
+          request_number VARCHAR(50) UNIQUE NOT NULL,
+          title VARCHAR(255) NOT NULL,
+          description TEXT NOT NULL,
+          category ENUM('hardware', 'software', 'network', 'account', 'peripheral', 'other') NOT NULL,
+          priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
+          status ENUM('submitted', 'assigned', 'in_progress', 'waiting_user', 'resolved', 'closed', 'rejected', 'cancelled') DEFAULT 'submitted',
+          asset_id INT NULL, requester_id INT NOT NULL, department_id INT NULL, assigned_to INT NULL,
+          resolution_summary TEXT NULL, resolution_cost DECIMAL(15,2) DEFAULT 0,
+          first_response_at DATETIME NULL, started_at DATETIME NULL, resolved_at DATETIME NULL, closed_at DATETIME NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE SET NULL,
+          FOREIGN KEY (requester_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL,
+          FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL
+        )
+      `);
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS technical_support_histories (
+          id INT PRIMARY KEY AUTO_INCREMENT, request_id INT NOT NULL, actor_id INT NULL,
+          action VARCHAR(50) NOT NULL, old_status VARCHAR(30) NULL, new_status VARCHAR(30) NULL,
+          comment TEXT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (request_id) REFERENCES technical_support_requests(id) ON DELETE CASCADE,
+          FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL
+        )
+      `);
+    } catch (e) {
+      console.error('Support request tables initialization failed:', e.message);
+    }
+
     await connection.end();
     return true;
   } catch (error) {

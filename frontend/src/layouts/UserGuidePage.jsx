@@ -193,8 +193,9 @@ const UserGuidePage = () => {
             <li><a href="#quan-ly-tai-san">1. Quản lý Tài sản</a></li>
             <li><a href="#kiem-ke">2. Kiểm kê</a></li>
             <li><a href="#bao-tri">3. Bảo trì</a></li>
-            <li><a href="#quan-ly-xe">4. Quản lý Đăng ký xe</a></li>
-            <li><a href="#de-xuat-mua-sam">5. Đề xuất Mua sắm</a></li>
+            <li><a href="#ho-tro-ky-thuat">4. Yêu cầu hỗ trợ kỹ thuật</a></li>
+            <li><a href="#quan-ly-xe">5. Quản lý Đăng ký xe</a></li>
+            <li><a href="#de-xuat-mua-sam">6. Đề xuất Mua sắm</a></li>
 
             <li className="group-title">Quản trị</li>
             <li><a href="#nguoi-dung">Quản lý Người dùng</a></li>
@@ -278,8 +279,35 @@ const UserGuidePage = () => {
               </div>
           </section>
 
+          <section id="ho-tro-ky-thuat">
+              <h1>4. Yêu cầu hỗ trợ kỹ thuật</h1>
+              <div className="card">
+                  <p>Sử dụng module này để gửi và theo dõi các sự cố phần cứng, phần mềm, mạng, tài khoản hoặc thiết bị ngoại vi.</p>
+
+                  <h3>Tạo phiếu hỗ trợ</h3>
+                  <ol>
+                      <li>Mở menu <strong>Yêu cầu hỗ trợ</strong> và nhấn <strong>"+ Tạo phiếu hỗ trợ"</strong>.</li>
+                      <li>Nhập tiêu đề và mô tả rõ sự cố, thời điểm phát sinh và ảnh hưởng.</li>
+                      <li>Chọn nhóm lỗi, mức độ ưu tiên và tài sản liên quan nếu có.</li>
+                      <li>Nhấn <strong>Gửi phiếu</strong>. Phiếu mới có trạng thái <code>Mới gửi</code>.</li>
+                  </ol>
+
+                  <h3>Quy trình xử lý</h3>
+                  <p>Phiếu được xử lý tuần tự theo các bước:</p>
+                  <p><code>Mới gửi</code> → <code>Đã tiếp nhận</code> → <code>Đang xử lý</code> → <code>Đã xử lý</code> → <code>Đã đóng</code></p>
+                  <ul>
+                      <li>Người dùng theo dõi trạng thái và lịch sử xử lý trong phần <strong>Chi tiết</strong>.</li>
+                      <li>Kỹ thuật viên ghi chú ở mỗi lần chuyển trạng thái để tạo timeline đầy đủ.</li>
+                      <li>Không tạo phiếu mới cho cùng một sự cố khi phiếu cũ vẫn đang được xử lý.</li>
+                  </ul>
+
+                  <h3>Tra cứu và báo cáo</h3>
+                  <p>Dùng ô tìm kiếm hoặc bộ lọc theo nhóm lỗi, trạng thái và mức độ ưu tiên. Mỗi phiếu có mã riêng và toàn bộ thao tác được lưu trong lịch sử hệ thống.</p>
+              </div>
+          </section>
+
           <section id="quan-ly-xe">
-              <h1>4. Quản lý Đăng ký xe</h1>
+              <h1>5. Quản lý Đăng ký xe</h1>
               <div className="card">
                   <p>Hệ thống hỗ trợ quản lý lịch trình xe, từ khâu đăng ký, phê duyệt đến điều phối xe.</p>
                   
@@ -324,7 +352,7 @@ const UserGuidePage = () => {
           </section>
 
           <section id="de-xuat-mua-sam">
-              <h1>5. Đề xuất Mua sắm</h1>
+              <h1>6. Đề xuất Mua sắm</h1>
               <div className="card">
                   <p>Khi gửi đề xuất, nếu có file báo giá (PDF, ảnh), hãy đính kèm ngay vào phiếu.</p>
                   <p><strong>Theo dõi trạng thái:</strong></p>
@@ -344,6 +372,22 @@ const UserGuidePage = () => {
                       <li>Khi thêm mới người dùng, hãy nhắc họ <strong>Đăng nhập lần đầu</strong> bằng mật khẩu mặc định (nếu có).</li>
                       <li>Khi thay đổi quyền hạn của một Role: Người dùng thuộc Role đó phải <strong>Đăng xuất</strong> thì quyền mới cập nhật vào phiên làm việc tiếp theo.</li>
                   </ul>
+              </div>
+          </section>
+
+          <section id="phan-quyen">
+              <h1>Quản trị: Phân quyền</h1>
+              <div className="card">
+                  <p>Quản trị viên cấu hình quyền theo từng vai trò tại menu <strong>Quản trị → Phân quyền</strong>.</p>
+                  <ol>
+                      <li>Chọn vai trò cần cấu hình.</li>
+                      <li>Bật hoặc tắt các quyền theo từng nhóm chức năng.</li>
+                      <li>Nhấn <strong>Lưu cấu hình phân quyền</strong>.</li>
+                      <li>Yêu cầu người dùng đăng xuất và đăng nhập lại để nhận quyền mới.</li>
+                  </ol>
+                  <div className="note">
+                      <p><strong>Lưu ý:</strong> Quyền đã cấu hình được lưu trong cơ sở dữ liệu và không bị mất khi backend khởi động lại.</p>
+                  </div>
               </div>
           </section>
         </main>

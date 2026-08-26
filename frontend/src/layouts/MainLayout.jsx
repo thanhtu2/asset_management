@@ -28,6 +28,7 @@ const menuItems = [
     ]
   },
   { path: '/maintenance',  label: 'Bảo trì',           icon: '🔧' },
+  { path: '/support-requests', label: 'Yêu cầu hỗ trợ', icon: '🛠️', permission: 'VIEW_SUPPORT_REQUESTS' },
   { path: '/inventory',    label: 'Kiểm kê',           icon: '📋' },
   { path: '/purchases',    label: 'Đề xuất mua sắm',   icon: '🛒', permission: 'MANAGE_PURCHASE_PROPOSALS' },
   { path: '/vehicle-registrations', label: 'Lịch đăng ký xe', icon: '🚗', permissions: ['VIEW_VEHICLE_REGISTRATIONS', 'VIEW_VEHICLE_WEEKLY'] },
