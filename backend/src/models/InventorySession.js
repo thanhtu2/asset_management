@@ -278,6 +278,8 @@ const InventorySession = {
         throw new Error(`Inventory session with ID ${sessionId} not found.`);
       }
       const session = sessions[0];
+      const isTotalInventory = session.department_id == null;
+      const isAssetInScope = isTotalInventory || asset.department_id === session.department_id;
 
       // 3. Check if a record for this asset already exists in this session
       const [existingRecords] = await connection.query(
@@ -291,7 +293,7 @@ const InventorySession = {
       if (existingRecords.length > 0) {
         // Asset was expected
         const record = existingRecords[0];
-        recordStatus = asset.department_id === session.department_id ? 'found' : 'found_wrong_location';
+        recordStatus = isAssetInScope ? 'found' : 'found_wrong_location';
         message = `Đã ghi nhận '${asset.name}'. Trạng thái: ${recordStatus === 'found' ? 'Đúng vị trí' : 'Sai vị trí'}.`;
 
         await connection.query(
@@ -302,7 +304,7 @@ const InventorySession = {
 
       } else {
         // Asset was not expected in this session's initial list.
-        if (asset.department_id === session.department_id) {
+        if (isAssetInScope) {
           // It's an extra asset from the correct department.
           recordStatus = 'extra';
           message = `Tài sản '${asset.name}' không có trong danh sách nhưng thuộc phòng này (ghi nhận là Thừa).`;

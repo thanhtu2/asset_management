@@ -23,6 +23,7 @@ const InventoryPage = () => {
   const [addAssetsModal, setAddAssetsModal] = useState({ show: false, sessionId: null });
   const [selectedAssets, setSelectedAssets] = useState([]);
   const [deleteModal, setDeleteModal] = useState({ show: false, id: null });
+  const [inventoryScope, setInventoryScope] = useState('all');
   const [selectedDepartment, setSelectedDepartment] = useState('');
 
   // State for damage report modal
@@ -84,6 +85,7 @@ const InventoryPage = () => {
       start_date: new Date().toISOString().split('T')[0],
       end_date: ''
     });
+    setInventoryScope('all');
     setSelectedDepartment('');
     setShowModal(true);
   };
@@ -93,7 +95,7 @@ const InventoryPage = () => {
     try {
       const sessionData = {
         ...formData,
-        department_id: selectedDepartment || null
+        department_id: inventoryScope === 'dept' ? selectedDepartment || null : null
       };
       await inventoryAPI.create(sessionData);
       setShowModal(false);
@@ -181,7 +183,7 @@ const InventoryPage = () => {
     }
     try {
       const result = await inventoryAPI.addAssetsByDepartment(sessionId, departmentId);
-      alert(result.message || `Đã thêm ${result.added} tài sản`);
+      alert(result.data?.message || `Đã thêm ${result.data?.added || 0} tài sản`);
       handleViewDetails(selectedSession);
     } catch (error) {
       console.error('Error adding assets by department:', error);
@@ -193,7 +195,7 @@ const InventoryPage = () => {
     if (!confirm('Bạn có chắc chắn muốn thêm TẤT CẢ tài sản vào phiên kiểm kê?')) return;
     try {
       const result = await inventoryAPI.addAllAssets(sessionId);
-      alert(result.message || `Đã thêm ${result.added} tài sản`);
+      alert(result.data?.message || `Đã thêm ${result.data?.added || 0} tài sản`);
       handleViewDetails(selectedSession);
     } catch (error) {
       console.error('Error adding all assets:', error);
@@ -404,7 +406,7 @@ const InventoryPage = () => {
   }
 
   return (
-    <div style={{ padding: '0 20px' }}>
+    <div className="inventory-page" style={{ padding: '0 20px' }}>
       <div className="page-header">
         <h1>Quản lý kiểm kê tài sản</h1>
         {(user?.role === 'admin' || user?.permissions?.includes('CREATE_INVENTORY')) && (
@@ -537,18 +539,18 @@ const InventoryPage = () => {
                 <div className="form-group">
                   <label>Loại kiểm kê *</label>
                   <select
-                    value={selectedDepartment === '' ? 'all' : 'dept'}
+                    value={inventoryScope}
                     onChange={(e) => {
-                      if (e.target.value === 'all') {
-                        setSelectedDepartment('');
-                      }
+                      const scope = e.target.value;
+                      setInventoryScope(scope);
+                      if (scope === 'all') setSelectedDepartment('');
                     }}
                   >
                     <option value="all">Kiểm kê tổng (tất cả tài sản)</option>
                     <option value="dept">Kiểm kê theo phòng ban</option>
                   </select>
                 </div>
-                {selectedDepartment !== '' || (
+                {inventoryScope === 'dept' && (
                   <div className="form-group">
                     <label>Phòng ban kiểm kê</label>
                     <select

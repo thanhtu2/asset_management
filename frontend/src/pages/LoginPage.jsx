@@ -263,7 +263,7 @@ const LoginPage = () => {
               justifyContent: 'center',
               gap: 8,
               boxShadow: '0 10px 24px rgba(20,115,230,0.4)',
-              transition: 'transform 0.13s ease-out, box-shadow 0.13s ease-out',
+                  transition: 'transform var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out)',
               opacity: loading ? 0.85 : 1,
             }}
           >
