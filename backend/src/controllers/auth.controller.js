@@ -55,42 +55,42 @@ export const login = async (req, res) => {
   }
 };
 
-export const register = async (req, res) => {
-  try {
-    const { username, password, fullName, role, department_id } = req.body;
+// export const register = async (req, res) => {
+//   try {
+//     const { username, password, fullName, role, department_id } = req.body;
     
-    const existingUser = await User.findByUsername(username);
-    if (existingUser) {
-      return res.status(400).json({ message: 'Username already exists' });
-    }
+//     const existingUser = await User.findByUsername(username);
+//     if (existingUser) {
+//       return res.status(400).json({ message: 'Username already exists' });
+//     }
     
-    const user = await User.create({ username, password, fullName, role, department_id });
+//     const user = await User.create({ username, password, fullName, role, department_id });
     
-    // Lấy danh sách quyền cho role mới
-    const [perms] = await pool.query('SELECT permission_code FROM role_permissions WHERE role_code = ?', [user.role]);
-    const permissions = perms.map(p => p.permission_code);
+//     // Lấy danh sách quyền cho role mới
+//     const [perms] = await pool.query('SELECT permission_code FROM role_permissions WHERE role_code = ?', [user.role]);
+//     const permissions = perms.map(p => p.permission_code);
 
-    const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role, department_id: user.department_id, permissions },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+//     const token = jwt.sign(
+//       { id: user.id, username: user.username, role: user.role, department_id: user.department_id, permissions },
+//       JWT_SECRET,
+//       { expiresIn: '24h' }
+//     );
     
-    const { password: _, ...userData } = user;
+//     const { password: _, ...userData } = user;
     
-    res.cookie('token', token, {
-      httpOnly: true,
-      // secure: process.env.NODE_ENV === 'production',
-      // sameSite: 'strict',
-      secure: true, // Đặt secure: true để cookie chỉ được gửi qua HTTPS
-      sameSite: 'none', // Đặt sameSite: 'none' để cookie được gửi trong các yêu cầu cross-site
-      maxAge: 24 * 60 * 60 * 1000 // Timeout 24 giờ
-    });
-    res.status(201).json({ user: userData });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+//     res.cookie('token', token, {
+//       httpOnly: true,
+//       // secure: process.env.NODE_ENV === 'production',
+//       // sameSite: 'strict',
+//       secure: true, // Đặt secure: true để cookie chỉ được gửi qua HTTPS
+//       sameSite: 'none', // Đặt sameSite: 'none' để cookie được gửi trong các yêu cầu cross-site
+//       maxAge: 24 * 60 * 60 * 1000 // Timeout 24 giờ
+//     });
+//     res.status(201).json({ user: userData });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
 
 export const getProfile = async (req, res) => {
   try {

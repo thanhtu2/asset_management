@@ -8,6 +8,8 @@ import rateLimit, { ipKeyGenerator }from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import compression from 'compression';
 
 // Import routes
 import authRoutes from './routes/auth.routes.js';
@@ -85,6 +87,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+app.use(helmet());
+app.use(compression());
 // Phục vụ file tĩnh từ thư mục uploads
 // app.use('/uploads', express.static(path.resolve(__dirname, '../uploads'))); // DEPRECATED: Insecure, replaced with a secure route
 
@@ -213,17 +217,17 @@ app.get('/api/health', (req, res) => {
 });
 
 // Test endpoint - no auth required
-app.get('/api/test-assets', async (req, res) => {
-  try {
-    const { page = 1, limit = 10 } = req.query;
-    const Asset = (await import('./models/Asset.js')).default;
-    const result = await Asset.findAll({}, page, limit);
-    res.json(result);
-  } catch (error) {
-    console.error('Test endpoint error:', error);
-    res.status(500).json({ message: error.message, stack: error.stack });
-  }
-});
+// app.get('/api/test-assets', async (req, res) => {
+//   try {
+//     const { page = 1, limit = 10 } = req.query;
+//     const Asset = (await import('./models/Asset.js')).default;
+//     const result = await Asset.findAll({}, page, limit);
+//     res.json(result);
+//   } catch (error) {
+//     console.error('Test endpoint error:', error);
+//     res.status(500).json({ message: error.message, stack: error.stack });
+//   }
+// });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -247,11 +251,13 @@ const seedAdminUser = async () => {
       console.log('Admin user created: admin / admin123');
     } else {
       // Always update password to ensure it's correct
-      await db.query(
-        'UPDATE users SET password = ? WHERE username = ?',
-        [hashedPassword, 'admin']
-      );
-      console.log('Admin password reset: admin / admin123');
+      // await db.query(
+      //   'UPDATE users SET password = ? WHERE username = ?',
+      //   [hashedPassword, 'admin']
+      // );
+      // console.log('Admin password reset: admin / admin123');
+      console.log('Admin user already exists, skip seeding.');
+
     }
   } catch (error) {
     console.error('Seed error:', error.message);

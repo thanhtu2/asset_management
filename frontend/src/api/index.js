@@ -238,6 +238,8 @@ export const purchaseProposalsAPI = {
 // Vehicles API
 export const vehiclesAPI = {
   getAll: () => apiClient.get('/vehicles'),
+  createExternal: (data) => apiClient.post('/vehicles/external', data),
+
 };
 
 export const vehicleRegistrationsAPI = {
