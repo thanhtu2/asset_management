@@ -100,7 +100,9 @@ const VehicleRegistrationPage = () => {
 
   // Modal gán xe (chỉ điều phối viên, chỉ khi phiếu đã được duyệt)
   const [assignModal, setAssignModal] = useState({ show: false, registration: null, vehicleId: '' });
-
+  const [showExternalForm, setShowExternalForm] = useState(false);
+  const [externalVehicle, setExternalVehicle] = useState({ plate_number: '', vendor_name: '', vendor_contact: '', vehicle_type: '', brand: '', model: '' });
+  const [externalError, setExternalError] = useState('');
   const hasActions = canEditRegistration || canDeleteRegistration || canApprove || canCoordinate || canCreateRegistration;
 
   useEffect(() => {
@@ -497,8 +499,24 @@ const fetchRegistrations = async () => {
 
   const openAssignModal = (registration) => {
     setAssignModal({ show: true, registration, vehicleId: registration.vehicle_id || '' });
+    setShowExternalForm(false);
+    setExternalVehicle({ plate_number: '', vendor_name: '', vendor_contact: ''});
+    setExternalError('');
   };
 
+const handleCreateExternalVehicle = async () => {
+    setExternalError('');
+    if (!externalVehicle.plate_number.trim()) { setExternalError('Vui lòng nhập biển số xe.'); return; }
+    if (!externalVehicle.vendor_name.trim()) { setExternalError('Vui lòng nhập tên nhà xe.'); return; }
+    try {
+      const response = await vehiclesAPI.createExternal(externalVehicle);
+      await fetchVehicles();
+      setAssignModal(prev => ({ ...prev, vehicleId: response.data.id }));
+      setShowExternalForm(false);
+    } catch (error) {
+      setExternalError(error.response?.data?.message || 'Có lỗi xảy ra khi thêm xe thuê ngoài.');
+    }
+  };
   const handleAssignSubmit = async (e) => {
     e.preventDefault();
     if (!assignModal.vehicleId) { alert('Vui lòng chọn xe.'); return; }
@@ -1069,11 +1087,78 @@ const fetchRegistrations = async () => {
                     required
                   >
                     <option value="">-- Chọn xe --</option>
-                    {vehiclesList.map(v => (
-                      <option key={v.id} value={v.id}>{v.plate_number} - {v.brand} {v.model}</option>
-                    ))}
+                    {vehiclesList.filter(v => !v.is_external).length > 0 && (
+                      <optgroup label="Xe nội bộ">
+                        {vehiclesList.filter(v => !v.is_external).map(v => (
+                          <option key={v.id} value={v.id}>{v.plate_number} - {v.brand} {v.model}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {vehiclesList.filter(v => v.is_external).length > 0 && (
+                      <optgroup label="Xe thuê ngoài">
+                        {vehiclesList.filter(v => v.is_external).map(v => (
+                          <option key={v.id} value={v.id}>{v.plate_number} - {v.vendor_name}</option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </div>
+
+                {!showExternalForm ? (
+                  <button type="button" className="btn btn-outline btn-sm" style={{ marginTop: 8 }} onClick={() => setShowExternalForm(true)}>
+                    + Thêm xe (thuê ngoài)
+                  </button>
+                ) : (
+                  <div style={{ marginTop: 12, padding: 12, border: '1px solid var(--color-border)', borderRadius: 8 }}>
+                    {externalError && <p style={{ color: 'var(--color-error)', fontSize: 13, marginBottom: 8 }}>{externalError}</p>}
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Biển số xe *</label>
+                        <input type="text" value={externalVehicle.plate_number}
+                          onChange={(e) => setExternalVehicle(prev => ({ ...prev, plate_number: e.target.value }))}
+                          placeholder="51A-123.45" />
+                      </div>
+                      <div className="form-group">
+                        <label>Nhà xe cho thuê *</label>
+                        <input type="text" value={externalVehicle.vendor_name}
+                          onChange={(e) => setExternalVehicle(prev => ({ ...prev, vendor_name: e.target.value }))}
+                          placeholder="Công ty vận tải Mai Linh" />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>SĐT liên hệ</label>
+                        <input type="text" value={externalVehicle.vendor_contact}
+                          onChange={(e) => setExternalVehicle(prev => ({ ...prev, vendor_contact: e.target.value }))}
+                          placeholder="0901 234 567" />
+                      </div>
+                      <div className="form-group">
+                        <label>Loại xe</label>
+                        <input type="text" value={externalVehicle.vehicle_type}
+                          onChange={(e) => setExternalVehicle(prev => ({ ...prev, vehicle_type: e.target.value }))}
+                          placeholder="Xe 7 chỗ" />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Thương hiệu</label>
+                        <input type="text" value={externalVehicle.brand}
+                          onChange={(e) => setExternalVehicle(prev => ({ ...prev, brand: e.target.value }))}
+                          placeholder="Toyota" />
+                      </div>
+                      <div className="form-group">
+                        <label>Model</label>
+                        <input type="text" value={externalVehicle.model}
+                          onChange={(e) => setExternalVehicle(prev => ({ ...prev, model: e.target.value }))}
+                          placeholder="Camry" />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button type="button" className="btn btn-outline btn-sm" onClick={() => setShowExternalForm(false)}>Hủy</button>
+                      <button type="button" className="btn btn-primary btn-sm" onClick={handleCreateExternalVehicle}>Thêm và chọn</button>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="modal-footer">
                 <button type="button" onClick={() => setAssignModal({ show: false, registration: null, vehicleId: '' })} className="btn btn-outline">Hủy</button>
