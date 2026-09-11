@@ -67,6 +67,19 @@ CREATE TABLE IF NOT EXISTS users (
   FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS changelogs (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  version VARCHAR(50) NOT NULL UNIQUE,
+  release_date DATE NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  type ENUM('feature', 'fix', 'security') NOT NULL DEFAULT 'feature',
+  description TEXT NOT NULL,
+  created_by INT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
 -- 6. Thêm manager_id vào departments sau khi users đã tồn tại
 ALTER TABLE departments ADD CONSTRAINT fk_dept_manager 
   FOREIGN KEY (manager_id) REFERENCES users(id) ON DELETE SET NULL;

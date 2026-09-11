@@ -252,17 +252,19 @@ const AssetListPage = () => {
       
       // Build label HTML with proper classes for print CSS
       const qrImage = qrData.qr_code 
-        ? `<img src="${qrData.qr_code}" style="width:60px;height:60px;display:block;" />`
+        ? `<img src="${qrData.qr_code}" style="width:72px;height:72px;display:block;" />`
         : '';
+      const userName = qrData.asset_user_name || asset.user_full_name || asset.assigned_to_name || '-';
       
       printArea.innerHTML = `
-        <div class="qr-label" style="width:113px;height:85px;padding:4px;border:1px dashed #ccc;display:flex;flex-direction:row;align-items:center;gap:4px;background:white;page-break-inside:avoid;">
-          <div class="qr-label__qr" style="width:60px;height:60px;flex-shrink:0;">
+        <div class="qr-label" style="width:135px;height:95px;padding:4px;border:1px dashed #ccc;display:flex;flex-direction:row;align-items:center;gap:5px;background:white;page-break-inside:avoid;">
+          <div class="qr-label__qr" style="width:72px;height:72px;flex-shrink:0;">
             ${qrImage}
           </div>
           <div class="qr-label__info" style="flex:1;overflow:hidden;">
             <div class="qr-label__code" style="font-weight:bold;font-size:9px;color:#000;word-break:break-word;">${escapeHTML(asset.asset_code)}</div>
             <div class="qr-label__name" style="font-size:7px;color:#333;margin-top:2px;word-break:break-word;">${escapeHTML(asset.name)}</div>
+            <div class="qr-label__user" style="font-size:6px;color:#333;margin-top:2px;word-break:break-word;">Người dùng: ${escapeHTML(userName)}</div>
           </div>
         </div>
       `;
@@ -307,17 +309,18 @@ const AssetListPage = () => {
     let labelsHtml = '';
     bulkQrData.forEach((qr) => {
       const qrImage = qr.qr_code 
-        ? `<img src="${qr.qr_code}" style="width:60px;height:60px;display:block;" />`
+        ? `<img src="${qr.qr_code}" style="width:72px;height:72px;display:block;" />`
         : '';
       
       labelsHtml += `
-        <div class="qr-label" style="width:113px;height:85px;padding:4px;border:1px dashed #ccc;display:flex;flex-direction:row;align-items:center;gap:4px;background:white;page-break-inside:avoid;float:left;margin:2px;">
-          <div class="qr-label__qr" style="width:60px;height:60px;flex-shrink:0;">
+        <div class="qr-label" style="width:135px;height:95px;padding:4px;border:1px dashed #ccc;display:flex;flex-direction:row;align-items:center;gap:5px;background:white;page-break-inside:avoid;float:left;margin:2px;">
+          <div class="qr-label__qr" style="width:72px;height:72px;flex-shrink:0;">
             ${qrImage}
           </div>
           <div class="qr-label__info" style="flex:1;overflow:hidden;">
             <div class="qr-label__code" style="font-weight:bold;font-size:9px;color:#000;word-break:break-word;">${escapeHTML(qr.asset_code)}</div>
             <div class="qr-label__name" style="font-size:7px;color:#333;margin-top:2px;word-break:break-word;">${escapeHTML(qr.asset_name)}</div>
+            <div class="qr-label__user" style="font-size:6px;color:#333;margin-top:2px;word-break:break-word;">Người dùng: ${escapeHTML(qr.asset_user_name || '-')}</div>
           </div>
         </div>
       `;
@@ -896,7 +899,7 @@ const AssetListPage = () => {
                           ) : (
                             <QRCodeSVG
                               value={`${window.location.origin}/asset/${qr.asset_id}`}
-                              size={56}
+                              size={72}
                               level={"L"}
                             />
                           )}
@@ -904,6 +907,7 @@ const AssetListPage = () => {
                         <div className="qr-label__info">
                           <div className="qr-label__code">{qr.asset_code}</div>
                           <div className="qr-label__name">{qr.asset_name}</div>
+                          <div className="qr-label__user">Người dùng: {qr.asset_user_name || '-'}</div>
                         </div>
                       </div>
                     ))}

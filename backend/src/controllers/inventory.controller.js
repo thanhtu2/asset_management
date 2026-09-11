@@ -1,6 +1,7 @@
 import InventorySession from '../models/InventorySession.js';
 import pool from '../config/database.js';
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx-js-style';
+import { styleTableSheet, styleSummarySheet } from '../ultis/excelExport.js';
 
 // Helper chuyển đổi trạng thái tài sản sang Tiếng Việt
 const getAssetStatusLabel = (status) => {
@@ -140,6 +141,7 @@ export const exportInventoryReport = async (req, res) => {
     );
 
     const ws1 = XLSX.utils.aoa_to_sheet(sessionInfoData);
+    styleSummarySheet(XLSX, ws1, { title: 'BÁO CÁO KIỂM KÊ TÀI SẢN', widths: [30, 18], headerRow: 9 });
     XLSX.utils.book_append_sheet(wb, ws1, 'Tổng hợp');
 
     // --- Sheet 2: Theo phòng ban ---
@@ -149,7 +151,14 @@ export const exportInventoryReport = async (req, res) => {
         s.department_name || 'Chưa phân phòng', s.total, s.pending_count, s.found_count, 
         s.missing_count, s.damaged_count, s.extra_count, s.found_wrong_location_count
       ]);
-      const ws2 = XLSX.utils.aoa_to_sheet([summaryHeaders, ...summaryData]);
+      const ws2 = XLSX.utils.aoa_to_sheet([
+        ['TỔNG HỢP KIỂM KÊ THEO PHÒNG BAN'],
+        [`Phiên kiểm kê: ${session.name}`],
+        [],
+        summaryHeaders,
+        ...summaryData
+      ]);
+      styleTableSheet(XLSX, ws2, { title: 'TỔNG HỢP KIỂM KÊ THEO PHÒNG BAN', subtitle: `Phiên kiểm kê: ${session.name}`, widths: [24, 12, 14, 14, 12, 12, 12, 14], numericColumns: [1, 2, 3, 4, 5, 6, 7] });
       XLSX.utils.book_append_sheet(wb, ws2, 'Tổng hợp theo phòng');
     }
 
@@ -166,7 +175,14 @@ export const exportInventoryReport = async (req, res) => {
         r.purchase_price, r.current_value, getAssetStatusLabel(r.asset_current_status), getRecordStatusLabel(r.status),
         r.actual_location_name || '-', r.checked_by_name || '-', r.checked_at ? new Date(r.checked_at).toLocaleString('vi-VN') : '-', r.notes || '-'
       ]);
-      const ws3 = XLSX.utils.aoa_to_sheet([recordHeaders, ...recordData]);
+      const ws3 = XLSX.utils.aoa_to_sheet([
+        ['CHI TIẾT BẢN GHI KIỂM KÊ'],
+        [`Phiên kiểm kê: ${session.name}`],
+        [],
+        recordHeaders,
+        ...recordData
+      ]);
+      styleTableSheet(XLSX, ws3, { title: 'CHI TIẾT BẢN GHI KIỂM KÊ', subtitle: `Phiên kiểm kê: ${session.name}`, widths: [12, 16, 24, 30, 18, 18, 20, 22, 14, 16, 18, 18, 18, 20, 20, 22, 30], numericColumns: [0, 9, 10], dateColumns: [8] });
       XLSX.utils.book_append_sheet(wb, ws3, 'Chi tiết bản ghi');
     }
 

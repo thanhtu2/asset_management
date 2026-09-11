@@ -33,6 +33,7 @@ import vehicleRoutes from './routes/vehicle.routes.js'; // Đảm bảo import t
 import vehicleRegistrationRoutes from './routes/vehicleRegistration.routes.js';
 import auditRoutes from './routes/audit.routes.js';
 import systemRoutes from './routes/system.routes.js';
+import changelogRoutes from './routes/changelog.routes.js';
 
 
 import { initDatabase, testConnection, getPool } from './config/database.js';
@@ -199,6 +200,7 @@ app.use('/api/vehicle-registrations', vehicleRegistrationRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/vehicle-trips', vehicleTripRoutes);
 app.use('/api/system', systemRoutes);
+app.use('/api/changelogs', changelogRoutes);
 
 // New Logout Route
 app.post('/api/auth/logout', (req, res) => {

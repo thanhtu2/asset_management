@@ -1,7 +1,7 @@
 import Asset from '../models/Asset.js';
 import MaintenanceRecord from '../models/MaintenanceRecord.js';
 import QRCode from 'qrcode';
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx-js-style';
 import pool from '../config/database.js';
 import { createNotification } from '../notification.service.js';
 import AuditLog from '../models/AuditLog.js';
@@ -160,6 +160,7 @@ export const generateQR = async (req, res) => {
       asset_id: asset.id,
       asset_code: asset.asset_code,
       asset_name: asset.name,
+      asset_user_name: asset.user_full_name || asset.assigned_to_name || '',
       qr_code: qrCodeDataUrl
     });
   } catch (error) {
@@ -765,6 +766,7 @@ export const importAssets = async (req, res) => {
       const status = normalizeStatus(status_raw) || 'new';
 
       try {
+          await connection.query('SAVEPOINT asset_import_row');
           const [result] = await connection.query(
             `INSERT INTO assets (asset_code, name, description, category_id, location_id, department_id,
               supplier_id, purchase_date, assigned_date, purchase_price, salvage_value, current_value, status, barcode, assigned_to, assigned_to_name)
@@ -784,8 +786,7 @@ export const importAssets = async (req, res) => {
 
         results.success++;
       } catch (err) {
-        await connection.rollback();
-        connection.release();
+        await connection.query('ROLLBACK TO SAVEPOINT asset_import_row');
         results.failed++;
         const msg = err.code === 'ER_DUP_ENTRY'
           ? `Mã tài sản "${asset_code}" đã tồn tại`
@@ -852,33 +853,137 @@ export const exportAssets = async (req, res) => {
       'disposed': 'Đã thanh lý'
     };
 
-    const data = assets.map(asset => ({
-      'Mã tài sản': asset.asset_code,
-      'Tên tài sản': asset.name,
-      'Mô tả': asset.description || '',
-      'Mã danh mục': catMap[asset.category_id] || '',
-      'Mã vị trí': locMap[asset.location_id] || '',
-      'Mã phòng ban': deptMap[asset.department_id] || '',
-      'Mã nhà cung cấp': supMap[asset.supplier_id] || '',
-      'Người sử dụng': asset.user_full_name || asset.assigned_to_name || '',
-      'Ngày cấp (YYYY-MM-DD)': asset.assigned_date ? new Date(asset.assigned_date).toISOString().slice(0, 10) : '',
-      'Ngày mua (YYYY-MM-DD)': asset.purchase_date ? new Date(asset.purchase_date).toISOString().slice(0, 10) : '',
-      'Giá mua': asset.purchase_price || 0,
-      'Giá trị thu hồi': asset.salvage_value || 0,
-      'Giá trị hiện tại': asset.current_value || 0,
-      'Trạng thái': statusLabels[asset.status] || 'Chờ cấp',
-      'Mã vạch': asset.barcode || ''
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    ws['!cols'] = [
-      { wch: 15 }, { wch: 25 }, { wch: 30 }, { wch: 15 },
-      { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 20 },
-      { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 }
+    const headers = [
+      'Mã tài sản', 'Tên tài sản', 'Mô tả', 'Mã danh mục', 'Mã vị trí',
+      'Mã phòng ban', 'Mã nhà cung cấp', 'Người sử dụng', 'Ngày cấp', 'Ngày mua',
+      'Giá mua', 'Giá trị thu hồi', 'Giá trị hiện tại', 'Trạng thái', 'Mã vạch'
     ];
+    const rows = assets.map(asset => [
+      asset.asset_code,
+      asset.name,
+      asset.description || '',
+      catMap[asset.category_id] || '',
+      locMap[asset.location_id] || '',
+      deptMap[asset.department_id] || '',
+      supMap[asset.supplier_id] || '',
+      asset.user_full_name || asset.assigned_to_name || '',
+      asset.assigned_date ? new Date(asset.assigned_date).toISOString().slice(0, 10) : '',
+      asset.purchase_date ? new Date(asset.purchase_date).toISOString().slice(0, 10) : '',
+      Number(asset.purchase_price || 0),
+      Number(asset.salvage_value || 0),
+      Number(asset.current_value || 0),
+      statusLabels[asset.status] || 'Chờ cấp',
+      asset.barcode || ''
+    ]);
+
+    const lastColumn = headers.length - 1;
+    const lastRow = rows.length + 3;
+    const headerRow = 3;
+    const border = {
+      top: { style: 'thin', color: { rgb: 'D9E2F3' } },
+      bottom: { style: 'thin', color: { rgb: 'D9E2F3' } },
+      left: { style: 'thin', color: { rgb: 'D9E2F3' } },
+      right: { style: 'thin', color: { rgb: 'D9E2F3' } }
+    };
+    const titleStyle = {
+      font: { name: 'Aptos Display', sz: 18, bold: true, color: { rgb: 'FFFFFF' } },
+      fill: { fgColor: { rgb: '1F4E78' } },
+      alignment: { horizontal: 'center', vertical: 'center' }
+    };
+    const headerStyle = {
+      font: { name: 'Aptos', sz: 10, bold: true, color: { rgb: 'FFFFFF' } },
+      fill: { fgColor: { rgb: '5B9BD5' } },
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+      border
+    };
+    const dataStyle = {
+      font: { name: 'Aptos', sz: 10, color: { rgb: '1F1F1F' } },
+      alignment: { vertical: 'center', wrapText: true },
+      border
+    };
+
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['BÁO CÁO DANH SÁCH TÀI SẢN'],
+      [`Xuất ngày ${new Date().toLocaleString('vi-VN')} | Tổng số: ${rows.length} tài sản`],
+      [],
+      headers,
+      ...rows
+    ]);
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: lastColumn } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: lastColumn } }
+    ];
+    ws['!cols'] = [
+      { wch: 16 }, { wch: 24 }, { wch: 30 }, { wch: 15 }, { wch: 15 },
+      { wch: 16 }, { wch: 20 }, { wch: 22 }, { wch: 14 }, { wch: 14 },
+      { wch: 16 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }
+    ];
+    ws['!rows'] = [{ hpt: 30 }, { hpt: 22 }, { hpt: 8 }, { hpt: 30 }];
+    ws['!autofilter'] = { ref: `A${headerRow + 1}:O${lastRow + 1}` };
+    ws['!freeze'] = { xSplit: 0, ySplit: headerRow + 1 };
+
+    for (let column = 0; column <= lastColumn; column += 1) {
+      const titleCell = ws[XLSX.utils.encode_cell({ r: 0, c: column })];
+      const subtitleCell = ws[XLSX.utils.encode_cell({ r: 1, c: column })];
+      const headerCell = ws[XLSX.utils.encode_cell({ r: headerRow, c: column })];
+      if (titleCell) titleCell.s = titleStyle;
+      if (subtitleCell) {
+        subtitleCell.s = {
+          font: { name: 'Aptos', sz: 10, italic: true, color: { rgb: '666666' } },
+          alignment: { horizontal: 'center', vertical: 'center' }
+        };
+      }
+      if (headerCell) headerCell.s = headerStyle;
+    }
+
+    rows.forEach((row, rowIndex) => {
+      row.forEach((value, column) => {
+        const cell = ws[XLSX.utils.encode_cell({ r: rowIndex + headerRow + 1, c: column })];
+        cell.s = {
+          ...dataStyle,
+          fill: { fgColor: { rgb: rowIndex % 2 === 0 ? 'F7FBFF' : 'FFFFFF' } },
+          alignment: { ...dataStyle.alignment, horizontal: column >= 10 && column <= 12 ? 'right' : 'left' }
+        };
+        if (column >= 10 && column <= 12) cell.z = '#,##0';
+      });
+    });
+
+    const statusSummary = Object.entries(statusLabels).map(([status, label]) => {
+      const matchingAssets = assets.filter(asset => asset.status === status);
+      return [label, matchingAssets.length, matchingAssets.reduce((sum, asset) => sum + Number(asset.current_value || 0), 0)];
+    });
+    const summary = XLSX.utils.aoa_to_sheet([
+      ['TỔNG QUAN TÀI SẢN'],
+      [`Cập nhật ${new Date().toLocaleString('vi-VN')}`],
+      [],
+      ['Trạng thái', 'Số lượng', 'Giá trị hiện tại'],
+      ...statusSummary,
+      [],
+      ['TỔNG CỘNG', rows.length, assets.reduce((sum, asset) => sum + Number(asset.current_value || 0), 0)]
+    ]);
+    summary['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } }
+    ];
+    summary['!cols'] = [{ wch: 24 }, { wch: 14 }, { wch: 22 }];
+    summary['!rows'] = [{ hpt: 30 }, { hpt: 22 }, { hpt: 8 }, { hpt: 24 }];
+    summary['!autofilter'] = { ref: `A4:C${statusSummary.length + 4}` };
+    summary['!freeze'] = { xSplit: 0, ySplit: 4 };
+    summary['A1'].s = titleStyle;
+    summary['A2'].s = { font: { name: 'Aptos', sz: 10, italic: true, color: { rgb: '666666' } }, alignment: { horizontal: 'center' } };
+    ['A4', 'B4', 'C4'].forEach(cell => { summary[cell].s = headerStyle; });
+    for (let row = 4; row < statusSummary.length + 4; row += 1) {
+      ['A', 'B', 'C'].forEach(column => { summary[`${column}${row + 1}`].s = dataStyle; });
+      summary[`C${row + 1}`].z = '#,##0';
+    }
+    ['A', 'B', 'C'].forEach(column => {
+      summary[`${column}${statusSummary.length + 6}`].s = { ...headerStyle, fill: { fgColor: { rgb: 'D9EAF7' } }, font: { ...headerStyle.font, color: { rgb: '1F1F1F' } } };
+    });
+    summary[`C${statusSummary.length + 6}`].z = '#,##0';
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Tài sản');
+    XLSX.utils.book_append_sheet(wb, ws, 'Danh sách tài sản');
+    XLSX.utils.book_append_sheet(wb, summary, 'Tổng quan');
 
     const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
     res.setHeader('Content-Disposition', 'attachment; filename="danh_sach_tai_san.xlsx"');

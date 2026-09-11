@@ -43,6 +43,7 @@ const adminMenuItems = [
       { path: '/users',       label: 'Người dùng',        icon: '👤', permission: 'MANAGE_USERS' },
       { path: '/roles',       label: 'Phân quyền',        icon: '🔐', permission: 'MANAGE_ROLES' },
       { path: '/audit-logs',  label: 'Lịch sử hệ thống', icon: '📝', permission: 'MANAGE_USERS' },
+      { path: '/changelog',   label: 'Lịch sử cập nhật',  icon: '📢', permission: 'MANAGE_USERS' },
     ]
   }
 ];

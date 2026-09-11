@@ -46,7 +46,7 @@ const formatDateForDisplay = (dateInput) => {
 // Helper để đếm số lượng thành phần tham gia từ chuỗi participants
 const countParticipants = (participants) => {
   if (!participants || participants.trim() === '') return 0;
-  return participants.split(',').filter(p => p.trim() !== '').length;
+  return participants.split(/[,\.\n]+/).filter(p => p.trim() !== '').length;
 };
 const VehicleRegistrationPage = () => {
   const { user } = useAuth();
@@ -66,6 +66,9 @@ const VehicleRegistrationPage = () => {
     total: 0,
     totalPages: 0
   });
+  // State cho các bộ lọc
+  const [filters, setFilters] = useState({ search: '', status: '', startDate: '', endDate: '' });
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   // State cho modal đăng ký xe
   const [isEditing, setIsEditing] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null); // Khai báo state bị thiếu
@@ -106,6 +109,11 @@ const VehicleRegistrationPage = () => {
   const hasActions = canEditRegistration || canDeleteRegistration || canApprove || canCoordinate || canCreateRegistration;
 
   useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(filters.search), 400);
+    return () => clearTimeout(timer);
+  }, [filters.search]);
+
+  useEffect(() => {
     if (!canViewRegistrations && !canViewWeekly) {
       setLoading(false);
       return;
@@ -127,10 +135,9 @@ const VehicleRegistrationPage = () => {
     
     fetchUsers();
     fetchDepartments();
-  }, [canViewRegistrations, canViewWeekly, viewMode, pagination.page, pagination.limit]);
-
-  useEffect(() => {
-  }, [canViewRegistrations, canViewWeekly, viewMode, currentWeekStart]);
+  }, [canViewRegistrations, canViewWeekly, viewMode, pagination.page, pagination.limit, filters.status, filters.startDate, filters.endDate, debouncedSearch]);
+  // useEffect(() => {
+  // }, [canViewRegistrations, canViewWeekly, viewMode, pagination.page, pagination.limit, filters]);
 
   // Hàm toggle đóng/mở menu
   const toggleDropdown = (id) => {
@@ -221,7 +228,7 @@ const VehicleRegistrationPage = () => {
 const fetchRegistrations = async () => {
     setLoading(true);
       try {
-        const params = { page: pagination.page, limit: pagination.limit };
+        const params = { page: pagination.page, limit: pagination.limit, ...filters, search: debouncedSearch };
         const response = await vehicleRegistrationsAPI.getAll(params);
         setRegistrations(response.data.data);
         setPagination(prev => ({
@@ -241,6 +248,15 @@ const fetchRegistrations = async () => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
       setPagination(prev => ({ ...prev, page: newPage }));
     }
+  };
+  const handleFilterChange = (field, value) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
+    setPagination(prev => ({ ...prev, page: 1 })); // reset về trang 1 khi đổi filter
+  };
+
+  const handleClearFilters = () => {
+    setFilters({ search: '', status: '', startDate: '', endDate: '' });
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const handleLimitChange = (newLimit) => {
@@ -587,12 +603,15 @@ const handleCreateExternalVehicle = async () => {
     setCurrentWeekStart(newDate);
   };
 
-  const handleExport = async () => {
+  const handleExport = async (exportFiltered = true) => {
     try {
       setLoading(true);
       const params = {};
       if (user?.role !== 'admin' && !canCoordinate) {
         params.department_id = user?.department_id;
+      }
+      if (exportFiltered) {
+        Object.assign(params, filters);
       }
       await vehicleRegistrationsAPI.exportRegistrations(params);
     } catch (err) {
@@ -603,7 +622,9 @@ const handleCreateExternalVehicle = async () => {
     }
   };
 
-  if (loading) return <div className="loading">Đang tải...</div>;
+  const isRefreshing = loading && registrations.length > 0;
+
+  if (loading && registrations.length === 0) return <div className="loading">Đang tải...</div>;
   if (error) return <div className="error-message">{error}</div>;
   if (!canViewRegistrations && !canViewWeekly) return <div className="error-message">Bạn không có quyền truy cập trang này.</div>;
 
@@ -632,7 +653,21 @@ const handleCreateExternalVehicle = async () => {
           </div>
           <div style={{ display: 'flex', gap: '10px', marginLeft: 'auto' }}>
             {viewMode === 'list' && (
-              <button className="btn btn-primary" onClick={handleExport}>Xuất báo cáo</button>
+              <div style={{ position: 'relative' }}>
+                <button className="btn btn-primary" onClick={() => toggleDropdown('export')}>
+                  Xuất báo cáo ▾
+                </button>
+                {activeDropdownId === 'export' && (
+                  <DropdownMenu>
+                    <DropdownItem onClick={() => { setActiveDropdownId(null); handleExport(true); }}>
+                      Xuất theo bộ lọc
+                    </DropdownItem>
+                    <DropdownItem onClick={() => { setActiveDropdownId(null); handleExport(false); }}>
+                      Xuất toàn bộ
+                    </DropdownItem>
+                  </DropdownMenu>
+                )}
+              </div>
             )}
             {canCreateRegistration && (
               <button className="btn btn-primary" onClick={handleAddClick}>+ Thêm Đăng ký xe</button>
@@ -654,7 +689,49 @@ const handleCreateExternalVehicle = async () => {
       
       {viewMode === 'list' ? (
         <>
-      <div className="card">
+      <div className="card" style={{ marginBottom: 16, padding: '1rem 1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr auto', gap: 10, alignItems: 'end' }}>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label>Tìm kiếm</label>
+            <input
+              type="text"
+              placeholder="Mã phiếu, biển số, điểm đến, người đề xuất..."
+              value={filters.search}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+            />
+          </div>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label>Trạng thái</label>
+            <select value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)}>
+              <option value="">Tất cả</option>
+              <option value="pending">Chờ duyệt</option>
+              <option value="approved">Đã duyệt</option>
+              <option value="scheduled">Đã lên lịch</option>
+              <option value="rejected">Từ chối</option>
+              <option value="cancelled">Đã hủy</option>
+            </select>
+          </div>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label>Từ ngày</label>
+            <input type="date" value={filters.startDate} onChange={(e) => handleFilterChange('startDate', e.target.value)} />
+          </div>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label>Đến ngày</label>
+            <input type="date" value={filters.endDate} onChange={(e) => handleFilterChange('endDate', e.target.value)} />
+          </div>
+          <button type="button" className="btn btn-outline" onClick={handleClearFilters}>Xóa lọc</button>
+        </div>
+      </div>
+      <div className="card" style={{ position: 'relative' }}>
+        {isRefreshing && (
+          <div
+            role="status"
+            aria-live="polite"
+            style={{ position: 'absolute', top: 10, right: 16, color: '#666', fontSize: '0.85em' }}
+          >
+            Đang cập nhật...
+          </div>
+        )}
         <div className="table-container">
           <table>
             <thead>
