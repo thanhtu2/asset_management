@@ -266,6 +266,22 @@ export const initDatabase = async () => {
     ssl: { rejectUnauthorized: false }
   });
 
+  // Runtime migration for deployments that skip init.sql (for example Vercel).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS changelogs (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      version VARCHAR(50) NOT NULL UNIQUE,
+      release_date DATE NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      type ENUM('feature', 'fix', 'security') NOT NULL DEFAULT 'feature',
+      description TEXT NOT NULL,
+      created_by INT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+    )
+  `);
+
   return pool;
 };
 

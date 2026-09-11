@@ -94,6 +94,10 @@ class VehicleRegistration {
       query += ` AND vr.vehicle_id = ?`;
       filterParams.push(filters.vehicle_id);
     }
+    if (filters.status) {
+      query += ` AND vr.status = ?`;
+      filterParams.push(filters.status);
+    }
     if (filters.startDate && filters.endDate) {
       query += ` AND vr.registration_date BETWEEN ? AND ?`;
       filterParams.push(filters.startDate, filters.endDate);

@@ -1,4 +1,5 @@
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx-js-style';
+import { styleTableSheet } from '../ultis/excelExport.js';
 import pool from '../config/database.js';
 import VehicleRegistration from '../models/VehicleRegistration.js';
 import { createNotification } from '../notification.service.js';
@@ -312,8 +313,8 @@ export const updateVehicleRegistration = async (req, res) => {
 
 export const getAllVehicleRegistrations = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, vehicle_id, requester_id, department_id} = req.query;
-    const filters = { search, vehicle_id, requester_id, department_id};
+    const { page = 1, limit = 10, search, vehicle_id, requester_id, department_id, status, startDate, endDate } = req.query;
+    const filters = { search, vehicle_id, requester_id, department_id, status, startDate, endDate };
     const { data, pagination } = await VehicleRegistration.findAll(filters, parseInt(page), parseInt(limit));
     res.json({ data, pagination });
   } catch (error) {
@@ -360,11 +361,20 @@ export const deleteVehicleRegistration = async (req, res) => {
      await connection.beginTransaction();
      const { targetRegistrationId, newRegistrationId } = req.body;
 
+     if (!targetRegistrationId || !newRegistrationId || targetRegistrationId === newRegistrationId) {
+       await connection.rollback();
+       return res.status(400).json({ message: 'Hai phiếu ghép phải tồn tại và khác nhau.' });
+     }
+
      // 1. Lấy thông tin phiếu cũ và phiếu mới
-     const [targetReg] = await connection.query('SELECT * FROM vehicle_registrations WHERE id = ?',
+     const [targetRows] = await connection.query('SELECT * FROM vehicle_registrations WHERE id = ?',
       [targetRegistrationId]);
-     const [newReg] = await connection.query('SELECT * FROM vehicle_registrations WHERE id = ?',
+     const [newRows] = await connection.query('SELECT * FROM vehicle_registrations WHERE id = ?',
       [newRegistrationId]);
+     if (!targetRows[0] || !newRows[0]) {
+       await connection.rollback();
+       return res.status(404).json({ message: 'Không tìm thấy một trong hai phiếu cần ghép.' });
+     }
 
       // 2. Cập nhật phòng ban phiếu cũ
       await connection.query(
@@ -376,19 +386,24 @@ export const deleteVehicleRegistration = async (req, res) => {
      await connection.query('DELETE FROM vehicle_registrations WHERE id = ?', [newRegistrationId]);
 
      // 4. Ghi Audit Log
-     await AuditLog.create({
-      user_id: req.user.id,
-      action: 'MERGE_REGISTRATION',
-      description: `Gộp phiếu ${newRegistrationId} vào phiếu ${targetRegistrationId}`,
-      target_id: targetRegistrationId
-     });
+     await AuditLog.log(
+       req.user.id,
+       'MERGE_REGISTRATION',
+       'vehicle_registrations',
+       targetRegistrationId,
+       targetRows[0],
+       { merged_registration_id: newRegistrationId },
+       `Gộp phiếu ${newRegistrationId} vào phiếu ${targetRegistrationId}`,
+       req.ip
+     );
 
     // 5. Thông báo cho Điều phối viên (cần role/permission COORDINATE_VEHICLE)
-    await createNotification({
-       message: `Phiếu ${newRegistrationId} đã được gộp vào phiếu ${targetRegistrationId}`,
-       type: 'INFO',
-       permission_required: 'COORDINATE_VEHICLE'
-     });
+     await createNotification(
+       null,
+       'Gộp đăng ký xe',
+       `Phiếu ${newRegistrationId} đã được gộp vào phiếu ${targetRegistrationId}`,
+       'info'
+     );
 
      await connection.commit();
      res.json({ message: 'Đã ghép chuyến thành công.' });
@@ -462,17 +477,25 @@ export const deleteVehicleRegistration = async (req, res) => {
 
 export const exportVehicleRegistrations = async (req, res) => {
   try {
-    const { search, vehicle_id, requester_id } = req.query;
+    const { search, vehicle_id, requester_id, status, startDate, endDate } = req.query;
     let department_id = req.query.department_id;
     const canCoordinate = req.user.role === 'admin' || (req.user.permissions && req.user.permissions.includes('COORDINATE_VEHICLE'));
     if (!canCoordinate) { department_id = req.user.department_id; }
-    const filters = { search, vehicle_id, requester_id, department_id, startDate: req.query.startDate, endDate: req.query.endDate };
+    const filters = { search, vehicle_id, requester_id, department_id, status, startDate, endDate };
     const { data } = await VehicleRegistration.findAll(filters, 1, 1000000);
     const statusLabels = { 'pending': 'Chờ duyệt', 'approved': 'Đã duyệt', 'rejected': 'Từ chối', 'completed': 'Đã hoàn thành', 'cancelled': 'Đã hủy', 'scheduled': 'Đã lên lịch', 'pending_change': 'Chờ duyệt thay đổi' };
     const formatDate = (dateStr) => { if (!dateStr) return ''; const d = new Date(dateStr); if (isNaN(d.getTime())) return ''; const day = String(d.getDate()).padStart(2, '0'); const month = String(d.getMonth() + 1).padStart(2, '0'); const year = d.getFullYear(); return `${day}/${month}/${year}`; };
-    const countParticipants = (participants) => { if (!participants || participants.trim() === '') return 0; return participants.split(',').filter(p => p.trim() !== '').length; };
-    const mappedData = data.map(reg => ({ 'Số đăng ký': reg.registration_number, 'Biển số xe': reg.plate_number || 'Chưa gán', 'Nhãn hiệu/Tên xe': reg.brand ? `${reg.brand} ${reg.model || ''}`.trim() : 'Chưa gán', 'Phòng ban tham gia': reg.department_names || '', 'Người đăng ký': reg.requester_name || '', 'Ngày khởi hành': formatDate(reg.registration_date), 'Thời gian khởi hành': reg.departure_time || '', 'Điểm đi': reg.departure_location || '', 'Địa điểm đến': reg.destination || '', 'Thành phần tham gia': reg.participants || '', 'Số lượng tham gia': countParticipants(reg.participants), 'Trạng thái': statusLabels[reg.status] || 'Chờ duyệt', 'Ghi chú': reg.notes || '' }));
-    const ws = XLSX.utils.json_to_sheet(mappedData); ws['!cols'] = [{ wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 18 }, { wch: 20 }, { wch: 25 }, { wch: 30 }, { wch: 18 }, { wch: 15 }, { wch: 30 }];
+    const countParticipants = (participants) => { if (!participants || participants.trim() === '') return 0; return participants.split(/[,\.\n]+/).filter(p => p.trim() !== '').length; };
+    const headers = ['Số đăng ký', 'Biển số xe', 'Nhãn hiệu/Tên xe', 'Phòng ban tham gia', 'Người đăng ký', 'Ngày khởi hành', 'Thời gian khởi hành', 'Điểm đi', 'Địa điểm đến', 'Thành phần tham gia', 'Số lượng tham gia', 'Trạng thái', 'Ghi chú'];
+    const rows = data.map(reg => [reg.registration_number, reg.plate_number || 'Chưa gán', reg.brand ? `${reg.brand} ${reg.model || ''}`.trim() : 'Chưa gán', reg.department_names || '', reg.requester_name || '', formatDate(reg.registration_date), reg.departure_time || '', reg.departure_location || '', reg.destination || '', reg.participants || '', countParticipants(reg.participants), statusLabels[reg.status] || 'Chờ duyệt', reg.notes || '']);
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['BÁO CÁO ĐĂNG KÝ XE'],
+      [`Xuất ngày ${new Date().toLocaleString('vi-VN')} | Tổng số: ${rows.length} đăng ký`],
+      [],
+      headers,
+      ...rows
+    ]);
+    styleTableSheet(XLSX, ws, { title: 'BÁO CÁO ĐĂNG KÝ XE', subtitle: `Xuất ngày ${new Date().toLocaleString('vi-VN')} | Tổng số: ${rows.length} đăng ký`, widths: [16, 16, 24, 26, 22, 18, 20, 22, 28, 32, 18, 20, 34], numericColumns: [10] });
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Đăng ký xe');
     const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
     res.setHeader('Content-Disposition', 'attachment; filename="danh_sach_dang_ky_xe.xlsx"');

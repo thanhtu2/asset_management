@@ -1,5 +1,6 @@
 import User from '../models/User.js';
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx-js-style';
+import { styleTableSheet } from '../ultis/excelExport.js';
 import AuditLog from '../models/AuditLog.js';
 import pool from '../config/database.js';
 import { createNotification } from '../notification.service.js';
@@ -240,8 +241,16 @@ export const exportUsers = async (req, res) => {
       'Ngày tạo': user.created_at ? new Date(user.created_at).toLocaleDateString('vi-VN') : '-'
     }));
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    ws['!cols'] = Object.keys(data[0] || {}).map(() => ({ wch: 20 }));
+    const headers = ['Tên đăng nhập', 'Họ tên', 'Vai trò', 'Bộ phận', 'Trạng thái', 'Ngày tạo'];
+    const rows = data.map(user => headers.map(header => user[header]));
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['BÁO CÁO DANH SÁCH NGƯỜI DÙNG'],
+      [`Xuất ngày ${new Date().toLocaleString('vi-VN')} | Tổng số: ${rows.length} người dùng`],
+      [],
+      headers,
+      ...rows
+    ]);
+    styleTableSheet(XLSX, ws, { title: 'BÁO CÁO DANH SÁCH NGƯỜI DÙNG', subtitle: `Xuất ngày ${new Date().toLocaleString('vi-VN')} | Tổng số: ${rows.length} người dùng`, widths: [22, 26, 20, 24, 16, 16] });
     
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Người dùng');

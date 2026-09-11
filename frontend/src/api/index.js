@@ -220,6 +220,13 @@ export const notificationsAPI = {
   markAsRead: (id) => apiClient.put(`/notifications/${id}/read`),
 };
 
+export const changelogsAPI = {
+  getAll: () => apiClient.get('/changelogs'),
+  create: (data) => apiClient.post('/changelogs', data),
+  update: (id, data) => apiClient.put(`/changelogs/${id}`, data),
+  delete: (id) => apiClient.delete(`/changelogs/${id}`),
+};
+
 // Audit Logs API
 export const auditLogsAPI = {
   getAll: (params) => apiClient.get('/audit-logs', { params }),

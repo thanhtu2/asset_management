@@ -1061,8 +1061,8 @@
 
 /* QR Label - Kích thước chuẩn ~4x3cm */
 .qr-label {
-  width: 113px;  /* ~4cm at 96dpi */
-  height: 85px;  /* ~3cm at 96dpi */
+  width: 135px;  /* ~4.8cm at 96dpi */
+  height: 95px;  /* ~3.4cm at 96dpi */
   padding: 4px;
   border: 1px dashed #ccc;
   display: flex;
@@ -1077,8 +1077,8 @@
 }
 
 .qr-label__qr {
-  width: 60px;
-  height: 60px;
+  width: 72px;
+  height: 72px;
   flex-shrink: 0;
 }
 
@@ -1116,10 +1116,22 @@
   overflow: hidden;
 }
 
+.qr-label__user {
+  font-size: 6px;
+  color: #333;
+  margin-top: 2px;
+  word-break: break-word;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* QR Label Print Styles - for actual printing */
 .qr-label-print {
-  width: 113px;
-  height: 85px;
+  width: 135px;
+  height: 95px;
   padding: 4px;
   display: flex;
   flex-direction: row;
@@ -1132,8 +1144,8 @@
 }
 
 .qr-label-print .qr-wrapper {
-  width: 60px;
-  height: 60px;
+  width: 72px;
+  height: 72px;
   flex-shrink: 0;
 }
 
@@ -1298,8 +1310,8 @@
 
   /* Format QR labels in bulk print */
   #bulk-print-modal .qr-label {
-    width: 113px !important;
-    height: 85px !important;
+    width: 135px !important;
+    height: 95px !important;
     padding: 4px !important;
     border: 1px dashed #ccc !important;
     display: flex !important;
@@ -1313,8 +1325,8 @@
   }
 
   #bulk-print-modal .qr-label__qr {
-    width: 60px !important;
-    height: 60px !important;
+    width: 72px !important;
+    height: 72px !important;
     flex-shrink: 0 !important;
   }
 
@@ -1362,8 +1374,8 @@
   }
 
   #single-qr-print-area .qr-label {
-    width: 113px !important;
-    height: 85px !important;
+    width: 135px !important;
+    height: 95px !important;
     padding: 4px !important;
     border: 1px dashed #ccc !important;
     display: flex !important;
@@ -1387,8 +1399,8 @@
   }
 
   #bulk-qr-print-area .qr-label {
-    width: 113px !important;
-    height: 85px !important;
+    width: 135px !important;
+    height: 95px !important;
     padding: 4px !important;
     border: 1px dashed #ccc !important;
     display: flex !important;
@@ -1403,8 +1415,8 @@
   }
 
   #bulk-qr-print-area .qr-label__qr {
-    width: 60px !important;
-    height: 60px !important;
+    width: 72px !important;
+    height: 72px !important;
     flex-shrink: 0 !important;
   }
 
