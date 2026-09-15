@@ -907,7 +907,7 @@ const AssetListPage = () => {
                         <div className="qr-label__info">
                           <div className="qr-label__code">{qr.asset_code}</div>
                           <div className="qr-label__name">{qr.asset_name}</div>
-                          <div className="qr-label__user">Người dùng: {qr.asset_user_name || '-'}</div>
+                          <div className="qr-label__user">{qr.asset_user_name || '-'}</div>
                         </div>
                       </div>
                     ))}
