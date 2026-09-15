@@ -261,10 +261,10 @@ const AssetListPage = () => {
           <div class="qr-label__qr" style="width:72px;height:72px;flex-shrink:0;">
             ${qrImage}
           </div>
-          <div class="qr-label__info" style="flex:1;overflow:hidden;">
-            <div class="qr-label__code" style="font-weight:bold;font-size:9px;color:#000;word-break:break-word;">${escapeHTML(asset.asset_code)}</div>
-            <div class="qr-label__name" style="font-size:7px;color:#333;margin-top:2px;word-break:break-word;">${escapeHTML(asset.name)}</div>
-            <div class="qr-label__user" style="font-size:6px;color:#333;margin-top:2px;word-break:break-word;">Người dùng: ${escapeHTML(userName)}</div>
+          <div class="qr-label__info" style="flex:1;min-width:0;overflow:hidden;">
+            <div class="qr-label__code" style="font-weight:bold;font-size:9px;color:#000;word-break:break-word;overflow-wrap:anywhere;">${escapeHTML(asset.asset_code)}</div>
+            <div class="qr-label__name" style="font-size:7px;color:#333;margin-top:2px;word-break:break-word;overflow-wrap:anywhere;">${escapeHTML(asset.name)}</div>
+            <div class="qr-label__user" style="font-size:6px;color:#333;margin-top:2px;word-break:break-word;overflow-wrap:anywhere;">Người dùng: ${escapeHTML(userName)}</div>
           </div>
         </div>
       `;
@@ -317,10 +317,10 @@ const AssetListPage = () => {
           <div class="qr-label__qr" style="width:72px;height:72px;flex-shrink:0;">
             ${qrImage}
           </div>
-          <div class="qr-label__info" style="flex:1;overflow:hidden;">
-            <div class="qr-label__code" style="font-weight:bold;font-size:9px;color:#000;word-break:break-word;">${escapeHTML(qr.asset_code)}</div>
-            <div class="qr-label__name" style="font-size:7px;color:#333;margin-top:2px;word-break:break-word;">${escapeHTML(qr.asset_name)}</div>
-            <div class="qr-label__user" style="font-size:6px;color:#333;margin-top:2px;word-break:break-word;">Người dùng: ${escapeHTML(qr.asset_user_name || '-')}</div>
+          <div class="qr-label__info" style="flex:1;min-width:0;overflow:hidden;">
+            <div class="qr-label__code" style="font-weight:bold;font-size:9px;color:#000;word-break:break-word;overflow-wrap:anywhere;">${escapeHTML(qr.asset_code)}</div>
+            <div class="qr-label__name" style="font-size:7px;color:#333;margin-top:2px;word-break:break-word;overflow-wrap:anywhere;">${escapeHTML(qr.asset_name)}</div>
+            <div class="qr-label__user" style="font-size:6px;color:#333;margin-top:2px;word-break:break-word;overflow-wrap:anywhere;">${escapeHTML(qr.asset_user_name || '-')}</div>
           </div>
         </div>
       `;
