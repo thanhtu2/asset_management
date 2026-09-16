@@ -8,7 +8,7 @@ const CATEGORY_LABELS = {
 };
 const STATUS_LABELS = {
   submitted: 'Mới gửi', assigned: 'Đã tiếp nhận', in_progress: 'Đang xử lý',
-  waiting_user: 'Chờ người dùng', resolved: 'Đã xử lý', closed: 'Đã đóng',
+  waiting_user: 'Chờ người dùng', resolved: 'Đã sửa xong - chờ xác nhận', closed: 'Đã đóng',
   rejected: 'Từ chối', cancelled: 'Đã hủy'
 };
 const PRIORITY_LABELS = { low: 'Thấp', normal: 'Bình thường', high: 'Cao', urgent: 'Khẩn cấp' };
@@ -48,6 +48,7 @@ const SupportRequestPage = () => {
     } catch (error) {
       console.error('Không thể tải yêu cầu hỗ trợ:', error);
       setRequests([]);
+      setAssets([]);
     } finally {
       setLoading(false);
     }
@@ -98,13 +99,32 @@ const SupportRequestPage = () => {
     }
   };
 
-  const updateRequest = async (status) => {
+  const updateRequest = async (status, extras = {}) => {
     if (!selected) return;
-    const comment = window.prompt('Ghi chú xử lý (không bắt buộc):', '');
-    if (comment === null) return;
+
+    const finalComment = status === 'closed'
+      ? (extras.comment ?? window.prompt('Nhập ghi chú xác nhận khi đóng phiếu (bắt buộc):', ''))
+      : (extras.comment ?? window.prompt('Ghi chú xử lý (không bắt buộc):', ''));
+
+    if (finalComment === null) return;
+    if (status === 'closed' && !String(finalComment).trim()) {
+      alert('Vui lòng nhập ghi chú xác nhận khi đóng phiếu.');
+      return;
+    }
+
+    const assignedTo = extras.assigned_to !== undefined
+      ? extras.assigned_to
+      : (selected.assigned_to ?? (status === 'assigned' || status === 'in_progress' || status === 'resolved' ? user?.id : null));
+
     setSaving(true);
     try {
-      const response = await supportRequestsAPI.update(selected.id, { status, comment });
+      const response = await supportRequestsAPI.update(selected.id, {
+        status,
+        comment: finalComment,
+        assigned_to: assignedTo,
+        ...(extras.resolution_summary !== undefined ? { resolution_summary: extras.resolution_summary } : {}),
+        ...(extras.resolution_cost !== undefined ? { resolution_cost: extras.resolution_cost } : {})
+      });
       setSelected(response.data);
       await loadData();
     } catch (error) {
@@ -113,6 +133,8 @@ const SupportRequestPage = () => {
       setSaving(false);
     }
   };
+
+  const canUserConfirmClosure = user?.id === selected?.requester_id && selected?.status === 'resolved';
 
   if (loading) return <div className="loading">Đang tải...</div>;
 
@@ -180,8 +202,27 @@ const SupportRequestPage = () => {
 
       {selected && <div className="modal-overlay"><div className="modal modal-lg">
         <div className="modal-header"><h2>{selected.request_number}</h2><button className="btn btn-sm btn-outline" onClick={() => setSelected(null)}>&times;</button></div>
-        <div className="modal-body"><div className="detail-grid"><div className="detail-item full-width"><label>Tiêu đề</label><span>{selected.title}</span></div><div className="detail-item"><label>Nhóm lỗi</label><span>{CATEGORY_LABELS[selected.category]}</span></div><div className="detail-item"><label>Ưu tiên</label><span>{PRIORITY_LABELS[selected.priority]}</span></div><div className="detail-item"><label>Người gửi</label><span>{selected.requester_name || '-'}</span></div><div className="detail-item"><label>Người xử lý</label><span>{selected.assignee_name || 'Chưa phân công'}</span></div><div className="detail-item full-width"><label>Mô tả</label><span>{selected.description}</span></div></div><div style={{ marginTop: 24 }}><h3 style={{ marginBottom: 12 }}>Lịch sử xử lý</h3>{selected.history?.map(item => <div key={item.id} style={{ borderLeft: '3px solid #2563eb', padding: '8px 12px', marginBottom: 8, background: '#f8fafc' }}><strong>{item.actor_name || 'Hệ thống'}</strong><div style={{ fontSize: 12, color: '#64748b' }}>{item.old_status ? `${STATUS_LABELS[item.old_status]} → ` : ''}{STATUS_LABELS[item.new_status] || item.action} · {new Date(item.created_at).toLocaleString('vi-VN')}</div>{item.comment && <div style={{ marginTop: 4 }}>{item.comment}</div>}</div>)}</div></div>
-        {canProcess && !['closed', 'cancelled', 'rejected'].includes(selected.status) && <div className="modal-footer"><button className="btn btn-outline" disabled={saving} onClick={() => updateRequest('assigned')}>Tiếp nhận</button><button className="btn btn-primary" disabled={saving} onClick={() => updateRequest('in_progress')}>Bắt đầu xử lý</button><button className="btn btn-success" disabled={saving} onClick={() => updateRequest('resolved')}>Đã xử lý</button><button className="btn btn-secondary" disabled={saving} onClick={() => updateRequest('closed')}>Đóng phiếu</button></div>}
+        <div className="modal-body"><div className="detail-grid"><div className="detail-item full-width"><label>Tiêu đề</label><span>{selected.title}</span></div><div className="detail-item"><label>Nhóm lỗi</label><span>{CATEGORY_LABELS[selected.category]}</span></div><div className="detail-item"><label>Ưu tiên</label><span>{PRIORITY_LABELS[selected.priority]}</span></div><div className="detail-item"><label>Người gửi</label><span>{selected.requester_name || '-'}</span></div><div className="detail-item"><label>Người xử lý</label><span>{selected.assignee_name || 'Chưa tiếp nhận'}</span></div><div className="detail-item full-width"><label>Mô tả</label><span>{selected.description}</span></div></div><div style={{ marginTop: 24 }}><h3 style={{ marginBottom: 12 }}>Lịch sử xử lý</h3>{selected.history?.map(item => <div key={item.id} style={{ borderLeft: '3px solid #2563eb', padding: '8px 12px', marginBottom: 8, background: '#f8fafc' }}><strong>{item.actor_name || 'Hệ thống'}</strong><div style={{ fontSize: 12, color: '#64748b' }}>{item.old_status ? `${STATUS_LABELS[item.old_status]} → ` : ''}{STATUS_LABELS[item.new_status] || item.action} · {new Date(item.created_at).toLocaleString('vi-VN')}</div>{item.comment && <div style={{ marginTop: 4 }}>{item.comment}</div>}</div>)}</div></div>
+        {(canProcess || canUserConfirmClosure) && !['closed', 'cancelled', 'rejected'].includes(selected.status) && (
+          <div className="modal-footer">
+            {canProcess && (
+              <>
+                {selected.status !== 'assigned' && selected.status !== 'in_progress' && selected.status !== 'resolved' && (
+                  <button className="btn btn-outline" disabled={saving} onClick={() => updateRequest('assigned')}>Tiếp nhận</button>
+                )}
+                {selected.status !== 'in_progress' && selected.status !== 'resolved' && (
+                  <button className="btn btn-primary" disabled={saving} onClick={() => updateRequest('in_progress')}>Bắt đầu xử lý</button>
+                )}
+                {selected.status !== 'resolved' && (
+                  <button className="btn btn-success" disabled={saving} onClick={() => updateRequest('resolved')}>Xác nhận sửa xong</button>
+                )}
+              </>
+            )}
+            {canUserConfirmClosure && (
+              <button className="btn btn-secondary" disabled={saving} onClick={() => updateRequest('closed')}>Xác nhận và đóng phiếu</button>
+            )}
+          </div>
+        )}
       </div></div>}
     </div>
   );
