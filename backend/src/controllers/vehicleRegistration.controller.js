@@ -5,6 +5,24 @@ import VehicleRegistration from '../models/VehicleRegistration.js';
 import { createNotification } from '../notification.service.js';
 import AuditLog from '../models/AuditLog.js';
 
+const getCoordinatorIds = async (excludeUserId = null) => {
+  const [rows] = await pool.query(`
+    SELECT DISTINCT u.id
+    FROM users u
+    LEFT JOIN role_permissions rp ON rp.role_code = u.role
+    WHERE u.isActive = TRUE
+      AND (u.role = 'admin' OR rp.permission_code = 'COORDINATE_VEHICLE')
+      AND (? IS NULL OR u.id <> ?)
+  `, [excludeUserId, excludeUserId]);
+  return rows.map(row => row.id);
+};
+
+const notifyUsers = async (userIds, title, message, type = 'info') => {
+  await Promise.all([...new Set(userIds.filter(Boolean))].map(userId => (
+    createNotification(userId, title, message, type)
+  )));
+};
+
 // Khi gửi qua multipart/form-data (có kèm file), mọi field text đều đến dưới dạng
 // chuỗi — kể cả mảng department_ids (được frontend JSON.stringify trước khi append).
 // Helper này chuẩn hoá department_ids về đúng kiểu mảng số trong mọi trường hợp.
@@ -42,6 +60,13 @@ export const createVehicleRegistration = async (req, res) => {
       departure_time, participants, notes, department_ids: parseDeptIds(department_ids),
       attachment_path
     }, req.user.id);
+    const coordinatorIds = await getCoordinatorIds(req.user.id);
+    await notifyUsers(
+      coordinatorIds,
+      'Đăng ký xe mới',
+      `${req.user.fullName || req.user.username || 'Người dùng'} tạo phiếu đăng ký xe, cần được xử lý.`,
+      'info'
+    );
     res.status(201).json({ message: 'Thêm đăng ký xe thành công', id: newRegistrationId });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -50,11 +75,18 @@ export const createVehicleRegistration = async (req, res) => {
 
 export const approveRegistration = async (req, res) => {
   try {
+    const registration = await VehicleRegistration.findById(req.params.id);
     const { affected, reason } = await VehicleRegistration.approve(req.params.id, req.user.id);
     if (reason === 'NOT_FOUND') return res.status(404).json({ message: 'Không tìm thấy đăng ký xe.' });
     if (reason === 'INVALID_STATUS' || affected === 0) {
       return res.status(400).json({ message: 'Chỉ có thể duyệt phiếu đang ở trạng thái "Chờ duyệt".' });
     }
+    await notifyUsers(
+      [registration.requester_id],
+      'Đăng ký xe đã được duyệt',
+      `Phiếu ${registration.registration_number} đã được duyệt.`,
+      'success'
+    );
     res.json({ message: 'Đã duyệt yêu cầu thành công.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -63,12 +95,19 @@ export const approveRegistration = async (req, res) => {
 
 export const rejectRegistration = async (req, res) => {
   try {
+    const registration = await VehicleRegistration.findById(req.params.id);
     const { reason } = req.body;
     const { affected, reason: failReason } = await VehicleRegistration.reject(req.params.id, req.user.id, reason);
     if (failReason === 'NOT_FOUND') return res.status(404).json({ message: 'Không tìm thấy đăng ký xe.' });
     if (failReason === 'INVALID_STATUS' || affected === 0) {
       return res.status(400).json({ message: 'Chỉ có thể từ chối phiếu đang ở trạng thái "Chờ duyệt".' });
     }
+    await notifyUsers(
+      [registration.requester_id],
+      'Đăng ký xe bị từ chối',
+      `Phiếu ${registration.registration_number} đã bị từ chối${reason ? `: ${reason}` : '.'}`,
+      'warning'
+    );
     res.json({ message: 'Đã từ chối yêu cầu.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -77,6 +116,7 @@ export const rejectRegistration = async (req, res) => {
 
 export const assignVehicle = async (req, res) => {
   try {
+    const registration = await VehicleRegistration.findById(req.params.id);
     const { vehicle_id } = req.body;
     if (!vehicle_id) return res.status(400).json({ message: 'Vui lòng chọn xe để gán.' });
 
@@ -90,6 +130,12 @@ export const assignVehicle = async (req, res) => {
     if (reason === 'INVALID_STATUS' || affected === 0) {
       return res.status(400).json({ message: 'Chỉ có thể gán xe cho phiếu đã được duyệt.' });
     }
+    await notifyUsers(
+      [registration.requester_id],
+      'Đăng ký xe đã được xếp lịch',
+      `Phiếu ${registration.registration_number} đã được gán xe và lên lịch.`,
+      'success'
+    );
     res.json({ message: 'Đã gán xe và lên lịch thành công.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -114,6 +160,12 @@ export const cancelRegistration = async (req, res) => {
     if (failReason === 'INVALID_STATUS' || affected === 0) {
       return res.status(400).json({ message: 'Không thể hủy phiếu đã bị từ chối, đã hủy hoặc đã hoàn thành.' });
     }
+    await notifyUsers(
+      [registration.requester_id],
+      'Đăng ký xe đã bị hủy',
+      `Phiếu ${registration.registration_number} đã bị hủy${reason ? `: ${reason}` : '.'}`,
+      'warning'
+    );
     res.json({ message: 'Đã hủy chuyến đi thành công.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -170,6 +222,12 @@ export const requestChange = async (req, res) => {
    );
 
     await pool.query('UPDATE vehicle_registrations SET status = "pending_change" WHERE id = ?', [req.params.id]);
+    await notifyUsers(
+      await getCoordinatorIds(req.user.id),
+      'Có yêu cầu thay đổi đăng ký xe',
+      `Phiếu ${registration.registration_number} có yêu cầu thay đổi cần được duyệt.`,
+      'info'
+    );
     res.json({ message: 'Đã gửi yêu cầu thay đổi thành công.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -239,6 +297,12 @@ export const approveChangeRequest = async (req, res) => {
     console.log('DEBUG: Updated change request status.');
 
     await connection.commit();
+    await notifyUsers(
+      [registration.requester_id],
+      'Yêu cầu thay đổi đã được duyệt',
+      `Yêu cầu thay đổi của phiếu ${registration.registration_number} đã được duyệt.`,
+      'success'
+    );
     console.log('DEBUG: Transaction committed successfully.');
     res.json({ message: 'Đã phê duyệt thay đổi thành công.' });
   } catch (error) {
@@ -258,7 +322,7 @@ export const rejectChangeRequest = async (req, res) => {
     if (changes.length === 0) throw new Error('Yêu cầu không tồn tại');
     if (changes[0].status !== 'pending') throw new Error('Yêu cầu này đã được xử lý trước đó.');
 
-    const [regRows] = await connection.query('SELECT vehicle_id FROM vehicle_registrations WHERE id = ?', [req.params.id]);
+    const [regRows] = await connection.query('SELECT vehicle_id, requester_id, registration_number FROM vehicle_registrations WHERE id = ?', [req.params.id]);
     if (regRows.length === 0) throw new Error('Không tìm thấy đăng ký xe.');
     // Trả phiếu về đúng trạng thái trước khi có yêu cầu thay đổi
     const revertStatus = regRows[0].vehicle_id ? 'scheduled' : 'approved';
@@ -267,6 +331,12 @@ export const rejectChangeRequest = async (req, res) => {
     await connection.query('UPDATE vehicle_registrations SET status = ? WHERE id = ?', [revertStatus, req.params.id]);
 
     await connection.commit();
+    await notifyUsers(
+      [regRows[0].requester_id],
+      'Yêu cầu thay đổi bị từ chối',
+      `Yêu cầu thay đổi của phiếu ${regRows[0].registration_number} đã bị từ chối.`,
+      'warning'
+    );
     res.json({ message: 'Đã từ chối yêu cầu thay đổi.' });
   } catch (error) {
     await connection.rollback();
@@ -305,6 +375,23 @@ export const updateVehicleRegistration = async (req, res) => {
 
     const affectedRows = await VehicleRegistration.update(req.params.id, payload, req.user.id, canCoordinate);
     if (affectedRows === 0) return res.status(404).json({ message: 'Không tìm thấy đăng ký xe để cập nhật.' });
+
+    if (canCoordinate) {
+      await notifyUsers(
+        [registration.requester_id],
+        'Đăng ký xe đã được cập nhật',
+        `Phiếu ${registration.registration_number} đã được điều phối viên cập nhật.`,
+        'info'
+      );
+    } else if (['approved', 'scheduled'].includes(registration.status)) {
+      await notifyUsers(
+        await getCoordinatorIds(req.user.id),
+        'Có yêu cầu thay đổi đăng ký xe',
+        `Phiếu ${registration.registration_number} có yêu cầu thay đổi cần được duyệt.`,
+        'info'
+      );
+    }
+
     res.json({ message: 'Cập nhật đăng ký xe thành công.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -349,6 +436,12 @@ export const deleteVehicleRegistration = async (req, res) => {
     if (affectedRows === 0) {
       return res.status(404).json({ message: 'Không tìm thấy đăng ký xe để xóa.' });
     }
+    await notifyUsers(
+      [registration.requester_id],
+      'Đăng ký xe đã bị xóa',
+      `Phiếu ${registration.registration_number} đã bị xóa khỏi hệ thống.`,
+      'warning'
+    );
     res.json({ message: 'Xóa đăng ký xe thành công.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -469,6 +562,12 @@ export const deleteVehicleRegistration = async (req, res) => {
      );
      await AuditLog.log(req.user.id, 'MERGE_DEPARTMENT', 'vehicle_registrations', registrationId, null,
        { department_id }, `Ghép phòng ban vào chuyến đi ${registration.registration_number}`);
+    await notifyUsers(
+      [registration.requester_id],
+      'Đăng ký xe đã thêm phòng ban',
+      `Phòng ban đã được thêm vào phiếu ${registration.registration_number}.`,
+      'info'
+    );
      res.json({ message: 'Đã ghép vào chuyến thành công.' });
    } catch (error) {
      res.status(500).json({ message: error.message });

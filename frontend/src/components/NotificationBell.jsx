@@ -1,11 +1,16 @@
 // frontend/src/components/NotificationBell.jsx
 import { useState, useEffect, useRef } from 'react';
-import { notificationsAPI } from '../api';
+import { notificationsAPI, pushAPI } from '../api';
+import { isPushSupported, registerPushNotifications } from '../pushNotifications';
 
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isRinging, setIsRinging] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushError, setPushError] = useState('');
+  const [testPushBusy, setTestPushBusy] = useState(false);
   const prevCountRef = useRef(0);
   const dropdownRef = useRef(null);
 
@@ -21,10 +26,55 @@ const NotificationBell = () => {
 
   useEffect(() => {
     fetchNotifications();
-    // Tự động làm mới mỗi 1 phút (Polling)
-    const interval = setInterval(fetchNotifications, 60000);
-    return () => clearInterval(interval);
+    // Đồng bộ nhanh khi Push không được hiển thị bởi hệ điều hành/trình duyệt.
+    const interval = setInterval(fetchNotifications, 10000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') fetchNotifications();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!isPushSupported()) return undefined;
+
+    navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+    if (Notification.permission === 'granted') {
+      registerPushNotifications()
+        .then(() => setPushEnabled(true))
+        .catch(() => {});
+    }
+    return undefined;
+  }, []);
+
+  const enablePushNotifications = async () => {
+    setPushBusy(true);
+    setPushError('');
+    try {
+      await registerPushNotifications();
+      setPushEnabled(true);
+      await pushAPI.sendTest();
+    } catch (error) {
+      setPushError(error.response?.data?.message || error.message || 'Không thể bật thông báo đẩy');
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const sendTestPush = async () => {
+    setTestPushBusy(true);
+    setPushError('');
+    try {
+      await pushAPI.sendTest();
+    } catch (error) {
+      setPushError(error.response?.data?.message || error.message || 'Không thể gửi thông báo thử');
+    } finally {
+      setTestPushBusy(false);
+    }
+  };
 
   // Xử lý tự động đóng khi click ra ngoài
   useEffect(() => {
@@ -86,6 +136,25 @@ const NotificationBell = () => {
           borderRadius: '8px', zIndex: 1000, maxHeight: '400px', overflowY: 'auto' 
         }}>
           <h4 style={{ padding: '10px 15px', borderBottom: '1px solid #eee', margin: 0 }}>Thông báo</h4>
+          <div style={{ padding: '10px 15px', borderBottom: '1px solid #eee' }}>
+            {pushEnabled ? (
+              <div>
+                <div style={{ color: '#18794e', fontSize: '13px' }}>Đã bật thông báo ngoài màn hình</div>
+                <button type="button" onClick={sendTestPush} disabled={testPushBusy} style={{ marginTop: '6px' }}>
+                  {testPushBusy ? 'Đang gửi...' : 'Gửi thông báo thử'}
+                </button>
+              </div>
+            ) : isPushSupported() ? (
+              <button type="button" onClick={enablePushNotifications} disabled={pushBusy}>
+                {pushBusy ? 'Đang bật...' : 'Bật thông báo ngoài màn hình'}
+              </button>
+            ) : (
+              <div style={{ color: '#8a4b08', fontSize: '12px' }}>
+                Trình duyệt hoặc kết nối hiện tại không hỗ trợ thông báo đẩy.
+              </div>
+            )}
+            {pushError && <div style={{ color: '#b42318', fontSize: '12px', marginTop: '6px' }}>{pushError}</div>}
+          </div>
           {notifications.length === 0 ? (
             <p style={{ padding: '15px', textAlign: 'center', color: '#666', margin: 0 }}>Không có thông báo</p>
           ) : (

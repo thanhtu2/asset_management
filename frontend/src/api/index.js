@@ -220,6 +220,13 @@ export const notificationsAPI = {
   markAsRead: (id) => apiClient.put(`/notifications/${id}/read`),
 };
 
+export const pushAPI = {
+  getPublicKey: () => apiClient.get('/push/public-key'),
+  subscribe: (subscription) => apiClient.post('/push/subscribe', subscription),
+  unsubscribe: (endpoint) => apiClient.delete('/push/subscribe', { data: { endpoint } }),
+  sendTest: () => apiClient.post('/push/test'),
+};
+
 export const changelogsAPI = {
   getAll: () => apiClient.get('/changelogs'),
   create: (data) => apiClient.post('/changelogs', data),

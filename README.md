@@ -95,8 +95,12 @@ Quyền hạn cho module Xe đã được tách nhỏ để quản lý linh ho�
 
 ### 10. Hệ thống thông báo (Notifications)
 - Chuông thông báo trực tuyến trên giao diện (Navbar)
+- Web Push Notification qua Service Worker, hiển thị ngoài màn hình khi tab bị ẩn hoặc đã đóng
+- Người dùng bật Push từ menu chuông; mỗi trình duyệt/thiết bị được lưu subscription riêng
 - Thông báo tự động khi có tài sản mới được thêm hoặc cập nhật thông tin
 - Thông báo tự động (Cảnh báo đỏ) khi có thiết bị được báo hỏng từ trang quét QR Public
+- Thông báo cho phiếu yêu cầu hỗ trợ khi tạo, cập nhật hoặc thay đổi trạng thái
+- Thông báo cho đăng ký xe khi tạo, duyệt, từ chối, gán xe, hủy, sửa hoặc gửi yêu cầu thay đổi
 - Cron Job chạy ngầm hàng ngày: Tự động rà quét và gửi cảnh báo các tài sản sắp đến hạn bảo trì (trong 7 ngày tới)
 - Phân loại thông báo (Info, Success, Warning, Maintenance)
 - Hiệu ứng rung chuông (Animation) mượt mà, trực quan ngay khi có thông báo mới theo thời gian thực
@@ -194,9 +198,12 @@ npm install express-rate-limit
 # DB_NAME=asset_management
 # PORT=3001
 # JWT_SECRET=your_secret_key
+# VAPID_PUBLIC_KEY=your_web_push_public_key
+# VAPID_PRIVATE_KEY=your_web_push_private_key
+# VAPID_SUBJECT=mailto:admin@example.com
 
-# Khởi động server
-npm run dev
+# Khởi động backend
+npm start
 ```
 
 ### 2. Cài đặt Frontend
@@ -209,13 +216,15 @@ cd frontend
 npm install
 
 # Khởi động development server
-npm run dev
+npm run dev -- --host
 ```
 
 ### 3. Truy cập ứng dụng
 
-http://localhost:5173 hoặc http://192.168.89.118:5173
+https://localhost:5173 hoặc https://192.168.90.29:5173
 - **Backend API**: http://localhost:3001/api
+
+Khi truy cập từ thiết bị khác trong LAN, cần cài/trust certificate dev tại `frontend/.certs/asset-management-dev.pfx` trên thiết bị đó. Certificate này bao phủ IP `192.168.90.29` và IP LAN cũ `192.168.88.175`. Không thay thế các certificate production trong thư mục `certs/`.
 
 ### 4. Tài khoản mặc định
 
@@ -330,6 +339,32 @@ Các API cho các tài nguyên này có cấu trúc tương tự nhau.
 | `GET` | `/api/roles/:roleCode/permissions` | Lấy danh sách quyền của một vai trò. |
 | `POST` | `/api/roles/:roleCode/permissions` | Cập nhật danh sách quyền cho một vai trò. |
 
+### Technical Support (Yêu cầu kỹ thuật)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/support-requests` | Lấy danh sách phiếu theo quyền người dùng. |
+| `GET` | `/api/support-requests/:id` | Xem chi tiết phiếu và lịch sử xử lý. |
+| `POST` | `/api/support-requests` | Tạo phiếu mới; gửi Web Push cho Admin và người có quyền `PROCESS_SUPPORT_REQUEST`. |
+| `PUT` | `/api/support-requests/:id` | Cập nhật phiếu hoặc trạng thái; gửi thông báo cho người tạo và kỹ thuật viên được giao. |
+
+### Vehicle Registrations (Đăng ký xe)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/vehicle-registrations` | Tạo phiếu; thông báo cho điều phối viên/Admin. |
+| `PUT` | `/api/vehicle-registrations/:id` | Sửa phiếu; thông báo cho người đăng ký hoặc điều phối viên tùy người thao tác. |
+| `PUT` | `/api/vehicle-registrations/:id/approve` | Duyệt phiếu; thông báo cho người đăng ký. |
+| `PUT` | `/api/vehicle-registrations/:id/reject` | Từ chối phiếu; thông báo cho người đăng ký. |
+| `PUT` | `/api/vehicle-registrations/:id/assign` | Gán xe/lên lịch; thông báo cho người đăng ký. |
+| `PUT` | `/api/vehicle-registrations/:id/cancel` | Hủy phiếu; thông báo cho người đăng ký. |
+| `POST` | `/api/vehicle-registrations/:id/request-change` | Gửi yêu cầu thay đổi; thông báo cho điều phối viên/Admin. |
+| `PUT` | `/api/vehicle-registrations/:id/approve-change/:changeId` | Duyệt thay đổi; thông báo cho người đăng ký. |
+| `PUT` | `/api/vehicle-registrations/:id/reject-change/:changeId` | Từ chối thay đổi; thông báo cho người đăng ký. |
+| `POST` | `/api/vehicle-registrations/add-department/:id` | Thêm phòng ban vào chuyến; thông báo cho người đăng ký. |
+| `DELETE` | `/api/vehicle-registrations/:id` | Xóa phiếu; thông báo cho người đăng ký. |
+| `POST` | `/api/vehicle-registrations/merge` | Gộp phiếu; gửi thông báo gộp chuyến. |
+
 ### Purchase Proposals (Đề xuất mua sắm)
 
 | Method | Endpoint | Description |
@@ -360,6 +395,17 @@ Các API cho các tài nguyên này có cấu trúc tương tự nhau.
 | `GET` | `/api/notifications` | Lấy danh sách thông báo của người dùng hiện tại. |
 | `PUT` | `/api/notifications/:id/read` | Đánh dấu một thông báo là đã đọc. |
 | `PUT` | `/api/notifications/read-all` | Đánh dấu tất cả thông báo là đã đọc. |
+
+### Web Push Subscription
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/push/public-key` | Lấy VAPID public key để đăng ký Push. |
+| `POST` | `/api/push/subscribe` | Lưu subscription của trình duyệt/thiết bị hiện tại. |
+| `DELETE` | `/api/push/subscribe` | Hủy subscription của thiết bị hiện tại. |
+| `POST` | `/api/push/test` | Gửi thông báo thử tới thiết bị của user hiện tại. |
+
+Web Push chỉ được gửi tới thiết bị đã đăng nhập và đăng ký thành công qua `POST /api/push/subscribe`. Service Worker được phục vụ tại `/service-worker.js`.
 
 ## 🔧 Phân trang
 
@@ -630,7 +676,12 @@ DB_NAME=defaultdb
 JWT_SECRET=your-super-secret-key-min-32-chars
 VITE_API_URL=/api
 FRONTEND_URL=https://your-project.vercel.app
+VAPID_PUBLIC_KEY=your_web_push_public_key
+VAPID_PRIVATE_KEY=your_web_push_private_key
+VAPID_SUBJECT=mailto:admin@example.com
 ```
+
+Tạo một cặp khóa Web Push bằng lệnh `npx web-push generate-vapid-keys` trong thư mục `backend`. Giữ khóa riêng tư trong biến môi trường và không commit vào mã nguồn. Người dùng cần cấp quyền thông báo trên trình duyệt qua nút trong menu chuông thông báo.
 
 ## ☁️ Triển khai Production (Vercel & Aiven)
 

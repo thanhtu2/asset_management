@@ -26,6 +26,7 @@ import roleRoutes from './routes/role.routes.js';
 import permissionRoutes from './routes/permission.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
+import pushRoutes from './routes/push.routes.js';
 import cronRoutes from './routes/cron.routes.js';
 import purchaseRoutes from './routes/purchase.routes.js';
 import vehicleTripRoutes from './routes/vehicleTrip.routes.js';
@@ -42,6 +43,7 @@ import { initCronJobs } from './cron.service.js';
 // Lùi ra 2 cấp thư mục (từ src/ ra backend/ rồi ra root/) để đọc file .env
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -194,6 +196,7 @@ app.use('/api/roles', roleRoutes);
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/push', pushRoutes);
 app.use('/api/purchases', purchaseRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/vehicle-registrations', vehicleRegistrationRoutes);

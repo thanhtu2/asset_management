@@ -20,15 +20,25 @@
 
 
 import { defineConfig } from 'vite'
+import fs from 'node:fs'
+import path from 'node:path'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import basicSsl from '@vitejs/plugin-basic-ssl'
+
+const devHttpsHost = process.env.VITE_DEV_HTTPS_HOST || '192.168.90.29'
+const legacyLanHost = '192.168.88.175'
+const devCertificatePath = path.resolve(__dirname, '.certs', 'asset-management-dev.pfx')
+const devCertificatePassphrase = process.env.VITE_DEV_CERT_PASSPHRASE || 'asset-management-dev'
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), basicSsl()],
+  plugins: [react(), tailwindcss()],
   server: {
     port: 5173,
     host: true,
+    https: fs.existsSync(devCertificatePath) ? {
+      pfx: fs.readFileSync(devCertificatePath),
+      passphrase: devCertificatePassphrase
+    } : undefined,
     allowedHosts: 'all', // ✅ Cho phép mọi host
     hmr: {
       protocol: 'wss', // ✅ Dùng wss thay vì ws khi có HTTPS

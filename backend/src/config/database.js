@@ -8,6 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const createDatabase = async () => {
   try {
@@ -236,6 +237,24 @@ const createDatabase = async () => {
       `);
     } catch (e) {
       console.error('Support request tables initialization failed:', e.message);
+    }
+
+    try {
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+          id INT PRIMARY KEY AUTO_INCREMENT,
+          user_id INT NOT NULL,
+          endpoint TEXT NOT NULL,
+          p256dh VARCHAR(255) NOT NULL,
+          auth VARCHAR(255) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          UNIQUE KEY unique_push_endpoint (endpoint(255)),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+    } catch (e) {
+      console.error('Push subscription table initialization failed:', e.message);
     }
 
     await connection.end();
