@@ -108,22 +108,65 @@ const SupportRequest = {
     const nextStatus = data.status || existing.status;
     const allowedStatuses = ['submitted', 'assigned', 'in_progress', 'waiting_user', 'resolved', 'closed', 'rejected', 'cancelled'];
     if (!allowedStatuses.includes(nextStatus)) throw new Error('Trạng thái phiếu không hợp lệ');
+
+    const statusTransitions = {
+      submitted: ['assigned', 'rejected', 'cancelled'],
+      assigned: ['in_progress', 'resolved', 'rejected', 'cancelled'],
+      in_progress: ['resolved', 'cancelled'],
+      waiting_user: ['closed', 'resolved', 'cancelled'],
+      resolved: ['closed'],
+      closed: [],
+      rejected: [],
+      cancelled: []
+    };
+
+    if (existing.status !== nextStatus && !statusTransitions[existing.status]?.includes(nextStatus)) {
+      throw new Error(`Không thể chuyển từ trạng thái "${existing.status}" sang "${nextStatus}".`);
+    }
+
+    if (nextStatus === existing.status) {
+      const hasMoreData = data.assigned_to !== undefined || data.resolution_summary !== undefined || data.resolution_cost !== undefined || data.comment !== undefined;
+      if (!hasMoreData) {
+        return existing;
+      }
+    }
+
+    const canProcess = user?.role === 'admin' || user?.permissions?.includes('PROCESS_SUPPORT_REQUEST');
+    if (nextStatus === 'closed' && existing.status !== 'resolved') {
+      throw new Error('Chỉ có thể đóng phiếu sau khi kỹ thuật viên đã xác nhận sửa xong.');
+    }
+    if (nextStatus === 'closed' && (!data.comment || !String(data.comment).trim())) {
+      throw new Error('Vui lòng nhập ghi chú xác nhận khi đóng phiếu.');
+    }
+    if (nextStatus === 'closed' && user?.id !== existing.requester_id && !canProcess) {
+      throw new Error('Chỉ người gửi phiếu hoặc người có quyền xử lý mới được đóng phiếu.');
+    }
+
+    const autoAssignedTo = (!existing.assigned_to && ['assigned', 'in_progress', 'resolved'].includes(nextStatus)) ? user.id : null;
+    const nextAssignedTo = data.assigned_to !== undefined
+      ? (data.assigned_to === '' || data.assigned_to === null ? null : Number(data.assigned_to))
+      : (existing.assigned_to ?? autoAssignedTo);
+    const nextResolutionSummary = data.resolution_summary !== undefined ? data.resolution_summary : existing.resolution_summary;
+    const nextResolutionCost = data.resolution_cost !== undefined ? Number(data.resolution_cost) || 0 : (existing.resolution_cost ?? 0);
+
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
       await connection.query(`
-        UPDATE technical_support_requests SET status = ?, assigned_to = COALESCE(?, assigned_to),
-          resolution_summary = COALESCE(?, resolution_summary), resolution_cost = COALESCE(?, resolution_cost),
+        UPDATE technical_support_requests SET status = ?, assigned_to = ?,
+          resolution_summary = ?, resolution_cost = ?,
           first_response_at = CASE WHEN ? IN ('assigned', 'in_progress') AND first_response_at IS NULL THEN NOW() ELSE first_response_at END,
           started_at = CASE WHEN ? = 'in_progress' AND started_at IS NULL THEN NOW() ELSE started_at END,
-          resolved_at = CASE WHEN ? = 'resolved' THEN NOW() ELSE resolved_at END,
-          closed_at = CASE WHEN ? = 'closed' THEN NOW() ELSE closed_at END
+          resolved_at = CASE WHEN ? = 'resolved' AND resolved_at IS NULL THEN NOW() ELSE resolved_at END,
+          closed_at = CASE WHEN ? = 'closed' AND closed_at IS NULL THEN NOW() ELSE closed_at END
         WHERE id = ?
-      `, [nextStatus, data.assigned_to || null, data.resolution_summary || null, data.resolution_cost ?? null, nextStatus, nextStatus, nextStatus, nextStatus, id]);
-      await connection.query(`
-        INSERT INTO technical_support_histories (request_id, actor_id, action, old_status, new_status, comment)
-        VALUES (?, ?, 'status_changed', ?, ?, ?)
-      `, [id, user.id, existing.status, nextStatus, data.comment || null]);
+      `, [nextStatus, nextAssignedTo, nextResolutionSummary, nextResolutionCost, nextStatus, nextStatus, nextStatus, nextStatus, id]);
+      if (existing.status !== nextStatus) {
+        await connection.query(`
+          INSERT INTO technical_support_histories (request_id, actor_id, action, old_status, new_status, comment)
+          VALUES (?, ?, 'status_changed', ?, ?, ?)
+        `, [id, user.id, existing.status, nextStatus, data.comment || null]);
+      }
       await connection.commit();
       return this.findById(id, { ...user, role: 'admin' });
     } catch (error) {

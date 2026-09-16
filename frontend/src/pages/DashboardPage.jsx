@@ -29,6 +29,13 @@ const DashboardPage = () => {
 
   useEffect(() => { fetchStats(); }, []);
 
+  const supportMetricCards = [
+    { key: 'total_support_requests', label: 'Tổng phiếu', icon: '🧾', accent: '#2563eb' },
+    { key: 'pending_support_requests', label: 'Đang xử lý', icon: '⏳', accent: '#f59e0b' },
+    { key: 'resolved_support_requests', label: 'Đã sửa xong', icon: '✅', accent: '#10b981' },
+    { key: 'urgent_support_requests', label: 'Ưu tiên cao', icon: '🚨', accent: '#ef4444' },
+  ];
+
   const fetchStats = async () => {
     try {
       const response = await dashboardAPI.getStats();
@@ -106,6 +113,55 @@ const DashboardPage = () => {
             </div>
           );
         })}
+      </div>
+
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-header">
+          <h3 className="card-title">Hỗ trợ kỹ thuật</h3>
+          <Link to="/support-requests" className="btn btn-sm btn-outline">Xem chi tiết →</Link>
+        </div>
+        <div className="stats-grid">
+          {supportMetricCards.map(({ key, label, icon, accent }) => {
+            const value = stats?.supportRequestMetrics?.[key] ?? 0;
+            return (
+              <div key={key} className="stat-card" style={{ '--stat-accent': accent }}>
+                <div style={{
+                  position: 'absolute', top: 16, right: 16,
+                  width: 40, height: 40, borderRadius: 10,
+                  background: accent + '18',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 18,
+                }}>{icon}</div>
+                <h3>{label}</h3>
+                <div className="value" style={{ fontSize: 28, color: accent, marginTop: 8 }}>{value}</div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ marginTop: 16 }}>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Trạng thái</th>
+                  <th style={{ textAlign: 'right' }}>Số lượng</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(stats?.supportByStatus || []).length > 0 ? stats.supportByStatus.map((item) => (
+                  <tr key={item.status}>
+                    <td>{item.status ? ({ submitted: 'Mới gửi', assigned: 'Đã tiếp nhận', in_progress: 'Đang xử lý', resolved: 'Đã sửa xong', closed: 'Đã đóng', cancelled: 'Đã hủy', rejected: 'Từ chối' }[item.status] || item.status) : 'Không xác định'}</td>
+                    <td style={{ textAlign: 'right' }}>{item.count}</td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="2" style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Không có dữ liệu hỗ trợ kỹ thuật</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       {/* Charts Section */}

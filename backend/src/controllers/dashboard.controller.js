@@ -108,7 +108,68 @@ export const getStats = async (req, res) => {
       ORDER BY created_at DESC 
       LIMIT 5
     `);
-    
+
+    // Support requests analytics
+    const emptySupportRequestMetrics = {
+      total_support_requests: 0,
+      pending_support_requests: 0,
+      resolved_support_requests: 0,
+      closed_support_requests: 0,
+      urgent_support_requests: 0
+    };
+
+    let supportRequestMetrics = { ...emptySupportRequestMetrics };
+    let supportByStatus = [];
+    let supportByCategory = [];
+
+    try {
+      const [supportTableCheck] = await pool.query("SHOW TABLES LIKE 'technical_support_requests'");
+
+      if (supportTableCheck.length > 0) {
+        const [metricsRows] = await pool.query(`
+          SELECT
+            COUNT(*) AS total_support_requests,
+            SUM(CASE WHEN status IN ('submitted', 'assigned', 'in_progress', 'waiting_user') THEN 1 ELSE 0 END) AS pending_support_requests,
+            SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) AS resolved_support_requests,
+            SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) AS closed_support_requests,
+            SUM(CASE WHEN priority = 'urgent' THEN 1 ELSE 0 END) AS urgent_support_requests
+          FROM technical_support_requests
+        `);
+
+        const [statusRows] = await pool.query(`
+          SELECT status, COUNT(*) AS count
+          FROM technical_support_requests
+          GROUP BY status
+          ORDER BY FIELD(status, 'submitted', 'assigned', 'in_progress', 'resolved', 'closed', 'cancelled', 'rejected')
+        `);
+
+        const [categoryRows] = await pool.query(`
+          SELECT category, COUNT(*) AS count
+          FROM technical_support_requests
+          GROUP BY category
+          ORDER BY count DESC
+        `);
+
+        supportRequestMetrics = {
+          ...emptySupportRequestMetrics,
+          ...Object.fromEntries(Object.entries(metricsRows[0] || {}).map(([key, value]) => [key, Number(value ?? 0)]))
+        };
+        supportByStatus = (statusRows || []).map(row => ({
+          ...row,
+          count: Number(row.count ?? 0)
+        }));
+        supportByCategory = (categoryRows || []).map(row => ({
+          ...row,
+          count: Number(row.count ?? 0)
+        }));
+      }
+    } catch (error) {
+      console.warn('Support request dashboard metrics unavailable:', error.message);
+      supportRequestMetrics = { ...emptySupportRequestMetrics };
+      supportByStatus = [];
+      supportByCategory = [];
+    }
+
     res.json({
       totalAssets: totalAssets[0].count,
       newAssets: newAssets[0].count,
@@ -127,7 +188,10 @@ export const getStats = async (req, res) => {
       recentAssets,
       upcomingMaintenance,
       maintenanceCosts: maintenanceCosts[0] || { total_cost: 0, total_records: 0 },
-      inventorySessions
+      inventorySessions,
+      supportRequestMetrics,
+      supportByStatus,
+      supportByCategory
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
