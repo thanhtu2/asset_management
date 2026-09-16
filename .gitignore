@@ -5,3 +5,4 @@ backend/node_modules/
 dist/
 .env
 .env.*
+frontend/.certs/

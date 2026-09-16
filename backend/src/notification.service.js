@@ -1,4 +1,5 @@
 import pool from './config/database.js';
+import { sendPushNotification } from './push.service.js';
 
 /**
  * Tạo một thông báo mới
@@ -9,10 +10,12 @@ import pool from './config/database.js';
  */
 export const createNotification = async (userId, title, message, type = 'info') => {
   try {
-    await pool.query(
+    const [result] = await pool.query(
       'INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)',
       [userId, title, message, type]
     );
+    await sendPushNotification(userId, { id: result.insertId, title, message, type });
+    return result.insertId;
   } catch (error) {
     console.error('Lỗi khi tạo thông báo:', error);
   }
