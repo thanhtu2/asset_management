@@ -10,8 +10,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'Asset Management';
   const options = {
     body: data.body || 'Bạn có thông báo mới',
-    icon: '/favicon.ico',
-    badge: '/favicon.ico',
+    icon: '/icon-192.png',
+    badge: '/icon-96.png',
     tag: data.notificationId ? `notification-${data.notificationId}` : 'notification',
     data: { url: data.url || '/' },
     renotify: true

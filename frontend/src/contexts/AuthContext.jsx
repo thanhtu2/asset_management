@@ -1,5 +1,6 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import { authAPI } from '../api';
+import { unregisterPushNotifications } from '../pushNotifications';
 
 const AuthContext = createContext(null);
 
@@ -37,6 +38,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      await unregisterPushNotifications(); // Hủy push của thiết bị này trước khi xóa phiên
       await authAPI.logout(); // Yêu cầu backend vô hiệu hóa cookie
     } catch (error) {
       console.error("Logout failed on server:", error);

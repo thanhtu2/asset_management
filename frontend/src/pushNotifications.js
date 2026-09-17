@@ -8,7 +8,20 @@ const urlBase64ToUint8Array = (value) => {
   const rawData = window.atob(base64);
   return Uint8Array.from([...rawData].map((character) => character.charCodeAt(0)));
 };
-
+export const unregisterPushNotifications = async () => {
+  if (!isPushSupported()) return;
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    const subscription = await registration?.pushManager.getSubscription();
+    if (subscription) {
+      const endpoint = subscription.endpoint;
+      await subscription.unsubscribe();
+      await pushAPI.unsubscribe(endpoint);
+    }
+  } catch (error) {
+    console.error('Không thể hủy đăng ký thông báo đẩy:', error);
+  }
+};
 export const isPushSupported = () => (
   'serviceWorker' in navigator &&
   'PushManager' in window &&
