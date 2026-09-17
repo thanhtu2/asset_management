@@ -35,7 +35,7 @@ export const removePushSubscription = async (userId, endpoint) => {
 
 export const sendPushNotification = async (userId, notification) => {
   if (!isConfigured) {
-    return;
+    return { configured: false, sent: 0, failed: 0 };
   }
 
   const [subscriptions] = await pool.query(
@@ -53,6 +53,9 @@ export const sendPushNotification = async (userId, notification) => {
     url: '/'
   });
 
+  let sent = 0;
+  let failed = 0;
+
   await Promise.all(subscriptions.map(async (subscription) => {
     try {
       await webpush.sendNotification({
@@ -66,12 +69,16 @@ export const sendPushNotification = async (userId, notification) => {
         'UPDATE push_subscriptions SET last_used_at = CURRENT_TIMESTAMP WHERE id = ?',
         [subscription.id]
       );
+      sent += 1;
     } catch (error) {
       if (error.statusCode === 404 || error.statusCode === 410) {
         await pool.query('DELETE FROM push_subscriptions WHERE id = ?', [subscription.id]);
       } else {
         console.error('Lỗi gửi Web Push:', error.message);
       }
+      failed += 1;
     }
   }));
+
+  return { configured: true, sent, failed, registered: subscriptions.length };
 };
