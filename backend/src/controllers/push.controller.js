@@ -37,13 +37,19 @@ export const unsubscribe = async (req, res) => {
 
 export const sendTestPush = async (req, res) => {
   try {
-    await sendPushNotification(req.user.id, {
+    const result = await sendPushNotification(req.user.id, {
       id: `test-${Date.now()}`,
       title: 'Kiểm tra thông báo đẩy',
       message: 'Thiết bị này đã nhận Web Push thành công.',
       type: 'success'
     });
-    return res.json({ message: 'Đã gửi thông báo thử tới thiết bị của bạn' });
+    if (!result.configured) {
+      return res.status(503).json({ message: 'VAPID chưa được cấu hình trên máy chủ' });
+    }
+    if (result.sent === 0) {
+      return res.status(409).json({ message: 'Thiết bị này chưa đăng ký Web Push hoặc subscription đã hết hạn.' });
+    }
+    return res.json({ message: 'Đã gửi thông báo thử tới thiết bị của bạn', ...result });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
