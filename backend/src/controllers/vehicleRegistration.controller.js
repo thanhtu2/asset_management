@@ -4,6 +4,7 @@ import pool from '../config/database.js';
 import VehicleRegistration from '../models/VehicleRegistration.js';
 import { createNotification } from '../notification.service.js';
 import AuditLog from '../models/AuditLog.js';
+import { uploadRegistrationAttachment } from '../config/supabaseStorage.js';
 
 const getCoordinatorIds = async (excludeUserId = null) => {
   const [rows] = await pool.query(`
@@ -47,11 +48,7 @@ export const createVehicleRegistration = async (req, res) => {
       return res.status(400).json({ message: 'Ngày khởi hành, điểm đi, điểm đến, phòng  và File đính kèm là bắt buộc.' });
     }
     
-    // let attachment_path = null;
-    // if (req.file) {
-    //   attachment_path = `/uploads/${req.file.filename}`;
-    // }
-    const attachment_path = `/uploads/${req.file.filename}`;
+    const attachment_path = await uploadRegistrationAttachment(req.file);
 
     // Whitelist tường minh — người tạo phiếu tuyệt đối KHÔNG được gửi vehicle_id/status
     const { departure_time, participants, notes, department_ids } = req.body;
@@ -207,10 +204,7 @@ export const requestChange = async (req, res) => {
       return res.status(400).json({ message: 'Chỉ có thể gửi yêu cầu thay đổi cho phiếu đã được duyệt hoặc đã lên lịch.' });
     }
 
-    let attachment_path = null;
-    if (req.file) {
-      attachment_path = `/uploads/${req.file.filename}`;
-    }
+    const attachment_path = await uploadRegistrationAttachment(req.file);
     // Whitelist field được phép đổi — không cho đổi vehicle_id/status qua đường này
     const { registration_date, departure_time, destination, departure_location, participants, notes, department_ids } = req.body;
     const requestedData = { registration_date, departure_time, destination, departure_location, participants, notes, department_ids: parseDeptIds(department_ids), attachment_path };
@@ -365,7 +359,7 @@ export const updateVehicleRegistration = async (req, res) => {
 
     let attachment_path = registration.attachment_path;
     if (req.file) {
-      attachment_path = `/uploads/${req.file.filename}`;
+      attachment_path = await uploadRegistrationAttachment(req.file);
     }
     // Whitelist — người dùng thường tuyệt đối không được tự đổi vehicle_id/status qua đây
     const { registration_number, registration_date, departure_time, destination, departure_location, participants, notes, department_ids } = req.body;

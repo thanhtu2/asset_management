@@ -19,7 +19,7 @@ import {
   addDepartmentToTrip
 } from '../controllers/vehicleRegistration.controller.js';
 import { authMiddleware, checkPermission } from '../middleware/auth.middleware.js';
-import { generalUpload } from '../middleware/upload.middleware.js';
+import { registrationUpload } from '../middleware/upload.middleware.js';
 
 const router = express.Router();
 
@@ -43,7 +43,7 @@ const canViewVehicleRegistrationData = (req, res, next) => {
   return res.status(403).json({ message: 'Bạn không có quyền xem dữ liệu đăng ký xe.' });
 };
 
-router.post('/', checkPermission('CREATE_VEHICLE_REGISTRATION'), generalUpload.single('file'), createVehicleRegistration);
+router.post('/', checkPermission('CREATE_VEHICLE_REGISTRATION'), registrationUpload.single('file'), createVehicleRegistration);
 router.get('/', canViewVehicleRegistrationData, getAllVehicleRegistrations);
 router.get('/export', checkPermission('VIEW_VEHICLE_REGISTRATIONS'), exportVehicleRegistrations);
 // QUAN TRỌNG: route tĩnh '/find-similar' phải khai báo TRƯỚC route động '/:id',
@@ -56,7 +56,7 @@ router.post('/add-department/:id', checkPermission('CREATE_VEHICLE_REGISTRATION'
 //hợp nhất phiếu đăng ký xe 
 router.post('/merge', checkPermission('COORDINATE_VEHICLE'), mergeRegistration);
 // Sửa phiếu (trước đây frontend gọi route này nhưng backend chưa từng định nghĩa -> luôn 404)
-router.put('/:id', checkPermission('EDIT_VEHICLE_REGISTRATION'), generalUpload.single('file'), updateVehicleRegistration);
+router.put('/:id', checkPermission('EDIT_VEHICLE_REGISTRATION'), registrationUpload.single('file'), updateVehicleRegistration);
 
 // Action routes — Duyệt / Từ chối
 router.put('/:id/approve', checkPermission('APPROVE_VEHICLE_REGISTRATION'), approveRegistration);
@@ -70,7 +70,7 @@ router.put('/:id/cancel', canCreateOrCoordinateVehicle, cancelRegistration);
 router.get('/:id/change/:changeId', checkPermission('COORDINATE_VEHICLE'), getChangeDetails);
 
 // Yêu cầu thay đổi khi đã lên lịch — Duyệt / Từ chối yêu cầu thay đổi
-router.post('/:id/request-change', checkPermission('CREATE_VEHICLE_REGISTRATION'), generalUpload.single('file'), requestChange);
+router.post('/:id/request-change', checkPermission('CREATE_VEHICLE_REGISTRATION'), registrationUpload.single('file'), requestChange);
 router.put('/:id/approve-change/:changeId', checkPermission('COORDINATE_VEHICLE'), approveChangeRequest);
 router.put('/:id/reject-change/:changeId', checkPermission('COORDINATE_VEHICLE'), rejectChangeRequest);
 

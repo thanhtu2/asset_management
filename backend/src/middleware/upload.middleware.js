@@ -56,3 +56,15 @@ export const generalUpload = multer({
   },
   limits: { fileSize: 10 * 1024 * 1024 } // Giới hạn 10MB
 });
+
+export const registrationUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => {
+    if (file.originalname.match(/\.(pdf|doc|docx|xls|xlsx|png|jpg|jpeg|csv)$/i)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Định dạng file đính kèm không được hỗ trợ!'), false);
+    }
+  },
+  limits: { fileSize: 4 * 1024 * 1024 }
+});
