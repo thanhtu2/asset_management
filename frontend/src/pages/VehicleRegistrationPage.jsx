@@ -342,6 +342,10 @@ const fetchRegistrations = async () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    if (attachedFile && attachedFile.size > 4 * 1024 * 1024) {
+      alert('File đính kèm phải nhỏ hơn hoặc bằng 4 MB.');
+      return;
+    }
     try {
       if (attachedFile) {
         // Có file đính kèm -> PHẢI dùng fetch thuần + FormData.
@@ -1115,6 +1119,7 @@ const handleCreateExternalVehicle = async () => {
                   <label>File đính kèm</label>
                   <input 
                     type="file" 
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv"
                     onChange={(e) => setAttachedFile(e.target.files[0])} 
                   />
                   {attachedFile && (

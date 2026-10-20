@@ -39,6 +39,7 @@ import changelogRoutes from './routes/changelog.routes.js';
 
 import { initDatabase, testConnection, getPool } from './config/database.js';
 import { initCronJobs } from './cron.service.js';
+import { createRegistrationAttachmentUrl } from './config/supabaseStorage.js';
 
 // Lùi ra 2 cấp thư mục (từ src/ ra backend/ rồi ra root/) để đọc file .env
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -96,7 +97,7 @@ app.use(compression());
 // app.use('/uploads', express.static(path.resolve(__dirname, '../uploads'))); // DEPRECATED: Insecure, replaced with a secure route
 
 // Secure file download route
-app.get('/api/download/:filename', (req, res, next) => {
+app.get('/api/download/:filename', async (req, res) => {
   try {
     const token = req.cookies.token;
     if (!token) {
@@ -110,6 +111,12 @@ app.get('/api/download/:filename', (req, res, next) => {
     if (safeFilename !== filename) {
       return res.status(400).json({ message: 'Tên file không hợp lệ' });
     }
+
+    if (safeFilename.startsWith('sb-')) {
+      const signedUrl = await createRegistrationAttachmentUrl(safeFilename);
+      return res.redirect(302, signedUrl);
+    }
+
     const filePath = path.resolve(__dirname, '../uploads', safeFilename);
     res.sendFile(filePath, (err) => { 
       if (err) {
@@ -119,7 +126,10 @@ app.get('/api/download/:filename', (req, res, next) => {
     });
   } catch (error) {
     console.error('Lỗi xác thực tải file:', error.message);
-    return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
+    }
+    return res.status(502).json({ message: 'Không thể tải file từ kho lưu trữ.' });
   }
 });
 
